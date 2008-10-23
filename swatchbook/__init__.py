@@ -79,14 +79,11 @@ class SwatchBook(object):
 			if output == None:
 				print codec.write(self)
 			else:
-				if not os.path.exists(output):
-					content = codec.write(self)
-					# TODO check if writable
-					bookfile = open(output, 'w')
-					bookfile.write(content)
-					bookfile.close()
-				else:
-					sys.stderr.write('file exists\n')
+				content = codec.write(self)
+				# TODO check if writable
+				bookfile = open(output, 'w')
+				bookfile.write(content)
+				bookfile.close()
 		else:
 			sys.stderr.write('unsupported output format\n')
 
@@ -100,6 +97,10 @@ class Swatch(object):
 	def __init__(self):
 		self.id = False
 		self.info = {}
+
+class Spacer(object):
+	def __init__(self):
+		pass
 
 class Color(Swatch):
 	def __init__(self):

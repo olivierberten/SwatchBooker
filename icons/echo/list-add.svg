@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://web.resource.org/cc/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="48" height="48" viewBox="0 0 97.598 100.598" overflow="visible" enable-background="new 0 0 97.598 100.598" preserveAspectRatio="xMidYMid meet" zoomAndPan="magnify" version="1.0" contentScriptType="text/ecmascript" contentStyleType="text/css" id="svg2">
+  <defs id="defs59"/>
+  <metadata id="metadata4">
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <switch id="switch6" transform="matrix(0.883579,0,0,0.883579,4.787375,3.3285317)">
+    <foreignObject requiredExtensions="http://ns.adobe.com/AdobeIllustrator/10.0/" x="0" y="0" width="1" height="1" content="structured text" id="foreignObject8"/>
+    <g id="g10">
+      <g id="Layer_1">
+        <g id="g13">
+          <linearGradient id="XMLID_4_" gradientUnits="userSpaceOnUse" x1="91.627403" y1="-0.57620001" x2="45.555401" y2="53.174599" gradientTransform="matrix(1,-0.2915,0,1,0,13.9325)" xlink:type="simple" xlink:show="other" xlink:actuate="onLoad">
+            <stop offset="0" style="stop-color:#9EABB0" id="stop16"/>
+            <stop offset="0.2956" style="stop-color:#707F86" id="stop18"/>
+            <stop offset="0.7758" style="stop-color:#2A3D47" id="stop20"/>
+            <stop offset="1" style="stop-color:#0E232E" id="stop22"/>
+          </linearGradient>
+          <polygon points="97.592,61.397 92.923,65.008 66.708,64.953 66.708,93.808 62.583,100.588 32.63,100.598 32.63,65.315 0.03,65.299 0,36.806 5.495,33.667 32.13,33.648 32.165,3.492 37.478,0.019 67.208,0 67.169,33.062 97.598,32.947 97.592,61.397 " id="polygon24" style="fill:url(#XMLID_4_)"/>
+          <linearGradient id="XMLID_5_" gradientUnits="userSpaceOnUse" x1="39.5742" y1="64.180199" x2="77.176903" y2="4.4015002" gradientTransform="matrix(1,-0.2915,0,1,0,13.9325)" xlink:type="simple" xlink:show="other" xlink:actuate="onLoad">
+            <stop offset="0" style="stop-color:#575757" id="stop27"/>
+            <stop offset="0.2375" style="stop-color:#898989" id="stop29"/>
+            <stop offset="0.4751" style="stop-color:#B6B6B6" id="stop31"/>
+            <stop offset="0.5955" style="stop-color:#C7C7C7" id="stop33"/>
+            <stop offset="1" style="stop-color:#CFCFCF" id="stop35"/>
+          </linearGradient>
+          <polygon points="95.259,60.918 92.437,63.1 64.832,63.15 64.72,93.202 62.005,97.752 45.755,46.615 2.33,37.546 6.414,35.391 34.766,35.431 34.63,3.857 37.922,1.771 64.796,1.759 64.836,35.285 95.259,35.308 95.259,60.918 " id="polygon37" style="fill:url(#XMLID_5_)"/>
+          <polygon points="92.406,63.17 61.88,63.165 61.861,97.772 34.649,97.769 34.559,63.483 2.327,63.472 2.338,37.47 34.505,37.447 34.505,4.019 62.005,4.003 62.002,37.375 92.396,37.412 92.406,63.17 " id="polygon39" style="fill:#ffffff"/>
+          <radialGradient id="XMLID_6_" cx="142.5015" cy="-165.86571" r="157.3067" fx="142.5015" fy="-165.86571" gradientTransform="matrix(0.8228,1.09e-2,-3.15e-2,0.4162,11.7814,68.4946)" gradientUnits="userSpaceOnUse" xlink:type="simple" xlink:show="other" xlink:actuate="onLoad">
+            <stop offset="0.3146" style="stop-color:#FFFFFF" id="stop42"/>
+            <stop offset="0.3662" style="stop-color:#F7FCFF" id="stop44"/>
+            <stop offset="0.4447" style="stop-color:#E2F5FF" id="stop46"/>
+            <stop offset="0.5404" style="stop-color:#C0E9FF" id="stop48"/>
+            <stop offset="0.6496" style="stop-color:#90D8FF" id="stop50"/>
+            <stop offset="0.7686" style="stop-color:#53C2FF" id="stop52"/>
+            <stop offset="0.8708" style="stop-color:#19AEFF" id="stop54"/>
+          </radialGradient>
+          <polygon points="90.061,60.602 58.484,60.61 58.38,93.684 37.755,93.822 37.654,60.779 4.995,60.811 5.004,40.538 37.63,40.483 37.63,7.983 58.258,7.95 58.505,40.149 90.052,40.272 90.061,60.602 " id="polygon56" style="fill:url(#XMLID_6_)"/>
+        </g>
+      </g>
+    </g>
+  </switch>
+</svg>

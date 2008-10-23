@@ -27,12 +27,6 @@ import xml.etree.cElementTree as etree
 from swatchbook import *
 from color import *
 
-def ords2str(ords):
-	string = u''
-	for ord in ords:
-		string += unichr(ord)
-	return unicode(string.split('\x00', 1)[0])
-
 class Codec(object):
 	ext = False
 	read = False
@@ -51,8 +45,7 @@ class adobe_acb(Codec):
 
 	@staticmethod
 	def read(book,file):
-		def decode_str(ords):
-			str = ords2str(ords)
+		def decode_str(str):
 			if str[0:4] == '$$$/':
 				str = str.partition('=')[2]
 			return str.replace('^C',u'©').replace('^R',u'®')
@@ -60,22 +53,22 @@ class adobe_acb(Codec):
 		file.seek(8, 1)
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
-			name = decode_str(struct.unpack('>'+str(length)+'H',file.read(length*2)))
+			name = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		if name > u'':
 			book.info['name'] = {0: name}
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
-			prefix = decode_str(struct.unpack('>'+str(length)+'H',file.read(length*2)))
+			prefix = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		else:
 			prefix = u''
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
-			suffix = decode_str(struct.unpack('>'+str(length)+'H',file.read(length*2)))
+			suffix = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		else:
 			suffix = u''
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
-			description = decode_str(struct.unpack('>'+str(length)+'H',file.read(length*2)))
+			description = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		if 'description' in vars() and description > u'':
 			book.info['copyright'] = {0: description}
 		nbcolors = struct.unpack('>H',file.read(2))[0]
@@ -86,7 +79,7 @@ class adobe_acb(Codec):
 			item = Color()
 			length = struct.unpack('>L',file.read(4))[0]
 			if length > 0:
-				item.info['name'] = {0: prefix+decode_str(struct.unpack('>'+str(length)+'H',file.read(length*2)))+suffix}
+				item.info['name'] = {0: prefix+decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))+suffix}
 			item.id = struct.unpack('>6s',file.read(6))[0]
 			if model == 0:
 				R,G,B = struct.unpack('>3B',file.read(3))
@@ -99,6 +92,8 @@ class adobe_acb(Codec):
 				item.values['Lab'] = (L/2.55,a-128,b-128)
 			else:
 				sys.stderr.write('unknown color model ['+str(model)+']\n')
+			if 'name' not in item.info:
+				item = Spacer()
 			book.items.append(item)
 		if file.read(4):
 			if struct.unpack('>4s',file.read(4))[0] == 'spot':
@@ -157,7 +152,7 @@ class adobe_aco(Codec):
 			if version == 2:
 				length = struct.unpack('>L',file.read(4))[0]
 				if length > 0:
-					item.info['name'] = {0: ords2str(struct.unpack('>'+str(length)+'H',file.read(length*2)))}
+					item.info['name'] = {0: unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be').split('\x00', 1)[0]}
 			book.items.append(item)
 		file.close()
 
@@ -199,7 +194,7 @@ class adobe_ase(Codec):
 			if block_size > 0:
 				length = struct.unpack('>H',file.read(2))[0]
 				if length > 0:
-					name = ords2str(struct.unpack('>'+str(length)+'H',file.read(length*2)))
+					name = unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be').split('\x00', 1)[0]
 				if name > u'':
 					if block_type == 0xc001:
 						group.info['name'] = {0: name}
@@ -619,7 +614,7 @@ class corel_cpl(Codec):
 				if version == '\xcd\xdc':
 					book.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
 				else:
-					book.info['name'] =  {0: ords2str(struct.unpack('<'+str(length)+'H',file.read(length*2)))}
+					book.info['name'] =  {0: unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_le')}
 			# Header 1: Palette Type
 			file.seek(headers[1], 0)
 			type = struct.unpack('<H',file.read(2))[0]
@@ -780,7 +775,7 @@ class corel_cpl(Codec):
 				if version in ('\xdc\xdc','\xcc\xdc') or (version == '\xcd\xdc' and type not in (16)):
 					item.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
 				else:
-					item.info['name'] =  {0: ords2str(struct.unpack('<'+str(length)+'H',file.read(length*2)))}
+					item.info['name'] =  {0: unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_le')}
 			if version == '\xcd\xdd':
 				row[i], col[i] = struct.unpack('<2L',file.read(8))
 				if row[i] > 0 and col[i] == 0 and col[i-1] < book.display['columns']-1:
@@ -839,6 +834,8 @@ class quark_qcl(Codec):
 			if data_format.has_key('NAME_FORMAT_ID'):
 				nid = eval(color.getchildren()[eval(data_format['NAME_FORMAT_ID'])-1].text)-1
 				item.info['name'] = {0: prefix[nid]+name+suffix[nid]}
+			elif name > u'':
+				item.info['name'] = {0: name}
 			if data_format.has_key('LAB_L'):
 				item.values['Lab'] = (eval(color.getchildren()[eval(data_format['LAB_L'])-1].text),\
 											  eval(color.getchildren()[eval(data_format['LAB_A'])-1].text),\
@@ -965,9 +962,9 @@ class gimp_gpl(Codec):
 	@staticmethod
 	def write(book,lang=0):
 		gpl = 'GIMP Palette\n'
-		if book.info['name']:
+		if 'name' in book.info:
 			gpl += 'Name: '+book.info['name'][lang]+'\n'
-		if book.display['columns']:
+		if 'columns' in book.display and book.display['columns'] > 0:
 			gpl += 'Columns: '+str(book.display['columns'])+'\n'
 		gpl += '#'
 		
@@ -987,6 +984,8 @@ class gimp_gpl(Codec):
 			elif isinstance(item,Group):
 				gpl_tmp += '\n# '+item.info['name'][lang]
 				gpl_tmp += gimp_gpl.writem(item.items)
+			elif isinstance(item,Spacer):
+				gpl_tmp += '\n  0   0   0'
 		return gpl_tmp
 
 
@@ -1086,17 +1085,19 @@ class html(Codec):
 		for item in items:
 			if isinstance(item,Group):
 				html_tmp += '<div class="group"><div class="group_name">'+item.info['name'][0]+'</div>\n'
-				htm,count = html.writem(item.items,count,breaks)
+				htm,count = html.writem(item.items,breaks,count)
 				html_tmp += htm+'\n<div class="group_descr">'
 				if 'description'in item.info:
 					html_tmp += item.info['description'][lang]
 				html_tmp += '</div></div>\n'
-			if isinstance(item,Color):
+			elif isinstance(item,Color):
 				R,G,B = item.toRGB8()
 				html_tmp += '<div class="swatch" style="background-color:#'+hex2(R)+hex2(G)+hex2(B)
 				if 'name' in item.info:
 					html_tmp += '" title="'+item.info['name'][lang]
 				html_tmp += '"></div>\n'
+			elif isinstance(item,Spacer):
+				html_tmp += '<div class="swatch"></div>\n'
 			count += 1
 			if count in breaks:
 				html_tmp += '<br class="clearall" />\n'
@@ -1108,7 +1109,7 @@ class sbxml(Codec):
 	ext = 'sb'
 	@staticmethod
 	def test(file):
-		if etree.parse(file).getroot().tag == 'SwatchBook':
+		if etree.parse(file).getroot().tag == 'SwatchBook' and etree.parse(file).getroot().attrib['version'] == '0.1':
 			format = 'sbxml'
 			return True
 
@@ -1116,7 +1117,7 @@ class sbxml(Codec):
 	def read(book,file):
 		xml = etree.parse(file).getroot()
 		for elem in xml:
-			if elem.tag in ('group','color'):
+			if elem.tag in ('group','color','spacer'):
 				sbxml.readitem(book,elem)
 			elif elem.tag in ('name','description','copyright'):
 				if elem.tag not in book.info:
@@ -1168,6 +1169,8 @@ class sbxml(Codec):
 						bitem.info[elem.tag][elem.attrib['lang']] = elem.text
 					else:
 						bitem.info[elem.tag][0] = elem.text
+		elif item.tag == 'spacer':
+			bitem = Spacer()
 		parent.items.append(bitem)
 			
 
@@ -1190,10 +1193,9 @@ class sbxml(Codec):
 		if len(book.display['breaks']) > 0:
 			xml += '<breaks>'+book.display['breaks'].join(' ')+'</breaks>'
 
-		xml += sbxml.writem(book.items)
-		if len(book.profiles) > 0:
-			for profile in book.profiles:
-				xml += '<colorspace id="'+profile+'" href="'+book.profiles[profile]+'" />'
+		xml += unicode(sbxml.writem(book.items),'utf-8')
+		for profile in book.profiles:
+			xml += '<colorspace id="'+profile+'" href="'+book.profiles[profile]+'" />'
 
 		xml += '</SwatchBook>'
 
@@ -1241,12 +1243,14 @@ class sbxml(Codec):
 				
 
 writes = []
+reads = []
 exts = {}
 
 for codec in Codec.__subclasses__():
 	cname = codec.__name__
 	ext = codec.ext
 	if codec.read:
+		reads.append(cname)
 		if ext in exts.keys():
 			exts[ext].append(cname)
 		else:
