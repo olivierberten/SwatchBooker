@@ -118,6 +118,12 @@ class Color(Swatch):
 		elif 'HSL' in values:
 			H,S,L = values['HSL']
 			R,G,B = HSL2RGB(H,S,L)
+		elif 'CMY' in values:
+			C,M,Y = values['CMY']
+			R,G,B = CMY2RGB(C,M,Y)
+		elif 'YIQ' in values:
+			Y,I,Q = values['YIQ']
+			R,G,B = YIQ2RGB(Y,I,Q)
 		elif 'Lab' in values:
 			L,a,b = values['Lab']
 			R,G,B = Lab2RGB(L,a,b)
@@ -156,3 +162,9 @@ class Gradient(Swatch):
 class Stop(object):
 	def __init__(self):
 		pass
+
+class Pattern(Swatch):
+	def __init__(self):
+		super(Pattern, self).__init__()
+		self.colors = []
+

@@ -192,3 +192,10 @@ def CMYK2CMY(C,M,Y,K):
 def CMYK2RGB(C,M,Y,K):
 	C,M,Y = CMYK2CMY(C,M,Y,K)
 	return CMY2RGB(C,M,Y)
+
+# from http://en.wikipedia.org/wiki/YIQ
+def YIQ2RGB(Y,I,Q):
+	R = Y + 0.9563 * I + 0.6210 * Q
+	G = Y - 0.2721 * I - 0.6474 * Q
+	B = Y - 1.1070 * I + 1.7046 * Q
+	return (R,G,B)

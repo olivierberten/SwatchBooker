@@ -1154,7 +1154,7 @@ class sbxml(Codec):
 			if 'spot' in item.attrib and item.attrib['spot'] == '1':
 				bitem.attr.append('spot')
 			for elem in item:
-				if elem.tag in ('RGB','CMYK','Lab','Gray'):
+				if elem.tag in ('RGB','CMYK','Lab','Gray','CMY','XYZ','YIQ'):
 					values = elem.text.split()
 					for i in range(len(values)):
 						values[i] = eval(values[i])
