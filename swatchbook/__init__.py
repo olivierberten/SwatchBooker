@@ -25,8 +25,9 @@ from color import *
 
 class SwatchBook(object):
 	"""Output values
-       RGB,HSV,HSL,CMY,CMYK,6CLR,YIQ: 0 -> 1
-       Lab: L 0 -> 100 | ab -128 -> 127
+       RGB,HSV,HSL,CMY,CMYK,6CLR: 0 -> 1
+       YIQ: Y 0 -> 1 : IQ -0.5 -> 0.5
+       Lab: L 0 -> 100 : ab -128 -> 127
        XYZ: 0 -> ~100 (cfr. ref)"""
 
 	def __init__(self, file=False):

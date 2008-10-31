@@ -692,7 +692,7 @@ class corel_cpl(Codec):
 			elif model == 11:
 				file.seek(4, 1)
 				Y,I,Q =  struct.unpack('3B',file.read(3))
-				item.values['YIQ'] = (Y/255,I/255,Q/255)
+				item.values['YIQ'] = (Y/255,(I-100)/128,(Q-100)/128)
 				file.seek(1, 1)
 			elif model == 12:
 				file.seek(4, 1)
@@ -772,7 +772,7 @@ class corel_cpl(Codec):
 						sys.stderr.write('unknown color model ['+str(model2)+']\n')
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
-				if version in ('\xdc\xdc','\xcc\xdc') or (version == '\xcd\xdc' and type not in (16)):
+				if version in ('\xdc\xdc','\xcc\xdc') or (version == '\xcd\xdc' and type not in (16,)):
 					item.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
 				else:
 					item.info['name'] =  {0: unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_le')}
