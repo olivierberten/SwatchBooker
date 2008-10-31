@@ -26,6 +26,7 @@ import struct
 import xml.etree.cElementTree as etree
 from swatchbook import *
 from color import *
+from string import *
 
 class Codec(object):
 	ext = False
@@ -751,7 +752,7 @@ class corel_cpl(Codec):
 					elif model2 == 11:
 						file.seek(4, 1)
 						Y,I,Q =  struct.unpack('3B',file.read(3))
-						item.values['YIQ'] = (Y/255,I/255,Q/255)
+						item.values['YIQ'] = (Y/255,(I-100)/128,(Q-100)/128)
 						file.seek(1, 1)
 					elif model2 == 12:
 						file.seek(4, 1)
@@ -783,6 +784,8 @@ class corel_cpl(Codec):
 				file.seek(4, 1)
 			if spot:
 				item.attr.append('spot')
+			if 'name' in item.info and (find(item.info['name'][0],'NONASSIGNED') >= 0 or find(item.info['name'][0],'UNASSIGNED') >= 0):
+				item = Spacer()
 			book.items.append(item)
 		if len(breaks)>0:
 			book.display['breaks'] = breaks
