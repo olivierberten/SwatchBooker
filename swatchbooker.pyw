@@ -137,6 +137,23 @@ class ColorWidget(QGroupBox):
 					grid.addWidget(BLabel, 2, 0)
 					grid.addWidget(B, 2, 1)
 					grid.addWidget(QLabel("%"), 2, 2)
+				elif model == 'YIQ':
+					YLabel = QLabel("Y:")
+					Y = QLineEdit()
+					ILabel = QLabel("I:")
+					I = QLineEdit()
+					QQLabel = QLabel("Q:")
+					Q = QLineEdit()
+					Y.setText(str(round(values[0],4)))
+					I.setText(str(round(values[1],4)))
+					Q.setText(str(round(values[2],4)))
+					grid = QGridLayout()
+					grid.addWidget(YLabel, 0, 0)
+					grid.addWidget(Y, 0, 1)
+					grid.addWidget(ILabel, 1, 0)
+					grid.addWidget(I, 1, 1)
+					grid.addWidget(QQLabel, 2, 0)
+					grid.addWidget(Q, 2, 1)
 				elif model == 'RGBa':
 					R = QLineEdit()
 					G = QLineEdit()
@@ -215,6 +232,23 @@ class ColorWidget(QGroupBox):
 					grid.addWidget(QLabel("K:"), 3, 0)
 					grid.addWidget(K, 3, 1)
 					grid.addWidget(QLabel("%"), 3, 2)
+				elif model == 'CMY':
+					C = QLineEdit()
+					M = QLineEdit()
+					Y = QLineEdit()
+					C.setText(str(round(values[0]*100,2)))
+					M.setText(str(round(values[1]*100,2)))
+					Y.setText(str(round(values[2]*100,2)))
+					grid = QGridLayout()
+					grid.addWidget(QLabel("C:"), 0, 0)
+					grid.addWidget(C, 0, 1)
+					grid.addWidget(QLabel("%"), 0, 2)
+					grid.addWidget(QLabel("M:"), 1, 0)
+					grid.addWidget(M, 1, 1)
+					grid.addWidget(QLabel("%"), 1, 2)
+					grid.addWidget(QLabel("Y:"), 2, 0)
+					grid.addWidget(Y, 2, 1)
+					grid.addWidget(QLabel("%"), 2, 2)
 				elif model == 'Gray':
 					K = QLineEdit()
 					K.setText(str(round(values[0]*100,2)))
@@ -421,16 +455,20 @@ class MainWindow(QMainWindow):
 		dir = os.path.dirname(self.filename) \
 				if self.filename is not None else "."
 		import swatchbook.codecs as codecs
-		filetypes = {}
+		filetypes = []
 		for codec in codecs.reads:
-			filetypes[eval('codecs.'+codec).__doc__ +' (*.'+eval('codecs.'+codec).ext+')'] = (codec,eval('codecs.'+codec).ext)
+			codec_exts = []
+			for ext in eval('codecs.'+codec).ext:
+				codec_exts.append('*.'+ext)
+			codec_txt = eval('codecs.'+codec).__doc__ +' ('+" ".join(codec_exts)+')'
+			filetypes.append(codec_txt)
 		allexts = ["*.%s" % unicode(format).lower() \
-				   for format in codecs.exts.keys()]
+				   for format in codecs.readexts.keys()]
 		fname = self.sb.info['filename'] if 'filename' in self.sb.info else "."
 		filetype = QString()
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							"SwatchBooker - Choose file", dir,
-							("All supported files (%s)" % " ".join(allexts))+";;"+(";;".join(sorted(filetypes.keys())))))
+							("All supported files (%s)" % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))))
 		if fname:
 			self.loadFile(fname)
 
@@ -536,8 +574,10 @@ class MainWindow(QMainWindow):
 				listItem.setIcon(QIcon())
 			else:
 				listItem = QListWidgetItem(self.listWidget)
-				icon = self.colorswatch(item)
-				listItem.setIcon(icon)
+				if len(item.values) > 0:
+					listItem.setIcon(self.colorswatch(item))
+				else:
+					listItem.setIcon(QIcon())
 				self.listItems[listItem] = item
 				self.itemList[item] = listItem
 				if 'name' in item.info:

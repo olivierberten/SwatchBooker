@@ -536,6 +536,7 @@ class autocad_acb(Codec):
 					encrypted = True
 				elif colorEntry.find('RGB8'):
 					item.values['RGB'] = (eval(colorEntry.find('RGB8').find('red').text)/255,eval(colorEntry.find('RGB8').find('green').text)/255,eval(colorEntry.find('RGB8').find('blue').text)/255)
+				item.attr.append('spot')
 				book.items.append(item)
 				i += 1
 			if len(list(colorPage.getiterator('colorEntry'))) < book.display['columns'] and i<nbcolors:
@@ -892,6 +893,46 @@ class riff_pal(Codec):
 			R,G,B = struct.unpack('3B',file.read(3))
 			item.values['RGB'] = (R/255,G/255,B/255)
 			file.seek(1, 1)
+			book.items.append(item)
+		file.close()
+
+class icc_nmcl(Codec):
+	"""ICC Named Colors Profile"""
+	ext = ('icc','icm')
+	@staticmethod
+	def test(file):
+		import icc
+		prof = icc.ICCprofile(file)
+		if prof.info['class'] == 'nmcl' and 'ncl2' in prof.info['tags']:
+			return True
+	@staticmethod
+	def read(book,file):
+		import icc
+		prof = icc.ICCprofile(file)
+		book.info['name'] = prof.info['desc']
+		book.info['copyright'] = prof.info['cprt']
+		file = open(file)
+		file.seek(prof.info['tags']['ncl2'][0]+8)
+		tags,n,m = struct.unpack('>4s 2L',file.read(12))
+		prefix,suffix = struct.unpack('>32s 32s',file.read(64))
+		colors = {}
+		for i in range(n):
+			item = Color()
+			item.id = 'col'+str(i+1)
+			# This is supposed to be coded in plain ascii but X-Rite Pantone NCPs use Latin 1
+			item.info['name'] = {0: unicode(prefix.split('\x00', 1)[0]+struct.unpack('>32s',file.read(32))[0].split('\x00', 1)[0]+suffix.split('\x00', 1)[0],'latin_1')}
+			if prof.info['pcs'] == 'Lab ':
+				L,a,b = struct.unpack('>3H',file.read(6))
+				# I'm not really sure this is the only criterion
+				if prof.info['version'][0] == 4:
+					item.values['Lab'] = (L*100/0xFFFF,(a-0x8080)/0x101,(b-0x8080)/0x101)
+				elif prof.info['version'][0] == 2:
+					item.values['Lab'] = (L*100/0xFF00,(a-0x8000)/0x100,(b-0x8000)/0x100)
+			elif prof.info['pcs'] == 'XYZ ':
+				X,Y,Z = struct.unpack('>3H',file.read(6))
+				item.values['XYZ'] = (X*100/0x8000,X*100/0x8000,X*100/0x8000)
+			file.seek(m*2,1)
+			item.attr.append('spot')
 			book.items.append(item)
 		file.close()
 
