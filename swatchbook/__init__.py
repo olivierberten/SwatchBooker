@@ -55,8 +55,8 @@ class SwatchBook(object):
 		import swatchbook.codecs as codecs
 		ext =  os.path.splitext(os.path.basename(file))[1].lower()[1:]
 		codec = False
-		if ext in codecs.exts:
-			for codec in codecs.exts[ext]:
+		if ext in codecs.readexts:
+			for codec in codecs.readexts[ext]:
 				test = eval('codecs.'+codec).test(file)
 				if test: break
 			else:
