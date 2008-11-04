@@ -35,7 +35,7 @@ class Codec(object):
 
 class adobe_acb(Codec):
 	"""Adobe Color Book"""
-	ext = 'acb'
+	ext = ('acb',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -104,7 +104,7 @@ class adobe_acb(Codec):
 
 class adobe_aco(Codec):
 	"""Adobe Color Swatch"""
-	ext = 'aco'
+	ext = ('aco',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -159,7 +159,7 @@ class adobe_aco(Codec):
 
 class adobe_ase(Codec):
 	"""Adobe Swatch Exchange"""
-	ext = 'ase'
+	ext = ('ase',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -231,72 +231,73 @@ class adobe_ase(Codec):
 	def writem(items,nbblocks=0,lang=0):
 		ase_tmp = ''
 		for item in items:
-			block_size = 0
-			name = ''
-			if 'name' in item.info:
-				block_size += 4+len(item.info['name'][lang])*2
-				name = struct.pack('>H',len(item.info['name'][lang])+1)+item.info['name'][lang].encode('utf_16_be')+'\x00\x00'
-			if isinstance(item,Color):
-				nbblocks += 1
-				block_size += 6
-				if 'spot' in item.attr:
-					spot = '\x00\x01'
-				elif 'global' in item.attr:
-					spot = '\x00\x00'
-				else:
-					spot = '\x00\x02'
-				values = unicc(item.values)
-				if 'Lab' in values:
-					L,a,b = values['Lab']
-					block_size += 12
-					values = 'LAB '+struct.pack('>3f',L/100,a,b)
-				elif 'RGB' in values:
-					R,G,B = values['RGB']
-					block_size += 12
-					values = 'RGB '+struct.pack('>3f',R,G,B)
-				elif 'CMYK' in values:
-					C,M,Y,K = values['CMYK']
-					block_size += 16
-					values = 'CMYK'+struct.pack('>4f',C,M,Y,K)
-				elif 'Gray' in values:
-					Gray = values['Gray'][0]
-					block_size += 4
-					values = 'Gray'+struct.pack('>f',1-Gray)
-				elif 'HSL' in values:
-					H,S,L = values['HSL']
-					R,G,B = HSL2RGB(H,S,L)
-					block_size += 12
-					values = 'RGB '+struct.pack('>3f',R,G,B)
-				elif 'HSV' in values:
-					H,S,V = values['HSV']
-					R,G,B = HSV2RGB(H,S,V)
-					block_size += 12
-					values = 'RGB '+struct.pack('>3f',R,G,B)
-				elif 'CMY' in values:
-					C,M,Y = values['CMY']
-					R,G,B = CMY2RGB(C,M,Y)
-					block_size += 12
-					values = 'RGB '+struct.pack('>3f',R,G,B)
-				elif 'XYZ' in values:
-					X,Y,Z = values['XYZ']
-					L,a,b = XYZ2Lab(X,Y,Z)
-					block_size += 12
-					values = 'LAB '+struct.pack('>3f',L/100,a,b)
-				else:
-					values = ''
-				ase_tmp += '\x00\x01'+struct.pack('>L',block_size)+name+values+spot
-			elif isinstance(item,Group):
-				nbblocks += 2
-				ase_tmp += '\xc0\x01'+struct.pack('>L',block_size)+name
-				nbblocks,content_tmp = adobe_ase.writem(item.items,nbblocks)
-				ase_tmp += content_tmp
-				ase_tmp += '\xc0\x02'+'\x00\x00\x00\x00'
+			if isinstance(item,Color) or isinstance(item,Group):
+				block_size = 0
+				name = ''
+				if 'name' in item.info:
+					block_size += 4+len(item.info['name'][lang])*2
+					name = struct.pack('>H',len(item.info['name'][lang])+1)+item.info['name'][lang].encode('utf_16_be')+'\x00\x00'
+				if isinstance(item,Color):
+					nbblocks += 1
+					block_size += 6
+					if 'spot' in item.attr:
+						spot = '\x00\x01'
+					elif 'global' in item.attr:
+						spot = '\x00\x00'
+					else:
+						spot = '\x00\x02'
+					values = unicc(item.values)
+					if 'Lab' in values:
+						L,a,b = values['Lab']
+						block_size += 12
+						values = 'LAB '+struct.pack('>3f',L/100,a,b)
+					elif 'RGB' in values:
+						R,G,B = values['RGB']
+						block_size += 12
+						values = 'RGB '+struct.pack('>3f',R,G,B)
+					elif 'CMYK' in values:
+						C,M,Y,K = values['CMYK']
+						block_size += 16
+						values = 'CMYK'+struct.pack('>4f',C,M,Y,K)
+					elif 'Gray' in values:
+						Gray = values['Gray'][0]
+						block_size += 4
+						values = 'Gray'+struct.pack('>f',1-Gray)
+					elif 'HSL' in values:
+						H,S,L = values['HSL']
+						R,G,B = HSL2RGB(H,S,L)
+						block_size += 12
+						values = 'RGB '+struct.pack('>3f',R,G,B)
+					elif 'HSV' in values:
+						H,S,V = values['HSV']
+						R,G,B = HSV2RGB(H,S,V)
+						block_size += 12
+						values = 'RGB '+struct.pack('>3f',R,G,B)
+					elif 'CMY' in values:
+						C,M,Y = values['CMY']
+						R,G,B = CMY2RGB(C,M,Y)
+						block_size += 12
+						values = 'RGB '+struct.pack('>3f',R,G,B)
+					elif 'XYZ' in values:
+						X,Y,Z = values['XYZ']
+						L,a,b = XYZ2Lab(X,Y,Z)
+						block_size += 12
+						values = 'LAB '+struct.pack('>3f',L/100,a,b)
+					else:
+						values = ''
+					ase_tmp += '\x00\x01'+struct.pack('>L',block_size)+name+values+spot
+				elif isinstance(item,Group):
+					nbblocks += 2
+					ase_tmp += '\xc0\x01'+struct.pack('>L',block_size)+name
+					nbblocks,content_tmp = adobe_ase.writem(item.items,nbblocks)
+					ase_tmp += content_tmp
+					ase_tmp += '\xc0\x02'+'\x00\x00\x00\x00'
 		return nbblocks,ase_tmp
 
 
 class adobe_act(Codec):
 	"""Adobe Color Table"""
-	ext = 'act'
+	ext = ('act',)
 	@staticmethod
 	def test(file):
 		filesize = os.path.getsize(file)
@@ -323,7 +324,7 @@ class adobe_act(Codec):
 
 class adobe_acf(Codec):
 	"""ASCII Color Format"""
-	ext = 'acf'
+	ext = ('acf',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -394,7 +395,7 @@ bcf_model = {1: 'RGB', 2: 'CMYK',8: 'hifi', 16: 'Mixed'}
 
 class adobe_bcf(Codec):
 	"""Binary Color Format"""
-	ext = 'bcf'
+	ext = ('bcf',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -479,7 +480,7 @@ class adobe_bcf(Codec):
 
 class adobe_clr(Codec):
 	"""Flash Color Set"""
-	ext = 'clr'
+	ext = ('clr',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -508,7 +509,7 @@ class adobe_clr(Codec):
 
 class autocad_acb(Codec):
 	"""AutoCAD Color Book"""
-	ext = 'acb'
+	ext = ('acb',)
 	@staticmethod
 	def test(file):
 		if etree.parse(file).getroot().tag == 'colorBook':
@@ -546,7 +547,7 @@ class autocad_acb(Codec):
 
 class ral_bcs(Codec):
 	"""RAL"""
-	ext = 'bcs'
+	ext = ('bcs',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -582,7 +583,7 @@ class ral_bcs(Codec):
 
 class corel_cpl(Codec):
 	"""Corel Palette"""
-	ext = 'cpl'
+	ext = ('cpl',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -793,7 +794,7 @@ class corel_cpl(Codec):
 
 class quark_qcl(Codec):
 	"""QuarkXPress Color Library"""
-	ext = 'qcl'
+	ext = ('qcl',)
 	@staticmethod
 	def test(file):
 		if etree.parse(file).getroot().tag == 'cgats17':
@@ -867,7 +868,7 @@ class quark_qcl(Codec):
 
 class riff_pal(Codec):
 	"""RIFF Palette"""
-	ext = 'pal'
+	ext = ('pal',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -896,7 +897,7 @@ class riff_pal(Codec):
 
 class colorschemer(Codec):
 	"""ColorSchemer"""
-	ext = 'cs'
+	ext = ('cs',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -924,7 +925,7 @@ class colorschemer(Codec):
 
 class gimp_gpl(Codec):
 	"""Gimp Palette"""
-	ext = 'gpl'
+	ext = ('gpl',)
 	@staticmethod
 	def test(file):
 		file = open(file)
@@ -994,12 +995,12 @@ class gimp_gpl(Codec):
 
 class scribus(Codec):
 	"""Scribus Swatch"""
-	ext = 'xml'
+	ext = ('xml',)
 	@staticmethod
 	def write(book,lang=0):
-		scsw = '<?xml version="1.0" encoding="UTF-8"?>\n<swatch>\n'
+		scsw = '<?xml version="1.0" encoding="UTF-8"?>\n<SCRIBUSCOLORS Name="'+book.info['name'][lang]+'">\n'
 		scsw += scribus.writem(book.items)
-		scsw += '</swatch>'
+		scsw += '</SCRIBUSCOLORS>'
 		return scsw.encode('utf-8')
 
 	@staticmethod
@@ -1031,7 +1032,7 @@ class scribus(Codec):
 
 class html(Codec):
 	"""HTML document"""
-	ext = 'html'
+	ext = ('html','htm')
 	@staticmethod
 	def write(book,lang=0):
 		htm = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
@@ -1109,7 +1110,7 @@ class html(Codec):
 
 class sbxml(Codec):
 	"""SwatchBook XML"""
-	ext = 'sb'
+	ext = ('sb',)
 	@staticmethod
 	def test(file):
 		if etree.parse(file).getroot().tag == 'SwatchBook' and etree.parse(file).getroot().attrib['version'] == '0.1':
@@ -1247,16 +1248,17 @@ class sbxml(Codec):
 
 writes = []
 reads = []
-exts = {}
+readexts = {}
 
 for codec in Codec.__subclasses__():
 	cname = codec.__name__
-	ext = codec.ext
+	exts = codec.ext
 	if codec.read:
 		reads.append(cname)
-		if ext in exts.keys():
-			exts[ext].append(cname)
-		else:
-			exts[ext] = [cname]
+		for ext in exts:
+			if ext in readexts.keys():
+				readexts[ext].append(cname)
+			else:
+				readexts[ext] = [cname]
 	if codec.write:
 		writes.append(cname)
