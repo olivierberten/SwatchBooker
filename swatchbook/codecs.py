@@ -705,7 +705,7 @@ class corel_cpl(Codec):
 			elif model == 15:
 				file.seek(2, 1)
 				Y,O,M,C,G,K =  struct.unpack('6B',file.read(6))
-				item.values['6CLR'] = (C/255,M/255,Y/255,K/255,O/255,G/255)
+				item.values['PC6'] = (C/255,M/255,Y/255,K/255,O/255,G/255)
 			elif model == 18:
 				file.seek(4, 1)
 				L,a,b =  struct.unpack('3B',file.read(3))
@@ -764,7 +764,7 @@ class corel_cpl(Codec):
 					elif model2 == 15:
 						file.seek(2, 1)
 						Y,O,M,C,G,K =  struct.unpack('6B',file.read(6))
-						item.values['6CLR'] = (C/255,M/255,Y/255,K/255,O/255,G/255)
+						item.values['PC6'] = (C/255,M/255,Y/255,K/255,O/255,G/255)
 					elif model2 == 18:
 						file.seek(4, 1)
 						L,a,b =  struct.unpack('3B',file.read(3))
@@ -855,7 +855,7 @@ class quark_qcl(Codec):
 											   eval(color.getchildren()[eval(data_format['CMYK_Y'])-1].text)/100,\
 											   eval(color.getchildren()[eval(data_format['CMYK_K'])-1].text)/100)
 			if data_format.has_key('PC6_1'):
-				item.values['6CLR'] = (eval(color.getchildren()[eval(data_format['PC6_1'])-1].text)/100,\
+				item.values['PC6'] = (eval(color.getchildren()[eval(data_format['PC6_1'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_2'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_3'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_4'])-1].text)/100,\
