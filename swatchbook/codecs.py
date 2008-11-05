@@ -705,7 +705,7 @@ class corel_cpl(Codec):
 			elif model == 15:
 				file.seek(2, 1)
 				Y,O,M,C,G,K =  struct.unpack('6B',file.read(6))
-				item.values['PC6'] = (C/255,M/255,Y/255,K/255,O/255,G/255)
+				item.values['PC6'] = (C/100,M/100,Y/100,K/100,O/100,G/100)
 			elif model == 18:
 				file.seek(4, 1)
 				L,a,b =  struct.unpack('3B',file.read(3))
@@ -764,7 +764,7 @@ class corel_cpl(Codec):
 					elif model2 == 15:
 						file.seek(2, 1)
 						Y,O,M,C,G,K =  struct.unpack('6B',file.read(6))
-						item.values['PC6'] = (C/255,M/255,Y/255,K/255,O/255,G/255)
+						item.values['PC6'] = (C/100,M/100,Y/100,K/100,O/100,G/100)
 					elif model2 == 18:
 						file.seek(4, 1)
 						L,a,b =  struct.unpack('3B',file.read(3))
@@ -1199,7 +1199,7 @@ class sbxml(Codec):
 			if 'spot' in item.attrib and item.attrib['spot'] == '1':
 				bitem.attr.append('spot')
 			for elem in item:
-				if elem.tag in ('RGB','CMYK','Lab','Gray','CMY','XYZ','YIQ'):
+				if elem.tag in ('RGB','CMYK','Lab','Gray','CMY','XYZ','YIQ','HSL','HSV','RGBa','PC6'):
 					values = elem.text.split()
 					for i in range(len(values)):
 						values[i] = eval(values[i])
