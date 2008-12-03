@@ -48,7 +48,7 @@ def Lab2RGB(L,a,b):
 	cmsCloseProfile(hsRGB)
 	cmsCloseProfile(hLab)
 
-	return (RGB[0]/65535,RGB[1]/65535,RGB[2]/65535)
+	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
 def XYZ2RGB(X,Y,Z):
 
@@ -66,7 +66,7 @@ def XYZ2RGB(X,Y,Z):
 	cmsCloseProfile(hsRGB)
 	cmsCloseProfile(hXYZ)
 
-	return (RGB[0]/65535,RGB[1]/65535,RGB[2]/65535)
+	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
 #
 # color model conversion formulas: http://www.easyrgb.com/math.php

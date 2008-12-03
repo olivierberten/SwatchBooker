@@ -26,13 +26,27 @@ from PyQt4.QtGui import *
 
 from swatchbook import *
 
-__version__ = "0.1"
+__version__ = "0.2"
 
-sb_theme = "tango" # echo
 current_sw = False
 
+# 0: float, 1: percentage, 2: degrees
+models = {'Lab':(('L',0),('a',0),('b',0)),
+		  'XYZ':(('X',0),('Y',0),('Z',0)),
+		  'RGB':(('R',1),('G',1),('B',1)),
+		  'RGBa':(('R',1),('G',1),('B',1),(u'α',1)),
+		  'CMY':(('C',1),('M',1),('Y',1)),
+		  'HSL':(('H',2),('S',1),('L',1)),
+		  'HSV':(('H',2),('S',1),('V',1)),
+		  'CMYK':(('C',1),('M',1),('Y',1),('K',1)),
+		  'CMYKOG':(('C',1),('M',1),('Y',1),('K',1),('O',1),('G',1)),
+		  'Gray':(('K',1),),
+		  'YIQ':(('Y',0),('I',0),('Q',0))
+		 }
+
 class GroupWidget(QGroupBox):
-	def __init__(self, item, parent=None):
+	def __init__(self, parent=None):
+		global current_sw
 		super(GroupWidget, self).__init__(parent)
 		
 		self.setTitle("Group")
@@ -48,22 +62,41 @@ class GroupWidget(QGroupBox):
 		swInfo.addWidget(self.swDescription, 2, 0, 1, 2)
 		self.setLayout(swInfo)
 
-		if hasattr(item,'info'):
-			if 'name' in item.info:
-				self.swName.setText(item.info['name'][0])
-			if 'description' in item.info:
-				self.swDescription.setText(item.info['description'][0])
+		if hasattr(current_sw,'info'):
+			if 'name' in current_sw.info:
+				self.swName.setText(current_sw.info['name'][0])
+			if 'description' in current_sw.info:
+				self.swDescription.setText(current_sw.info['description'][0])
+
+		# Actions
+		self.connect(self.swName,
+				SIGNAL("textEdited(QString)"), self.sw_edit)
+		self.connect(self.swDescription,
+				SIGNAL("textChanged()"), self.sw_edit)
+
+	def sw_edit(self):
+		global current_sw
+		if self.swName.text() > '':
+			if 'name' not in current_sw.info:
+				current_sw.info['name'] = {}
+			current_sw.info['name'][0] = unicode(self.swName.text())
+		if self.swDescription.toPlainText() > '':
+			if 'description' not in current_sw.info:
+				current_sw.info['description'] = {}
+			current_sw.info['description'][0] = unicode(self.swDescription.toPlainText())
 
 class ColorWidget(QGroupBox):
-	def __init__(self, item, parent=None):
+	def __init__(self, profiles, parent=None):
 		super(ColorWidget, self).__init__(parent)
 		
 		self.setTitle("Color")
 
 		nameLabel = QLabel("Name:")
 		self.swName = QLineEdit()
-		self.swDescription = QTextEdit()
 		descriptionLabel = QLabel("Description:")
+		self.swDescription = QTextEdit()
+		self.sample = QLabel()
+		self.sample.setMinimumHeight(30)
 		self.swSpot = QCheckBox("Spot")
 		self.swValues = QTabWidget()
 		swInfo = QGridLayout()
@@ -71,194 +104,97 @@ class ColorWidget(QGroupBox):
 		swInfo.addWidget(self.swName, 0, 1)
 		swInfo.addWidget(descriptionLabel, 1, 0, 1, 2)
 		swInfo.addWidget(self.swDescription, 2, 0, 1, 2)
-		swInfo.addWidget(self.swSpot, 3, 0, 1, 2)
-		swInfo.addWidget(self.swValues, 4, 0, 1, 2)
+		swInfo.addWidget(self.sample, 3, 0, 1, 2)
+		swInfo.addWidget(self.swSpot, 4, 0, 1, 2)
+		swInfo.addWidget(self.swValues, 5, 0, 1, 2)
 		self.setLayout(swInfo)
 
-		if hasattr(item,'info'):
-			if 'name' in item.info:
-				self.swName.setText(item.info['name'][0])
-			if 'description' in item.info:
-				self.swDescription.setText(item.info['description'][0])
-		if hasattr(item,'attr') and 'spot' in item.attr:
+		if hasattr(current_sw,'info'):
+			if 'name' in current_sw.info:
+				self.swName.setText(current_sw.info['name'][0])
+			if 'description' in current_sw.info:
+				self.swDescription.setText(current_sw.info['description'][0])
+		if hasattr(current_sw,'attr') and 'spot' in current_sw.attr:
 			self.swSpot.setChecked(True)
-		if hasattr(item,'values') and item.values:
-			for model in item.values:
-				values = item.values[model]
+		if hasattr(current_sw,'values') and len(current_sw.values) > 0:
+			r,g,b = current_sw.toRGB8()
+			self.sample.setStyleSheet("QWidget { background-color: #"+hex2(r)+hex2(g)+hex2(b)+" }")
+			self.val = {}
+			for model in current_sw.values:
+				profile = False
+				values = current_sw.values[model]
+				if isinstance(model,tuple):
+					profile = model[1]
+					modell = model[0]
+				else:
+					modell = model
 				swColor = QWidget()
-				if model == 'Lab':
-					LLabel = QLabel("L:")
-					L = QLineEdit()
-					aLabel = QLabel("a:")
-					a = QLineEdit()
-					bLabel = QLabel("b:")
-					b = QLineEdit()
-					L.setText(str(round(values[0],2)))
-					a.setText(str(round(values[1],2)))
-					b.setText(str(round(values[2],2)))
-					grid = QGridLayout()
-					grid.addWidget(LLabel, 0, 0)
-					grid.addWidget(L, 0, 1)
-					grid.addWidget(aLabel, 1, 0)
-					grid.addWidget(a, 1, 1)
-					grid.addWidget(bLabel, 2, 0)
-					grid.addWidget(b, 2, 1)
-				elif model == 'XYZ':
-					X = QLineEdit()
-					Y = QLineEdit()
-					Z = QLineEdit()
-					X.setText(str(round(values[0],2)))
-					Y.setText(str(round(values[1],2)))
-					Z.setText(str(round(values[2],2)))
-					grid = QGridLayout()
-					grid.addWidget(QLabel("X:"), 0, 0)
-					grid.addWidget(X, 0, 1)
-					grid.addWidget(QLabel("Y:"), 1, 0)
-					grid.addWidget(Y, 1, 1)
-					grid.addWidget(QLabel("Z:"), 2, 0)
-					grid.addWidget(Z, 2, 1)
-				elif model == 'RGB':
-					RLabel = QLabel("R:")
-					R = QLineEdit()
-					GLabel = QLabel("G:")
-					G = QLineEdit()
-					BLabel = QLabel("B:")
-					B = QLineEdit()
-					R.setText(str(round(values[0]*100,2)))
-					G.setText(str(round(values[1]*100,2)))
-					B.setText(str(round(values[2]*100,2)))
-					grid = QGridLayout()
-					grid.addWidget(RLabel, 0, 0)
-					grid.addWidget(R, 0, 1)
-					grid.addWidget(QLabel("%"), 0, 2)
-					grid.addWidget(GLabel, 1, 0)
-					grid.addWidget(G, 1, 1)
-					grid.addWidget(QLabel("%"), 1, 2)
-					grid.addWidget(BLabel, 2, 0)
-					grid.addWidget(B, 2, 1)
-					grid.addWidget(QLabel("%"), 2, 2)
-				elif model == 'YIQ':
-					YLabel = QLabel("Y:")
-					Y = QLineEdit()
-					ILabel = QLabel("I:")
-					I = QLineEdit()
-					QQLabel = QLabel("Q:")
-					Q = QLineEdit()
-					Y.setText(str(round(values[0],4)))
-					I.setText(str(round(values[1],4)))
-					Q.setText(str(round(values[2],4)))
-					grid = QGridLayout()
-					grid.addWidget(YLabel, 0, 0)
-					grid.addWidget(Y, 0, 1)
-					grid.addWidget(ILabel, 1, 0)
-					grid.addWidget(I, 1, 1)
-					grid.addWidget(QQLabel, 2, 0)
-					grid.addWidget(Q, 2, 1)
-				elif model == 'RGBa':
-					R = QLineEdit()
-					G = QLineEdit()
-					B = QLineEdit()
-					a = QLineEdit()
-					R.setText(str(round(values[0]*100,2)))
-					G.setText(str(round(values[1]*100,2)))
-					B.setText(str(round(values[2]*100,2)))
-					a.setText(str(round(values[3]*100,2)))
-					grid = QGridLayout()
-					grid.addWidget(QLabel("R:"), 0, 0)
-					grid.addWidget(R, 0, 1)
-					grid.addWidget(QLabel("%"), 0, 2)
-					grid.addWidget(QLabel("G:"), 1, 0)
-					grid.addWidget(G, 1, 1)
-					grid.addWidget(QLabel("%"), 1, 2)
-					grid.addWidget(QLabel("B:"), 2, 0)
-					grid.addWidget(B, 2, 1)
-					grid.addWidget(QLabel("%"), 2, 2)
-					grid.addWidget(QLabel(u"α:"), 3, 0)
-					grid.addWidget(a, 3, 1)
-					grid.addWidget(QLabel("%"), 3, 2)
-				elif model == 'HSL':
-					H = QLineEdit()
-					S = QLineEdit()
-					L = QLineEdit()
-					H.setText(str(round(values[0]*360,2)))
-					S.setText(str(round(values[1]*100,2)))
-					L.setText(str(round(values[2]*100,2)))
-					grid = QGridLayout()
-					grid.addWidget(QLabel("H:"), 0, 0)
-					grid.addWidget(H, 0, 1)
-					grid.addWidget(QLabel(u"°"), 0, 2)
-					grid.addWidget(QLabel("S:"), 1, 0)
-					grid.addWidget(S, 1, 1)
-					grid.addWidget(QLabel("%"), 1, 2)
-					grid.addWidget(QLabel("L:"), 2, 0)
-					grid.addWidget(L, 2, 1)
-					grid.addWidget(QLabel("%"), 2, 2)
-				elif model == 'HSV':
-					H = QLineEdit()
-					S = QLineEdit()
-					V = QLineEdit()
-					H.setText(str(round(values[0]*360,2)))
-					S.setText(str(round(values[1]*100,2)))
-					V.setText(str(round(values[2]*100,2)))
-					grid = QGridLayout()
-					grid.addWidget(QLabel("H:"), 0, 0)
-					grid.addWidget(H, 0, 1)
-					grid.addWidget(QLabel(u"°"), 0, 2)
-					grid.addWidget(QLabel("S:"), 1, 0)
-					grid.addWidget(S, 1, 1)
-					grid.addWidget(QLabel("%"), 1, 2)
-					grid.addWidget(QLabel("V:"), 2, 0)
-					grid.addWidget(V, 2, 1)
-					grid.addWidget(QLabel("%"), 2, 2)
-				elif model == 'CMYK':
-					C = QLineEdit()
-					M = QLineEdit()
-					Y = QLineEdit()
-					K = QLineEdit()
-					C.setText(str(round(values[0]*100,2)))
-					M.setText(str(round(values[1]*100,2)))
-					Y.setText(str(round(values[2]*100,2)))
-					K.setText(str(round(values[3]*100,2)))
-					grid = QGridLayout()
-					grid.addWidget(QLabel("C:"), 0, 0)
-					grid.addWidget(C, 0, 1)
-					grid.addWidget(QLabel("%"), 0, 2)
-					grid.addWidget(QLabel("M:"), 1, 0)
-					grid.addWidget(M, 1, 1)
-					grid.addWidget(QLabel("%"), 1, 2)
-					grid.addWidget(QLabel("Y:"), 2, 0)
-					grid.addWidget(Y, 2, 1)
-					grid.addWidget(QLabel("%"), 2, 2)
-					grid.addWidget(QLabel("K:"), 3, 0)
-					grid.addWidget(K, 3, 1)
-					grid.addWidget(QLabel("%"), 3, 2)
-				elif model == 'CMY':
-					C = QLineEdit()
-					M = QLineEdit()
-					Y = QLineEdit()
-					C.setText(str(round(values[0]*100,2)))
-					M.setText(str(round(values[1]*100,2)))
-					Y.setText(str(round(values[2]*100,2)))
-					grid = QGridLayout()
-					grid.addWidget(QLabel("C:"), 0, 0)
-					grid.addWidget(C, 0, 1)
-					grid.addWidget(QLabel("%"), 0, 2)
-					grid.addWidget(QLabel("M:"), 1, 0)
-					grid.addWidget(M, 1, 1)
-					grid.addWidget(QLabel("%"), 1, 2)
-					grid.addWidget(QLabel("Y:"), 2, 0)
-					grid.addWidget(Y, 2, 1)
-					grid.addWidget(QLabel("%"), 2, 2)
-				elif model == 'Gray':
-					K = QLineEdit()
-					K.setText(str(round(values[0]*100,2)))
-					grid = QGridLayout()
-					grid.addWidget(QLabel("K:"), 0, 0)
-					grid.addWidget(K, 0, 1)
-					grid.addWidget(QLabel("%"), 0, 2)
+				grid = QGridLayout()
+				width = 2
+				count = 0
+				global models
+				if modell in models:
+					for elem in models[modell]:
+						val = QLineEdit()
+						self.val[val] = (model,count)
+						self.connect(val,
+								SIGNAL("textEdited(QString)"), self.sw_valedit)
+						grid.addWidget(QLabel(elem[0]+":"), count, 0)
+						if elem[1] == 0:
+							val.setText(str(round(values[count],2)))
+							grid.addWidget(val, count, 1)
+						elif elem[1] == 1:
+							width = 3
+							val.setText(str(round(values[count]*100,2)))
+							grid.addWidget(val, count, 1)
+							grid.addWidget(QLabel("%"), count, 2)
+						if elem[1] == 2:
+							width = 3
+							val.setText(str(round(values[count]*360,2)))
+							grid.addWidget(val, count, 1)
+							grid.addWidget(QLabel(u"°"), count, 2)
+						count += 1
+				elif modell == 'hifi':
+					for ink in values:
+						grid.addWidget(QLabel("Ink "+ink+":"), count, 0)
+						val = QLineEdit()
+						self.val[val] = (model,count)
+						val.setText(str(round(values[ink],2)))
+						grid.addWidget(val, count, 1)
+						count += 1
+				else:
+					self.val[model] = {}
+					for ink in values:
+						val = QLineEdit()
+						self.val[val] = (model,count)
+						val.setText(str(round(values[count],2)))
+						grid.addWidget(val, count, 1)
+						count += 1
+						
+				grid.addWidget(QLabel("Profile"), count, 0, 1, width)
+				grid.addWidget(QComboBox(), count+1, 0, 1, width)
 				swColor.setLayout(grid)
-				self.swValues.addTab(swColor,model)
+				self.swValues.addTab(swColor,modell)
 
+		# Actions
+		self.connect(self.swName,
+				SIGNAL("textEdited(QString)"), self.sw_edit)
+		self.connect(self.swDescription,
+				SIGNAL("textChanged()"), self.sw_edit)
+
+	def sw_edit(self):
+		global current_sw
+		if self.swName.text() > '':
+			if 'name' not in current_sw.info:
+				current_sw.info['name'] = {}
+			current_sw.info['name'][0] = unicode(self.swName.text())
+		if self.swDescription.toPlainText() > '':
+			if 'description' not in current_sw.info:
+				current_sw.info['description'] = {}
+			current_sw.info['description'][0] = unicode(self.swDescription.toPlainText())
+
+	def sw_valedit(self):
+		print self.val[self.sender()]
 
 class MainWindow(QMainWindow):
 
@@ -280,6 +216,8 @@ class MainWindow(QMainWindow):
 		self.copyright = QLineEdit()
 		versionLabel = QLabel("Version:")
 		self.version = QLineEdit()
+		licenseLabel = QLabel("License:")
+		self.sbLicense = QTextEdit()
 		
 		groupBoxInfo = QGroupBox("Information")
 		sbInfo = QGridLayout()
@@ -291,6 +229,8 @@ class MainWindow(QMainWindow):
 		sbInfo.addWidget(self.copyright, 3, 1)
 		sbInfo.addWidget(versionLabel, 4, 0)
 		sbInfo.addWidget(self.version, 4, 1)
+		sbInfo.addWidget(licenseLabel, 5, 0, 1, 2)
+		sbInfo.addWidget(self.sbLicense, 6, 0, 1, 2)
 
 		groupBoxInfo.setLayout(sbInfo)
 		self.sbWidget.addWidget(groupBoxInfo)
@@ -336,21 +276,13 @@ class MainWindow(QMainWindow):
 
 		self.setCentralWidget(self.sbWidget)
 		
-		# Menu
-		fileNewAction = self.createAction("&New...", self.fileNew,
-				QKeySequence.New, "document-new", "Create an swatchbook")
-		fileOpenAction = self.createAction("&Open...", self.fileOpen,
-				QKeySequence.Open, "document-open",
-				"Open an existing swatchbook")
-		fileSaveAsAction = self.createAction("Save &As...",
-				self.fileSaveAs, icon="document-save-as",
-				tip="Save the swatchbook using a new name/format")
-
-		fileToolbar = self.addToolBar("File")
-		fileToolbar.setObjectName("FileToolBar")
-		self.addActions(fileToolbar, (fileNewAction, fileOpenAction,
-									  fileSaveAsAction))
-		settings = QSettings()
+		fileMenu = self.menuBar().addMenu("&File")
+		fileMenu.addAction("&New...", self.fileNew, QKeySequence.New)
+		fileMenu.addAction("&Open...", self.fileOpen, QKeySequence.Open)
+		fileMenu.addAction("&Save As...", self.fileSaveAs, QKeySequence.Save)
+		self.menuBar().addAction("Settings", self.settings)
+		self.menuBar().addAction("&About", self.about)
+		options = QSettings()
 
 		# Actions
 		self.connect(self.sbName,
@@ -359,6 +291,8 @@ class MainWindow(QMainWindow):
 				SIGNAL("textChanged()"), self.sb_edit)
 		self.connect(self.copyright,
 				SIGNAL("textEdited(QString)"), self.sb_edit)
+		self.connect(self.sbLicense,
+				SIGNAL("textChanged()"), self.sb_edit)
 		self.connect(self.version,
 				SIGNAL("textEdited(QString)"), self.sb_edit)
 		self.connect(self.cols,
@@ -378,6 +312,7 @@ class MainWindow(QMainWindow):
 			self.sb_flush()
 
 	def sw_display_tree(self):
+		global current_sw
 		if self.treeWidget.selectedItems():
 			treeItem = self.treeWidget.selectedItems()[0]
 			current_sw = item = self.treeItems[treeItem]
@@ -388,12 +323,13 @@ class MainWindow(QMainWindow):
 			if hasattr(self,'sbSwatch'):
 				self.sbSwatch.setParent(None)
 			if isinstance(item,Color):
-				self.sbSwatch = ColorWidget(current_sw)
+				self.sbSwatch = ColorWidget(self.sb.profiles)
 			elif isinstance(item,Group):
-				self.sbSwatch = GroupWidget(current_sw)
+				self.sbSwatch = GroupWidget()
 			self.sbWidget.addWidget(self.sbSwatch)
 
 	def sw_display_list(self):
+		global current_sw
 		if self.listWidget.selectedItems():
 			listItem = self.listWidget.selectedItems()[0]
 			current_sw = item = self.listItems[listItem]
@@ -412,43 +348,26 @@ class MainWindow(QMainWindow):
 			if 'copyright' not in self.sb.info:
 				self.sb.info['copyright'] = {}
 			self.sb.info['copyright'][0] = unicode(self.copyright.text())
+		if self.sbLicense.toPlainText() > '':
+			if 'license' not in self.sb.info:
+				self.sb.info['license'] = {}
+			self.sb.info['license'][0] = unicode(self.sbLicense.toPlainText())
 		if self.version.text() > '':
 			self.sb.info['version'] = unicode(self.version.text())
 		if self.cols.value() > 0:
 			self.sb.display['columns'] = self.cols.value()
 			self.listWidget.setFixedWidth(self.sb.display['columns']*17 + 20)
+		elif self.cols.value() == 0:
+			self.listWidget.setMinimumWidth(0)
+			self.listWidget.setMaximumWidth(0xFFFFFF)
 		if self.rows.value() > 0:
 			self.sb.display['rows'] = self.rows.value()
 			self.listWidget.setFixedHeight(self.sb.display['rows']*17 + 5)
-
-	def createAction(self, text, slot=None, shortcut=None, icon=None,
-					 tip=None, checkable=False, signal="triggered()"):
-		action = QAction(text, self)
-		if icon is not None:
-			action.setIcon(QIcon("icons/"+sb_theme+"/%s.svg" % icon))
-		if shortcut is not None:
-			action.setShortcut(shortcut)
-		if tip is not None:
-			action.setToolTip(tip)
-			action.setStatusTip(tip)
-		if slot is not None:
-			self.connect(action, SIGNAL(signal), slot)
-		if checkable:
-			action.setCheckable(True)
-		return action
-
-
-	def addActions(self, target, actions):
-		for action in actions:
-			if action is None:
-				target.addSeparator()
-			else:
-				target.addAction(action)
-
+		elif self.rows.value() == 0:
+			self.listWidget.setMinimumHeight(0)
+			self.listWidget.setMaximumHeight(0xFFFFFF)
 
 	def fileNew(self):
-		if not self.okToContinue():
-			return
 		self.sb_flush()
 
 	def fileOpen(self):
@@ -477,6 +396,7 @@ class MainWindow(QMainWindow):
 		self.sbDescription.clear()
 		self.copyright.clear()
 		self.version.clear()
+		self.sbLicense.clear()
 		self.cols.setValue(0)
 		self.cols.clear()
 		self.rows.setValue(0)
@@ -484,7 +404,7 @@ class MainWindow(QMainWindow):
 		self.treeWidget.clear()
 		self.listWidget.clear()
 		self.listWidget.setMinimumSize(QSize(0,0))
-		self.listWidget.setMaximumSize(QSize(16777215, 16777215))
+		self.listWidget.setMaximumSize(QSize(0xFFFFFF,0xFFFFFF))
 		self.swnbLabel.clear()
 		if hasattr(self,'sbSwatch'):
 			self.sbSwatch.setParent(None)
@@ -508,6 +428,8 @@ class MainWindow(QMainWindow):
 				self.sbDescription.setText(self.sb.info['description'][0])
 			if 'copyright' in self.sb.info:
 				self.copyright.setText(self.sb.info['copyright'][0])
+			if 'license' in self.sb.info:
+				self.sbLicense.setText(self.sb.info['license'][0])
 			if 'version' in self.sb.info:
 				self.version.setText(self.sb.info['version'])
 			if 'columns' in self.sb.display:
@@ -530,7 +452,11 @@ class MainWindow(QMainWindow):
 		import swatchbook.codecs as codecs
 		filetypes = {}
 		for codec in codecs.writes:
-			filetypes[eval('codecs.'+codec).__doc__ +' (*.'+eval('codecs.'+codec).ext+')'] = (codec,eval('codecs.'+codec).ext)
+			codec_exts = []
+			for ext in eval('codecs.'+codec).ext:
+				codec_exts.append('*.'+ext)
+			codec_txt = eval('codecs.'+codec).__doc__ +' ('+" ".join(codec_exts)+')'
+			filetypes[codec_txt] = (codec,eval('codecs.'+codec).ext[0])
 		fname = self.sb.info['filename'] if 'filename' in self.sb.info else "."
 		filetype = QString()
 		fname = unicode(QFileDialog.getSaveFileName(self,
@@ -561,7 +487,7 @@ class MainWindow(QMainWindow):
 		self.swnbLabel.setText(swnbLabelText)
 
 	def fillTree(self,items,group = False):
-		for item in items:
+		for item in items.values():
 			if group:
 				parent = group
 			else:
@@ -572,12 +498,15 @@ class MainWindow(QMainWindow):
 			elif isinstance(item,Spacer):
 				listItem = QListWidgetItem(self.listWidget)
 				listItem.setIcon(QIcon())
+			elif isinstance(item,Break):
+				pass
 			else:
 				listItem = QListWidgetItem(self.listWidget)
-				if len(item.values) > 0:
-					listItem.setIcon(self.colorswatch(item))
+				if isinstance(item,Color) and len(item.values) > 0:
+					icon = self.colorswatch(item)
 				else:
-					listItem.setIcon(QIcon())
+					icon = QIcon("icons/swatchbooker.svg")
+				listItem.setIcon(icon)
 				self.listItems[listItem] = item
 				self.itemList[item] = listItem
 				if 'name' in item.info:
@@ -585,14 +514,13 @@ class MainWindow(QMainWindow):
 					listItem.setToolTip(item.info['name'][0])
 				else:
 					treeItem = QTreeWidgetItem(parent)
-				if len(item.values) > 0:
-					treeItem.setIcon(0,self.colorswatch(item))
-			if not isinstance(item, Spacer):
+				treeItem.setIcon(0,icon)
+			if not isinstance(item, Spacer) and not isinstance(item, Break):
 				self.treeItems[treeItem] = item
 				self.itemTree[item] = treeItem
 			if group:
 				self.treeWidget.expandItem(parent)
-			if not isinstance(item, Group) and not isinstance(item, Spacer):
+			if not isinstance(item, Group) and not isinstance(item, Spacer) and not isinstance(item, Break):
 				self.swnb += 1
 
 	def colorswatch(self,swatch):
@@ -611,6 +539,15 @@ class MainWindow(QMainWindow):
 		paint.end()
 		return QIcon(icon)
 
+	def about(self):
+		QMessageBox.about(self, "About SwatchBooker",
+                """<b>SwatchBooker</b> %s
+                <p>&copy; 2008 Olivier Berten
+                <p>Qt %s - PyQt %s""" % (
+                __version__, QT_VERSION_STR, PYQT_VERSION_STR))
+
+	def settings(self):
+		print "Settings"
 
 if __name__ == "__main__":
 	app = QApplication(sys.argv)

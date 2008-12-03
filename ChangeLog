@@ -1,0 +1,58 @@
+2008-12-03  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/__init__.py:
+   New internal format
+ * swatchbook/codecs.py:
+   Added OpenOffice.org format (read/write)
+ * swatchbooker.py:
+   Replaced icons with menus
+   Added license field
+ * New release: SwatchBooker 0.2
+
+
+2008-11-05  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/codecs.py:
+   Changed 6CLR to PC6 for easier xml compliance
+   Fixed Corel values for PC6
+
+
+2008-11-04  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/codecs.py:
+   Added ICC NCP format (read)
+   Support more than one extension for each format
+   Fixed a bug in ASE write function
+   Updated Scribus format
+ * swatchbook/__init__.py:
+   Support more than one extension for each format
+ * swatchbook/icc.py:
+   New file
+ * swatchbooker.py:
+   Add support for CMY and YIQ
+   Bugfixes
+
+
+2008-10-31  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/__init__.py:
+   Fixed YIQ range
+ * swatchbook/codecs.py:
+   Fixed Corel's YIQ import
+   More fixes for Corel's format
+
+
+2008-10-28  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/__init__.py:
+   Add CMY and YIQ to the toRGB8 function
+ * swatchbook/color.py:
+   Add YIQ2RGB function
+ * swatchbook/codecs.py:
+   Improve sbxml class
+
+
+2008-10-23  Olivier Berten  <olivier.berten@gmail.com>
+
+ * first release: SwatchBooker 0.1
+
