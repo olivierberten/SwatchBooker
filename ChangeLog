@@ -1,10 +1,15 @@
 2009-01-23  Olivier Berten  <olivier.berten@gmail.com>
 
+ * swatchbooker.pyw:
+   Some prerequisites for color management
+
+2009-01-23  Olivier Berten  <olivier.berten@gmail.com>
+
  * swatchbook/codecs.py:
    Fixed some bugs
  * swatchbooker.pyw:
    Editing features
-   Some prerequisites for color management
+ * New release: SwatchBooker 0.3
 
 2008-12-03  Olivier Berten  <olivier.berten@gmail.com>
 
