@@ -1143,7 +1143,10 @@ class html(Codec):
 					html_tmp += item.info['description'][lang]
 				html_tmp += '</div></div>\n'
 			elif isinstance(item,Color):
-				R,G,B = item.toRGB8()
+				if len(item.values) > 0:
+					R,G,B = item.toRGB8()
+				else:
+					R,G,B = [0,0,0]
 				html_tmp += '<div class="swatch" style="background-color:#'+hex2(R)+hex2(G)+hex2(B)
 				if 'name' in item.info:
 					html_tmp += '" title="'+item.info['name'][lang]
@@ -1285,7 +1288,7 @@ class sbxml(Codec):
 	@staticmethod
 	def write(book):
 		xml = '<?xml version="1.0" encoding = "UTF-8"?>\n<SwatchBook version="0.1">'
-		for info in ('name','description','copyright'):
+		for info in ('name','description','copyright','license'):
 			if info in book.info:
 				for lang in book.info[info]:
 					if lang == 0:
@@ -1300,7 +1303,7 @@ class sbxml(Codec):
 			xml += '<rows>'+str(book.display['rows'])+'</rows>'
 		xml += unicode(sbxml.writem(book.items),'utf-8')
 		for profile in book.profiles:
-			xml += '<colorspace id="'+profile+'" href="'+book.profiles[profile]+'" />'
+			xml += '<colorspace id="'+profile+'" href="'+book.profiles[profile].info['file']+'" />'
 
 		xml += '</SwatchBook>'
 
@@ -1321,7 +1324,7 @@ class sbxml(Codec):
 							if lang == 0:
 								xml += '<'+info+'>'+item.info[info][0]+'</'+info+'>'
 							else:
-								xml += '<'+info+' label="'+lang+'">'+item.info[info][lang]+'</'+info+'>'
+								xml += '<'+info+' lang="'+lang+'">'+item.info[info][lang]+'</'+info+'>'
 				xml += sbxml.writem(item.items)
 				xml += '</group>'
 			elif isinstance(item,Color):

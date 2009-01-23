@@ -1,10 +1,18 @@
+2009-01-23  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/codecs.py:
+   Fixed some bugs
+ * swatchbooker.pyw:
+   Editing features
+   Some prerequisites for color management
+
 2008-12-03  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbook/__init__.py:
    New internal format
  * swatchbook/codecs.py:
    Added OpenOffice.org format (read/write)
- * swatchbooker.py:
+ * swatchbooker.pyw:
    Replaced icons with menus
    Added license field
  * New release: SwatchBooker 0.2
@@ -28,7 +36,7 @@
    Support more than one extension for each format
  * swatchbook/icc.py:
    New file
- * swatchbooker.py:
+ * swatchbooker.pyw:
    Add support for CMY and YIQ
    Bugfixes
 
