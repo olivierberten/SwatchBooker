@@ -148,6 +148,7 @@ class SwatchBook(object):
 	def __init__(self, file=False):
 		# Informations
 		self.info = {}
+		self.ids = {}
 		self.inks = False
 		# Display informations
 		self.display = {}
@@ -204,22 +205,20 @@ class SwatchBook(object):
 
 class Group(object):
 	def __init__(self):
-		self.id = False
 		self.info = {}
 		self.items = SortedDict()
 
 class Swatch(object):
 	def __init__(self):
-		self.id = False
 		self.info = {}
 
 class Spacer(object):
 	def __init__(self):
-		self.id = False
+		pass
 
 class Break(object):
 	def __init__(self):
-		self.id = False
+		pass
 
 class Color(Swatch):
 	def __init__(self):
@@ -227,7 +226,7 @@ class Color(Swatch):
 		self.values = {}
 		self.attr = []
 
-	def toRGB8(self):
+	def toRGB8(self,disprof=False):
 		values = unicc(self.values.copy())
 		if 'RGB' in values:
 			R,G,B = values['RGB']

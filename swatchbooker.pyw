@@ -28,7 +28,7 @@ from PyQt4.QtGui import *
 
 from swatchbook import *
 
-__version__ = "0.3"
+__version__ = "0.4"
 
 current_sw = False
 current_sp = False
@@ -56,8 +56,8 @@ class GroupWidget(QGroupBox):
 
 		nameLabel = QLabel("Name:")
 		self.swName = QLineEdit()
-		self.swDescription = QTextEdit()
 		descriptionLabel = QLabel("Description:")
+		self.swDescription = QTextEdit()
 		swInfo = QGridLayout()
 		swInfo.addWidget(nameLabel, 0, 0)
 		swInfo.addWidget(self.swName, 0, 1)
@@ -445,6 +445,8 @@ class MainWindow(QMainWindow):
 		self.swEditMenu.addAction('Add Gradient',self.swAddGradient)
 		self.swEditMenu.addAction('Add Pattern',self.swAddPattern)
 		self.swEditMenu.addAction('Add Texture',self.swAddTexture)
+		self.swEditMenu.addAction('Add Spacer',self.swAddSpacer)
+		self.swEditMenu.addAction('Add Break',self.swAddBreak)
 		self.deleteAction = self.swEditMenu.addAction('Delete',self.swDelete)
 		self.swEditBut.setPopupMode(QToolButton.InstantPopup)
 		self.swEditBut.setMenu(self.swEditMenu)
@@ -668,6 +670,11 @@ class MainWindow(QMainWindow):
 			for prof in self.sb.profiles:
 				profItemID = QTableWidgetItem(prof)
 				profItemTitle = QTableWidgetItem(self.sb.profiles[prof].info['desc'][0])
+				cprt = self.sb.profiles[prof].info['cprt']
+				if 0 in cprt:
+					profItemTitle.setToolTip(cprt[0])
+				elif 'en_US' in cprt:
+					profItemTitle.setToolTip(cprt['en_US'])
 				self.sbProfiles.setItem(row, 0, profItemTitle)
 				self.sbProfiles.setItem(row, 1, profItemID)
 				space = self.sb.profiles[prof].info['space'].strip()
@@ -727,17 +734,19 @@ class MainWindow(QMainWindow):
 			elif isinstance(item,Spacer):
 				listItem = QListWidgetItem(self.listWidget)
 				listItem.setIcon(QIcon())
+				self.listItems[listItem] = item
+				self.itemList[item] = listItem
 				treeItem = QTreeWidgetItem(parent,[QString('<spacer>')])
 				font = QFont()
 				font.setItalic(True)
 				treeItem.setFont(0,font)
-				treeItem.setTextColor(0,QColor(128))
+				treeItem.setTextColor(0,QColor(128,128,128))
 			elif isinstance(item,Break):
 				treeItem = QTreeWidgetItem(parent,[QString('<break>')])
 				font = QFont()
 				font.setItalic(True)
 				treeItem.setFont(0,font)
-				treeItem.setTextColor(0,QColor(128))
+				treeItem.setTextColor(0,QColor(128,128,128))
 			else:
 				listItem = QListWidgetItem(self.listWidget)
 				if isinstance(item,Color) and len(item.values) > 0:
@@ -784,16 +793,25 @@ class MainWindow(QMainWindow):
                 __version__, QT_VERSION_STR, PYQT_VERSION_STR))
 
 	def settings(self):
-		print "Settings"
+		dialog = SettingsDlg(self)
+		settings = QSettings()
+		if dialog.exec_():
+			if dialog.returnDisProf():
+				settings.setValue("DisplayProfile",QVariant(dialog.returnDisProf()))
+			else:
+				settings.remove("DisplayProfile")
+				
 
 	def swDelete(self):
 		global current_sw
 		sw_tbd = current_sw
 		if hasattr(self,'sbSwatch'):
 			self.sbSwatch.setParent(None)
-		tbd = self.get_parent(self.sb,sw_tbd)
+		tbd = self.get_parent(sw_tbd)
 		if isinstance(sw_tbd, Group):
 			self.del_group_from_list(tbd[0],tbd[1])
+		elif isinstance(sw_tbd, Break):
+			pass
 		else:
 			self.listWidget.takeItem(self.listWidget.row(self.itemList[sw_tbd]))
 			del self.itemList[sw_tbd]
@@ -803,6 +821,7 @@ class MainWindow(QMainWindow):
 		else:
 			self.itemTree[sw_tbd].parent().takeChild(self.itemTree[sw_tbd].parent().indexOfChild(self.itemTree[sw_tbd]))
 		del tbd[0].items[tbd[1]]
+		del self.sb.ids[tbd[1]]
 		del self.itemTree[sw_tbd]
 		swnbLabelText = str(self.swnb)+' swatch'
 		if self.swnb > 1:
@@ -819,21 +838,21 @@ class MainWindow(QMainWindow):
 				self.listWidget.takeItem(self.listWidget.row(self.itemList[parent.items[group].items[sw]]))
 				del self.itemList[parent.items[group].items[sw]]
 				self.swnb -= 1
+			del self.sb.ids[sw]
 	
-	def get_parent(self,parent,value):
-		for item in parent.items.values():
-			if value == item:
-				return (parent,parent.items.keys()[parent.items.values().index(item)])
-			elif isinstance(item, Group):
-				if self.get_parent(item,value):
-					return self.get_parent(item,value)
+	def get_parent(self,value):
+		for item in self.sb.ids:
+			if self.sb.ids[item][0] == value:
+				return (self.sb.ids[item][1],item)
 		return False
 
 	def swAddColor(self):
 		global current_sw
 		item = Color()
 		key = 'col'+str(int(time.mktime(time.gmtime())))
-		item.id = key
+		if key in self.sb.ids:
+			sys.stderr.write('duplicate id ['+key+']\n')
+			key = key+str(item)
 		icon = QIcon("icons/swatchbooker.svg")
 		listItem = QListWidgetItem()
 		listItem.setIcon(icon)
@@ -844,9 +863,10 @@ class MainWindow(QMainWindow):
 		self.treeItems[treeItem] = item
 		self.itemTree[item] = treeItem
 		if self.treeWidget.selectedItems():
-			selItem = self.get_parent(self.sb,current_sw)
+			selItem = self.get_parent(current_sw)
 			index = selItem[0].items.values().index(current_sw)
 			selItem[0].items.insert(index+1,key,item)
+			self.sb.ids[key] = (item,selItem[0])
 			selLItem = self.listWidget.selectedItems()[0]
 			lIndex = self.listWidget.indexFromItem(selLItem).row()
 			self.listWidget.insertItem(lIndex+1,self.itemList[item])
@@ -859,6 +879,7 @@ class MainWindow(QMainWindow):
 				selTItem.parent().insertChild(tIndex+1,treeItem)
 		else:
 			self.sb.items[key] = item
+			self.sb.ids[key] = (item,self.sb)
 			self.treeWidget.addTopLevelItem(self.itemTree[item])
 			self.listWidget.addItem(self.itemList[item])
 		self.treeWidget.setCurrentItem(self.itemTree[item])
@@ -869,10 +890,43 @@ class MainWindow(QMainWindow):
 		self.swnbLabel.setText(swnbLabelText)
 		current_sw = item
 
+	def swAddBreak(self):
+		global current_sw
+		item = Break()
+		key = 'br'+str(int(time.mktime(time.gmtime())))
+		if key in self.sb.ids:
+			sys.stderr.write('duplicate id ['+key+']\n')
+			key = key+str(item)
+		icon = QIcon("icons/swatchbooker.svg")
+		treeItem = QTreeWidgetItem([QString('<break>')])
+		font = QFont()
+		font.setItalic(True)
+		treeItem.setFont(0,font)
+		treeItem.setTextColor(0,QColor(128,128,128))
+		self.treeItems[treeItem] = item
+		self.itemTree[item] = treeItem
+		if self.treeWidget.selectedItems():
+			selItem = self.get_parent(current_sw)
+			index = selItem[0].items.values().index(current_sw)
+			selItem[0].items.insert(index+1,key,item)
+			self.sb.ids[key] = (item,selItem[0])
+			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.parent() == None:
+				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
+				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
+			else:
+				tIndex = selTItem.parent().indexOfChild(selTItem)
+				selTItem.parent().insertChild(tIndex+1,treeItem)
+		else:
+			self.sb.items[key] = item
+			self.sb.ids[key] = (item,self.sb)
+			self.treeWidget.addTopLevelItem(self.itemTree[item])
+		self.treeWidget.setCurrentItem(self.itemTree[item])
+
 	def swAddTexture(self):
 		print 'unimplemented'
 
-	swAddSpacer = swAddBreak = swAddGradient = swAddPattern = swAddTexture
+	swAddSpacer = swAddGradient = swAddPattern = swAddTexture
 
 	def prof_editable(self):
 		if self.sbProfiles.isItemSelected(self.sbProfiles.currentItem()):
@@ -882,21 +936,30 @@ class MainWindow(QMainWindow):
 	def addProfile(self):
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							"SwatchBooker - Choose file", ".",
-							("ICC profiles (*.icc *.icm *.3cc)")))
+							("ICC profiles (*.icc *.icm)")))
 		if fname:
 			import swatchbook.icc as icc
-			self.sb.profiles[fname] = icc.ICCprofile(fname)
-			profItemID = QTableWidgetItem(fname)
-			profItemTitle = QTableWidgetItem(self.sb.profiles[fname].info['desc'][0])
+			profile = icc.ICCprofile(open(fname))
+			profile.info['file'] = fname
+			#TODO: check if exists
+			id = os.path.basename(profile.info['file'])
+			self.sb.profiles[id] = profile
+			profItemID = QTableWidgetItem(id)
+			profItemTitle = QTableWidgetItem(profile.info['desc'][0])
+			cprt = profile.info['cprt']
+			if 0 in cprt:
+				profItemTitle.setToolTip(cprt[0])
+			elif 'en_US' in cprt:
+				profItemTitle.setToolTip(cprt['en_US'])
 			row = self.sbProfiles.rowCount()
 			self.sbProfiles.setRowCount(row+1)
 			self.sbProfiles.setItem(row, 0, profItemTitle)
 			self.sbProfiles.setItem(row, 1, profItemID)
-			space = self.sb.profiles[fname].info['space'].strip()
+			space = profile.info['space'].strip()
 			if space in self.profiles:
-				self.profiles[space].append(fname)
+				self.profiles[space].append(id)
 			else:
-				self.profiles[space] = [fname]
+				self.profiles[space] = [id]
 
 	def remProfile(self):
 		profid = unicode(self.sbProfiles.item(self.sbProfiles.currentItem().row(),1).text())
@@ -907,8 +970,88 @@ class MainWindow(QMainWindow):
 		self.profRemoveAction.setEnabled(False)
 		# TODO remove profile from color values
 
+class SettingsDlg(QDialog):
+	def __init__(self, parent=None):
+		super(SettingsDlg, self).__init__(parent)
+		
+		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+		self.sRGB = QCheckBox("sRGB")
+		
+		self.fileLabel = QLabel()
+		self.fileLabel.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
+		self.fileButton = QPushButton("Choose file")
+
+		fileLayout = QHBoxLayout()
+		fileLayout.addWidget(self.fileLabel, 1)
+		fileLayout.addWidget(self.fileButton)
+		
+		gDisProf = QGroupBox("Display Profile")
+		disprof = QVBoxLayout()
+		disprof.addWidget(self.sRGB)
+		disprof.addLayout(fileLayout)
+		gDisProf.setLayout(disprof)
+		sett = QVBoxLayout()
+		sett.addWidget(gDisProf)
+		sett.addWidget(buttonBox)
+		self.setLayout(sett)
+
+		settings = QSettings()
+		if settings.contains("DisplayProfile"):
+			self.fname = settings.value("DisplayProfile").toString()
+			self.fileLabel.setText(self.fname)
+		else:
+			self.sRGB.setCheckState(2)
+			self.fileButton.setEnabled(False)
+
+		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
+		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
+		self.connect(self.sRGB, SIGNAL("stateChanged (int)"), self.actProfile)
+		self.connect(self.fileButton, SIGNAL("clicked()"), self.setFile)
+		self.setWindowTitle("SwatchBooker - Settings")
+
+	def accept(self):
+		if self.sRGB.checkState() == 0 and not hasattr(self,'fname'):
+			msgBox = QMessageBox(self)
+			msgBox.setWindowTitle('Error')
+			msgBox.setIcon(QMessageBox.Critical)
+			msgBox.setText("You must choose either sRGB or a file")
+			msgBox.exec_()
+		else:
+			QDialog.accept(self)
+
+	def returnDisProf(self):
+		if hasattr(self,'fname'):
+			return self.fname
+
+	def actProfile(self):
+		if self.sRGB.checkState() == 2:
+			if hasattr(self,'fname'):
+				del self.fname
+			self.fileLabel.setText("")
+			self.fileButton.setEnabled(False)
+		else:
+			self.fileButton.setEnabled(True)
+
+	def setFile(self):
+		fname = QFileDialog.getOpenFileName(self, "Choose file", QDir.homePath(),"ICC profiles (*.icc *.icm)")
+		if fname:
+			import swatchbook.icc as icc
+			profile = icc.ICCprofile(open(fname))
+			if profile.info['class'] == "mntr" and profile.info['space'] == 'RGB ':
+				self.fname = fname
+				self.fileLabel.setText(self.fname)
+			else:
+				msgBox = QMessageBox(self)
+				msgBox.setWindowTitle('Error')
+				msgBox.setIcon(QMessageBox.Critical)
+				msgBox.setText("This isn't a RGB monitor profile")
+				msgBox.exec_()
+		
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
+	app.setOrganizationName("Selapa")
+	app.setOrganizationDomain("selapa.net")
+	app.setApplicationName("SwatchBooker")
 	if len(sys.argv) > 1:
 		form = MainWindow(sys.argv[1])
 	else:
