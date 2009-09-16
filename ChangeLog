@@ -1,7 +1,24 @@
+2009-09-16  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbooker.pyw,swatchbook/codecs.py,swatchbook/color.py:
+   Color management almost done
+ * swatchbook/codecs.py:
+   Changed sbz xml in order to reflect the internal structure
+ * swatchbook/icc.py,swatchbook/codecs.py:
+   Back to files for using with lcms
+ * icons/swatchbooker.svg:
+   Added shadows
+
 2009-03-20  Olivier Berten  <olivier.berten@gmail.com>
 
- * (all)
+ * swatchbook/codecs.py,swatchbook/color.py:
    Getting further with color management
+ * swatchbook/codecs.py:
+   New file format (sbz)
+ * swatchbook/__init__.py,swatchbook/codecs.py:
+   New id management
+ * swatchbook/icc.py,swatchbook/codecs.py:
+   Profiles as stream instead of files
 
 2009-01-23  Olivier Berten  <olivier.berten@gmail.com>
 

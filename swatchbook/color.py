@@ -21,50 +21,146 @@
 
 from __future__ import division
 from lcms import *
+from icc import *
+import os.path
 
-def hex2(val):
-	return hex(int(round(val)))[2:].rjust(2,'0')
-
-def unicc(values):
+def unicc(values): # meant to disappear - used in the ASE and Scribus codecs
 	for val in values:
 		if isinstance(val,tuple):
 			values[val[0]] = values[val]
 			del values[val]
 	return values
 
-def Lab2RGB(L,a,b):
+def toRGB(model,values,prof_in=False,prof_out=False):
+	if prof_in:
+		icc_in = ICCprofile(prof_in)
+#		if icc_in.info['space'] == model:
+		
+	if model in ('RGB','HSV','HLS','CMY','YIQ'):
+		if model == 'RGB':
+			R,G,B = values
+		elif model == 'HSV':
+			H,S,V = values
+			R,G,B = HSV2RGB(H,S,V)
+		elif model == 'HLS':
+			H,L,S = values
+			R,G,B = HSL2RGB(H,S,L)
+		elif model == 'CMY':
+			C,M,Y = values
+			R,G,B = CMY2RGB(C,M,Y)
+		elif model == 'YIQ':
+			Y,I,Q = values
+			R,G,B = YIQ2RGB(Y,I,Q)
+		R,G,B = RGB2RGB(R,G,B,prof_in,prof_out)
+	elif model == 'Lab':
+		L,a,b = values
+		R,G,B = Lab2RGB(L,a,b,prof_out)
+	elif model == 'CMYK':
+		C,M,Y,K = values
+		R,G,B = CMYK2RGB(C,M,Y,K,prof_in,prof_out)
+	elif model == 'GRAY':
+		R = G = B = 1-values[0]
+	else:
+		return False
+	return (R,G,B)
+
+
+def Lab2RGB(L,a,b,prof_out=False):
 
 	Lab = cmsCIELab(L,a,b)
 	RGB = COLORW()
 	
 	hLab    = cmsCreateLabProfile(None)
-	hsRGB   = cmsCreate_sRGBProfile()
+	if prof_out:
+		hRGB = cmsOpenProfileFromFile(prof_out,'r')
+	else:
+		hRGB = cmsCreate_sRGBProfile()
 
-	xform = cmsCreateTransform(hLab, TYPE_Lab_DBL, hsRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+	xform = cmsCreateTransform(hLab, TYPE_Lab_DBL, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
 
 	cmsDoTransform(xform, Lab, RGB, 1)
 
 	cmsDeleteTransform(xform)
-	cmsCloseProfile(hsRGB)
+	cmsCloseProfile(hRGB)
 	cmsCloseProfile(hLab)
 
 	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
-def XYZ2RGB(X,Y,Z):
+def XYZ2RGB(X,Y,Z,prof_out=False):
 
 	XYZ = cmsCIEXYZ(X/100,Y/100,Z/100)
 	RGB = COLORW()
 	
 	hXYZ    = cmsCreateXYZProfile()
-	hsRGB   = cmsCreate_sRGBProfile()
+	if prof_out:
+		hRGB = cmsOpenProfileFromFile(prof_out,'r')
+	else:
+		hRGB = cmsCreate_sRGBProfile()
 
-	xform = cmsCreateTransform(hXYZ, TYPE_XYZ_DBL, hsRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+	xform = cmsCreateTransform(hXYZ, TYPE_XYZ_DBL, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
 
 	cmsDoTransform(xform, XYZ, RGB, 1)
 
 	cmsDeleteTransform(xform)
-	cmsCloseProfile(hsRGB)
+	cmsCloseProfile(hRGB)
 	cmsCloseProfile(hXYZ)
+
+	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+
+def CMYK2RGB(C,M,Y,K,prof_in=False,prof_out=False):
+	
+	CMYK = COLORW()
+	RGB = COLORW()
+	
+	CMYK[0] = int(C*0xFFFF)
+	CMYK[1] = int(M*0xFFFF)
+	CMYK[2] = int(Y*0xFFFF)
+	CMYK[3] = int(K*0xFFFF)
+
+	if prof_out:
+		hRGB = cmsOpenProfileFromFile(prof_out,'r')
+	else:
+		hRGB = cmsCreate_sRGBProfile()
+	if prof_in:
+		hCMYK = cmsOpenProfileFromFile(prof_in,'r')
+	else:
+		hCMYK = cmsOpenProfileFromFile((os.path.dirname(__file__) or ".")+"/Fogra27L.icm",'r')
+
+	xform = cmsCreateTransform(hCMYK, TYPE_CMYK_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+
+	cmsDoTransform(xform, CMYK, RGB, 1)
+
+	cmsDeleteTransform(xform)
+	cmsCloseProfile(hRGB)
+	cmsCloseProfile(hCMYK)
+
+	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+
+def RGB2RGB(RR,GG,BB,prof_in=False,prof_out=False):
+	
+	RRGGBB = COLORW()
+	RGB = COLORW()
+	
+	RRGGBB[0] = int(RR*0xFFFF)
+	RRGGBB[1] = int(GG*0xFFFF)
+	RRGGBB[2] = int(BB*0xFFFF)
+
+	if prof_out:
+		hRGB = cmsOpenProfileFromFile(prof_out,'r')
+	else:
+		hRGB = cmsCreate_sRGBProfile()
+	if prof_in:
+		hRRGGBB = cmsOpenProfileFromFile(prof_in,'r')
+	else:
+		hRRGGBB = cmsCreate_sRGBProfile()
+
+	xform = cmsCreateTransform(hRRGGBB, TYPE_RGB_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+
+	cmsDoTransform(xform, RRGGBB, RGB, 1)
+
+	cmsDeleteTransform(xform)
+	cmsCloseProfile(hRGB)
+	cmsCloseProfile(hRRGGBB)
 
 	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
@@ -72,12 +168,32 @@ def XYZ2RGB(X,Y,Z):
 # color model conversion formulas: http://www.easyrgb.com/math.php
 #
 
-# Observer= 2°, Illuminant= D65
-ref_X =  95.047
-ref_Y = 100.000
-ref_Z = 108.883
+ref_XYZ = {'2°':{
+'A':(109.850,100,35.585),
+'C':(98.074,100,118.232),
+'D50':(96.422,100,82.521),
+'D55':(95.682,100,92.149),
+'D65':(95.047,100,108.883),
+'D75':(94.972,100,122.638),
+'F2':(99.187,100,67.395),
+'F7':(95.044,100,108.755),
+'F11':(100.966,100,64.370)
+}, '10°':{
+'A':(111.144,100,35.200),
+'C':(97.285,100,116.145),
+'D50':(96.720,100,81.427),
+'D55':(95.799,100,90.926),
+'D65':(94.811,100,107.304),
+'D75':(94.416,100,120.641),
+'F2':(103.280,100,69.026),
+'F7':(95.792,100,107.687),
+'F11':(103.866,100,65.627)
+}}
 
-def XYZ2Lab(X,Y,Z):
+# Observer= 2°, Illuminant= D65
+ref_X,ref_Y,ref_Z = ref_XYZ['2°']['D65']
+
+def XYZ2Lab(X,Y,Z): # This formula is used in the ASE codec
 	X = X / ref_X
 	Y = Y / ref_Y
 	Z = Z / ref_Z
@@ -181,17 +297,6 @@ def CMY2RGB(C,M,Y):
 	B = ( 1 - Y )
 
 	return (R,G,B)
-
-def CMYK2CMY(C,M,Y,K):
-	C = ( C * ( 1 - K ) + K )
-	M = ( M * ( 1 - K ) + K )
-	Y = ( Y * ( 1 - K ) + K )
-
-	return (C,M,Y)
-
-def CMYK2RGB(C,M,Y,K):
-	C,M,Y = CMYK2CMY(C,M,Y,K)
-	return CMY2RGB(C,M,Y)
 
 # from http://en.wikipedia.org/wiki/YIQ
 def YIQ2RGB(Y,I,Q):

@@ -178,10 +178,10 @@ class SwatchBook(object):
 				codec = False
 		if codec:
 			eval('codecs.'+codec).read(self,file)
-			self.info['filename'] =  os.path.splitext(os.path.basename(file))[0]
-			# Don't know if this is the right way...
-			if isinstance(self.info['filename'],str):
-				self.info['filename'] = unicode(self.info['filename'],'utf-8')
+			if sys.getfilesystemencoding() == 'UTF-8':
+				self.info['filename'] =  os.path.splitext(os.path.basename(file))[0]
+			else:
+				self.info['filename'] =  os.path.splitext(os.path.basename(file))[0].decode(sys.getfilesystemencoding())
 			if 'name' not in self.info:
 				self.info['name'] = {0: self.info['filename'].replace('_',' ')}
 
@@ -209,8 +209,9 @@ class Group(object):
 		self.items = SortedDict()
 
 class Swatch(object):
-	def __init__(self):
+	def __init__(self,book):
 		self.info = {}
+		self.book = book
 
 class Spacer(object):
 	def __init__(self):
@@ -221,68 +222,30 @@ class Break(object):
 		pass
 
 class Color(Swatch):
-	def __init__(self):
-		super(Color, self).__init__()
-		self.values = {}
+	def __init__(self,book):
+		super(Color, self).__init__(book)
+		self.values = SortedDict()
 		self.attr = []
 
 	def toRGB8(self,disprof=False):
-		values = unicc(self.values.copy())
-		if 'RGB' in values:
-			R,G,B = values['RGB']
-		elif 'HSV' in values:
-			H,S,V = values['HSV']
-			R,G,B = HSV2RGB(H,S,V)
-		elif 'HSL' in values:
-			H,S,L = values['HSL']
-			R,G,B = HSL2RGB(H,S,L)
-		elif 'CMY' in values:
-			C,M,Y = values['CMY']
-			R,G,B = CMY2RGB(C,M,Y)
-		elif 'YIQ' in values:
-			Y,I,Q = values['YIQ']
-			R,G,B = YIQ2RGB(Y,I,Q)
-		elif 'Lab' in values:
-			L,a,b = values['Lab']
-			R,G,B = Lab2RGB(L,a,b)
-		elif 'CMYK' in values:
-			C,M,Y,K = values['CMYK']
-			R,G,B = CMYK2RGB(C,M,Y,K)
-		elif 'Gray' in values:
-			R = G = B = 1-values['Gray'][0]
+		for key in self.values:
+			if key[1]:
+				prof_in = self.book.profiles[key[1]].uri
+			else:
+				prof_in = False
+			if toRGB(key[0],self.values[key],prof_in,disprof):
+				R,G,B = toRGB(key[0],self.values[key],prof_in,disprof)
+				return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
+				break
 		else:
 			return False
-		return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
 			
-class Tint(Swatch):
-	def __init__(self):
-		super(Tint, self).__init__()
-		self.color = False
-		self.density = 1 # 0 = white
-
-class Tone(Swatch):
-	def __init__(self):
-		super(Tone, self).__init__()
-		self.color = False
-		self.density = 1 # 0 = gray
-
-class Shade(Swatch):
-	def __init__(self):
-		super(Shade, self).__init__()
-		self.color = False
-		self.density = 1 # 0 = black
-
 class Gradient(Swatch):
-	def __init__(self):
-		super(Gradient, self).__init__()
-		self.stops = []
-
-class Stop(object):
-	def __init__(self):
-		pass
+	def __init__(self,book):
+		super(Gradient, self).__init__(book)
 
 class Pattern(Swatch):
-	def __init__(self):
-		super(Pattern, self).__init__()
+	def __init__(self,book):
+		super(Pattern, self).__init__(book)
 		self.colors = []
 

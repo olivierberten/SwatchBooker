@@ -23,6 +23,7 @@ from __future__ import division
 import os
 import sys
 import struct
+import tempfile
 import xml.etree.cElementTree as etree
 from zipfile import *
 from swatchbook import *
@@ -79,27 +80,27 @@ class adobe_acb(Codec):
 		file.seek(2, 1)
 		model = struct.unpack('>H',file.read(2))[0]
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			length = struct.unpack('>L',file.read(4))[0]
 			if length > 0:
 				item.info['name'] = {0: prefix+decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))+suffix}
 			id = struct.unpack('>6s',file.read(6))[0].strip()
 			if model == 0:
 				R,G,B = struct.unpack('>3B',file.read(3))
-				item.values['RGB'] = [R/0xFF,G/0xFF,B/0xFF]
+				item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 			elif model == 2:
 				C,M,Y,K = struct.unpack('>4B',file.read(4))
-				item.values['CMYK'] = [1-C/0xFF,1-M/0xFF,1-Y/0xFF,1-K/0xFF]
+				item.values[('CMYK',False)] = [1-C/0xFF,1-M/0xFF,1-Y/0xFF,1-K/0xFF]
 			elif model == 7:
 				L,a,b = struct.unpack('>3B',file.read(3))
-				item.values['Lab'] = [L*100/0xFF,a-0x80,b-0x80]
+				item.values[('Lab',False)] = [L*100/0xFF,a-0x80,b-0x80]
 			else:
 				sys.stderr.write('unknown color model ['+str(model)+']\n')
 			if 'name' not in item.info and sum(item.values[item.values.keys()[0]]) == 0:
 				id = 'sp'+str(i)
 				item = Spacer()
 			if id in book.ids or len(id) == 0:
-				sys.stderr.write('duplicate id ['+str(id)+']\n')
+				#sys.stderr.write('duplicate id ['+str(id)+']\n')
 				id = id+str(item)
 			book.items[id] = item
 			book.ids[id] = (item,book)
@@ -130,30 +131,30 @@ class adobe_aco(Codec):
 			file.seek(4+nbcolors*10)
 			version, nbcolors = struct.unpack('>2H',file.read(4))
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			model = struct.unpack('>H',file.read(2))[0]
 			if model == 2:
 				C,M,Y,K = struct.unpack('>4H',file.read(8))
-				item.values['CMYK'] = [1-C/0xFFFF,1-M/0xFFFF,1-Y/0xFFFF,1-K/0xFFFF]
+				item.values[('CMYK',False)] = [1-C/0xFFFF,1-M/0xFFFF,1-Y/0xFFFF,1-K/0xFFFF]
 			elif model == 9:
 				C,M,Y,K = struct.unpack('>4H',file.read(8))
-				item.values['CMYK'] = [C/10000,M/10000,Y/10000,K/10000]
+				item.values[('CMYK',False)] = [C/10000,M/10000,Y/10000,K/10000]
 			elif model == 0:
 				R,G,B = struct.unpack('>3H',file.read(6))
-				item.values['RGB'] = [R/0xFFFF,G/0xFFFF,B/0xFFFF]
+				item.values[('RGB',False)] = [R/0xFFFF,G/0xFFFF,B/0xFFFF]
 				file.seek(2, 1)
 			elif model == 1:
 				H,S,V = struct.unpack('>3H',file.read(6))
-				item.values['HSV'] = [H/0xFFFF,S/0xFFFF,V/0xFFFF]
+				item.values[('HSV',False)] = [H/0xFFFF,S/0xFFFF,V/0xFFFF]
 				file.seek(2, 1)
 			elif model == 7:
 				L,a,b = struct.unpack('>H 2h',file.read(6))
-				item.values['Lab'] = [L/100,a/100,b/100]
+				item.values[('Lab',False)] = [L/100,a/100,b/100]
 				file.seek(2, 1)
 			elif model == 8:
 				K = struct.unpack('>H',file.read(2))[0]
-				item.values['Gray'] = [K/10000,]
+				item.values[('GRAY',False)] = [K/10000,]
 				file.seek(6, 1)
 			else:
 				file.seek(8, 1)
@@ -199,7 +200,7 @@ class adobe_ase(Codec):
 				parent.items[grpid] = group
 				book.ids[grpid] = (item,parent)
 			elif block_type == 0x0001:
-				item = Color()
+				item = Color(book)
 				col_count += 1
 				id = 'col'+str(col_count)
 			if block_size > 0:
@@ -214,14 +215,14 @@ class adobe_ase(Codec):
 				if block_type == 0x0001:
 					model = struct.unpack('4s',file.read(4))[0]
 					if model == "CMYK":
-						item.values['CMYK'] = list(struct.unpack('>4f',file.read(16)))
+						item.values[('CMYK',False)] = list(struct.unpack('>4f',file.read(16)))
 					elif model == "RGB ":
-						item.values['RGB'] = list(struct.unpack('>3f',file.read(12)))
+						item.values[('RGB',False)] = list(struct.unpack('>3f',file.read(12)))
 					elif model == "LAB ":
 						L,a,b = struct.unpack('>3f',file.read(12))
-						item.values['Lab'] = [L*100,a,b]
+						item.values[('Lab',False)] = [L*100,a,b]
 					elif model == "Gray":
-						item.values['Gray'] = [1-struct.unpack('>f',file.read(4))[0],]
+						item.values[('GRAY',False)] = [1-struct.unpack('>f',file.read(4))[0],]
 					type = struct.unpack('>H',file.read(2))[0]
 					if type == 0:
 						item.attr.append('global')
@@ -259,38 +260,38 @@ class adobe_ase(Codec):
 						spot = '\x00\x02'
 					values = unicc(item.values)
 					if 'Lab' in values:
-						L,a,b = values['Lab']
+						L,a,b = values[('Lab',False)]
 						block_size += 12
 						values = 'LAB '+struct.pack('>3f',L/100,a,b)
 					elif 'RGB' in values:
-						R,G,B = values['RGB']
+						R,G,B = values[('RGB',False)]
 						block_size += 12
 						values = 'RGB '+struct.pack('>3f',R,G,B)
 					elif 'CMYK' in values:
-						C,M,Y,K = values['CMYK']
+						C,M,Y,K = values[('CMYK',False)]
 						block_size += 16
 						values = 'CMYK'+struct.pack('>4f',C,M,Y,K)
-					elif 'Gray' in values:
-						Gray = values['Gray'][0]
+					elif 'GRAY' in values:
+						Gray = values[('GRAY',False)][0]
 						block_size += 4
 						values = 'Gray'+struct.pack('>f',1-Gray)
-					elif 'HSL' in values:
-						H,S,L = values['HSL']
-						R,G,B = HSL2RGB(H,S,L)
+					elif 'HLS' in values:
+						H,L,S = values[('HLS',False)]
+						R,G,B = HLS2RGB(H,L,S)
 						block_size += 12
 						values = 'RGB '+struct.pack('>3f',R,G,B)
 					elif 'HSV' in values:
-						H,S,V = values['HSV']
+						H,S,V = values[('HSV',False)]
 						R,G,B = HSV2RGB(H,S,V)
 						block_size += 12
 						values = 'RGB '+struct.pack('>3f',R,G,B)
 					elif 'CMY' in values:
-						C,M,Y = values['CMY']
+						C,M,Y = values[('CMY',False)]
 						R,G,B = CMY2RGB(C,M,Y)
 						block_size += 12
 						values = 'RGB '+struct.pack('>3f',R,G,B)
 					elif 'XYZ' in values:
-						X,Y,Z = values['XYZ']
+						X,Y,Z = values[('XYZ',False)]
 						L,a,b = XYZ2Lab(X,Y,Z)
 						block_size += 12
 						values = 'LAB '+struct.pack('>3f',L/100,a,b)
@@ -326,10 +327,10 @@ class adobe_act(Codec):
 			nbcolors = int(filesize/3)
 			file = open(file)
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			R,G,B = struct.unpack('3B',file.read(3))
-			item.values['RGB'] = [R/0xFF,G/0xFF,B/0xFF]
+			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 			book.items[id] = item
 			book.ids[id] = (item,book)
 		file.close()
@@ -382,7 +383,7 @@ class adobe_acf(Codec):
 				pos = pos+1
 		pos = pos+1
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			for model in models:
 				colors = file[pos].strip().split()
@@ -391,7 +392,10 @@ class adobe_acf(Codec):
 						colors[k] = eval(colors[k])/0xFFFF
 					else:
 						colors[k] = eval(colors[k])
-				item.values[model] = colors
+				if model == "hifi" and len(colors) > 0:
+					item.values[("%X" % len(colors))+'CLR',False] = colors
+				else:
+					item.values[model,False] = colors
 				pos = pos+1
 			if type == 'Mixed':
 				col_type = file[pos].strip()
@@ -451,31 +455,32 @@ class adobe_bcf(Codec):
 				for i in range(nbinks):
 					book.inks.append(struct.unpack('>10s 10s H 32s',file.read(54)))
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			if XYZ == 1:
 				X,Y,Z  = struct.unpack('>3H',file.read(6))
-				item.values['XYZ'] = [X*100/0xFFFF,Y*100/0xFFFF,Z*100/0xFFFF]
+				item.values[('XYZ',False)] = [X*100/0xFFFF,Y*100/0xFFFF,Z*100/0xFFFF]
 			elif 'Lab' in vars() and Lab == 1:
-				item.values['Lab'] = list(struct.unpack('>3h',file.read(6)))
+				item.values[('Lab',False)] = list(struct.unpack('>3h',file.read(6)))
 			else:
 				file.seek(6, 1)
 			if CMYK == 1:
 				C,M,Y,K = struct.unpack('>4H',file.read(8))
-				item.values['CMYK'] = [C/0xFFFF,M/0xFFFF,Y/0xFFFF,K/0xFFFF]
+				item.values[('CMYK',False)] = [C/0xFFFF,M/0xFFFF,Y/0xFFFF,K/0xFFFF]
 			else:
 				file.seek(8, 1)
 			if RGB == 1:
 				R,G,B = struct.unpack('>3H',file.read(6))
-				item.values['RGB'] = [R/0xFFFF,G/0xFFFF,B/0xFFFF]
+				item.values[('RGB',False)] = [R/0xFFFF,G/0xFFFF,B/0xFFFF]
 			else:
 				file.seek(6, 1)
 			if version in ('ACF 2.1','BCF 2.0') and type in (8,16):
 				col_nbinks = struct.unpack('>H',file.read(2))[0]
-				item.values['hifi'] = {}
-				for j in range(col_nbinks):
-					hifi = struct.unpack('>2H',file.read(4))
-					item.values['hifi'][hifi[0]] = hifi[1]/0xFFFF
+				if col_nbinks > 0:
+					item.values[("%X" % col_nbinks)+'CLR',False] = {}
+					for j in range(col_nbinks):
+						hifi = struct.unpack('>2H',file.read(4))
+						item.values[("%X" % col_nbinks)+'CLR',False][hifi[0]] = hifi[1]/0xFFFF
 				file.seek((8-col_nbinks)*4, 1)
 			col_type = struct.unpack('>H',file.read(2))[0]
 			if col_type == 1:
@@ -511,14 +516,14 @@ class adobe_clr(Codec):
 		nbcolors = struct.unpack('<H',file.read(2))[0]
 		file.seek(15, 1)
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			file.seek(1, 1)
 			R,G,B,a = struct.unpack('4B',file.read(4))
-			item.values['RGBa'] = [R/0xFF,G/0xFF,B/0xFF,a/0xFF]
+			item.values['RGB',False] = [R/0xFF,G/0xFF,B/0xFF] # since α isn't a color property I don't take this in account
 			file.seek(2, 1)
 			H,S,L = struct.unpack('<3H',file.read(6))
-			item.values['HSL'] = [H/240,S/240,L/240]
+			item.values[('HLS',False)] = [H/240,L/240,S/240]
 			file.seek(2, 1)
 			book.items[id] = item
 			book.ids[id] = (item,book)
@@ -545,13 +550,13 @@ class autocad_acb(Codec):
 		encrypted = False
 		for colorPage in xml.getiterator('colorPage'):
 			for colorEntry in colorPage.getiterator('colorEntry'):
-				item = Color()
+				item = Color(book)
 				id = 'col'+str(i+1)
 				item.info['name'] = {0: unicode(colorEntry.find('colorName').text)}
 				if colorEntry.find('RGB8Encrypt'):
 					encrypted = True
 				elif colorEntry.find('RGB8'):
-					item.values['RGB'] = [eval(colorEntry.find('RGB8').find('red').text)/0xFF,eval(colorEntry.find('RGB8').find('green').text)/0xFF,eval(colorEntry.find('RGB8').find('blue').text)/0xFF]
+					item.values[('RGB',False)] = [eval(colorEntry.find('RGB8').find('red').text)/0xFF,eval(colorEntry.find('RGB8').find('green').text)/0xFF,eval(colorEntry.find('RGB8').find('blue').text)/0xFF]
 				item.attr.append('spot')
 				book.items[id] = item
 				book.ids[id] = (item,book)
@@ -569,7 +574,7 @@ class ral_bcs(Codec):
 		file = open(file)
 		data = file.read(4)
 		file.close()
-		if struct.unpack('b3s', data)[1] in ('clf','rgb','atl'):
+		if struct.unpack('b3s', data)[1].lower() in ('clf','rgb','atl'):
 			return True
 	@staticmethod
 	def read(book,file):
@@ -585,12 +590,12 @@ class ral_bcs(Codec):
 			book.info['name']['de'] = unicode(name_tmp[1].split('German_')[1],'utf-8')
 		file.seek(1, 1)
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
 				item.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
-			item.values['Lab'] = list(struct.unpack('<3f',file.read(12)))
+			item.values[('Lab',False)] = list(struct.unpack('<3f',file.read(12)))
 			if sig == 'clf':
 				item.attr.append('spot')
 			book.items[id] = item
@@ -669,7 +674,7 @@ class corel_cpl(Codec):
 		row = {}
 		col = {}
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			if long:
 				id = str(struct.unpack('<L',file.read(4))[0])
 			else:
@@ -679,52 +684,52 @@ class corel_cpl(Codec):
 			if model == 2:
 				file.seek(4, 1)
 				C,M,Y,K =  struct.unpack('4B',file.read(4))
-				item.values['CMYK'] = [C/100,M/100,Y/100,K/100]
+				item.values[('CMYK',False)] = [C/100,M/100,Y/100,K/100]
 			elif model in (3,17):
 				file.seek(4, 1)
 				C,M,Y,K =  struct.unpack('4B',file.read(4))
-				item.values['CMYK'] = [C/0xFF,M/0xFF,Y/0xFF,K/0xFF]
+				item.values[('CMYK',False)] = [C/0xFF,M/0xFF,Y/0xFF,K/0xFF]
 			elif model == 4:
 				file.seek(4, 1)
 				C,M,Y =  struct.unpack('3B',file.read(3))
-				item.values['CMY'] = [C/0xFF,M/0xFF,Y/0xFF]
+				item.values[('CMY',False)] = [C/0xFF,M/0xFF,Y/0xFF]
 				file.seek(1, 1)
 			elif model in (5,21):
 				file.seek(4, 1)
 				B,G,R = struct.unpack('3B',file.read(3))
-				item.values['RGB'] = [R/0xFF,G/0xFF,B/0xFF]
+				item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 				file.seek(1, 1)
 			elif model == 6:
 				file.seek(4, 1)
 				H,S,V = struct.unpack('<H2B',file.read(4))
-				item.values['HSV'] = [H/360,S/0xFF,V/0xFF]
+				item.values[('HSV',False)] = [H/360,S/0xFF,V/0xFF]
 			elif model == 7:
 				file.seek(4, 1)
 				H,L,S = struct.unpack('<H2B',file.read(4))
-				item.values['HSL'] = [H/360,S/0xFF,L/0xFF]
+				item.values[('HLS',False)] = [H/360,L/0xFF,S/0xFF]
 			elif model == 9:
 				file.seek(4, 1)
 				K =  struct.unpack('B',file.read(1))[0]
-				item.values['Gray'] = [1-K/0xFF,]
+				item.values[('GRAY',False)] = [1-K/0xFF,]
 				file.seek(3, 1)
 			elif model == 11:
 				file.seek(4, 1)
 				Y,I,Q =  struct.unpack('3B',file.read(3))
-				item.values['YIQ'] = [Y/0xFF,(I-100)/0x80,(Q-100)/0x80]
+				item.values[('YIQ',False)] = [Y/0xFF,(I-100)/0x80,(Q-100)/0x80]
 				file.seek(1, 1)
 			elif model == 12:
 				file.seek(4, 1)
 				L,a,b =  struct.unpack('B 2b',file.read(3))
-				item.values['Lab'] = [L*100/0xFF,a,b]
+				item.values[('Lab',False)] = [L*100/0xFF,a,b]
 				file.seek(1, 1)
 			elif model == 15:
 				file.seek(2, 1)
 				Y,O,M,C,G,K =  struct.unpack('6B',file.read(6))
-				item.values['CMYKOG'] = [C/100,M/100,Y/100,K/100,O/100,G/100]
+				item.values[('6CLR',False)] = [Y/100,O/100,M/100,C/100,G/100,K/100]
 			elif model == 18:
 				file.seek(4, 1)
 				L,a,b =  struct.unpack('3B',file.read(3))
-				item.values['Lab'] = [L*100/0xFF,a-0x80,b-0x80]
+				item.values[('Lab',False)] = [L*100/0xFF,a-0x80,b-0x80]
 				file.seek(1, 1)
 			else:
 				file.seek(8, 1)
@@ -738,52 +743,52 @@ class corel_cpl(Codec):
 					if model2 == 2:
 						file.seek(4, 1)
 						C,M,Y,K =  struct.unpack('4B',file.read(4))
-						item.values['CMYK'] = [C/100,M/100,Y/100,K/100]
+						item.values[('CMYK',False)] = [C/100,M/100,Y/100,K/100]
 					elif model2 in (3,17):
 						file.seek(4, 1)
 						C,M,Y,K =  struct.unpack('4B',file.read(4))
-						item.values['CMYK'] = [C/0xFF,M/0xFF,Y/0xFF,K/0xFF]
+						item.values[('CMYK',False)] = [C/0xFF,M/0xFF,Y/0xFF,K/0xFF]
 					elif model2 == 4:
 						file.seek(4, 1)
 						C,M,Y =  struct.unpack('3B',file.read(3))
-						item.values['CMY'] = [C/0xFF,M/0xFF,Y/0xFF]
+						item.values[('CMY',False)] = [C/0xFF,M/0xFF,Y/0xFF]
 						file.seek(1, 1)
 					elif model2 in (5,21):
 						file.seek(4, 1)
 						B,G,R = struct.unpack('3B',file.read(3))
-						item.values['RGB'] = [R/0xFF,G/0xFF,B/0xFF]
+						item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 						file.seek(1, 1)
 					elif model2 == 6:
 						file.seek(4, 1)
 						H,S,V = struct.unpack('<H2B',file.read(4))
-						item.values['HSV'] = [H/360,S/0xFF,V/0xFF]
+						item.values[('HSV',False)] = [H/360,S/0xFF,V/0xFF]
 					elif model2 == 7:
 						file.seek(4, 1)
 						H,L,S = struct.unpack('<H2B',file.read(4))
-						item.values['HSL'] = [H/360,S/0xFF,L/0xFF]
+						item.values[('HLS',False)] = [H/360,L/0xFF,S/0xFF]
 					elif model2 == 9:
 						file.seek(4, 1)
 						K =  struct.unpack('B',file.read(1))[0]
-						item.values['Gray'] = [1-K/0xFF,]
+						item.values[('GRAY',False)] = [1-K/0xFF,]
 						file.seek(3, 1)
 					elif model2 == 11:
 						file.seek(4, 1)
 						Y,I,Q =  struct.unpack('3B',file.read(3))
-						item.values['YIQ'] = [Y/0xFF,(I-100)/0x80,(Q-100)/0x80]
+						item.values[('YIQ',False)] = [Y/0xFF,(I-100)/0x80,(Q-100)/0x80]
 						file.seek(1, 1)
 					elif model2 == 12:
 						file.seek(4, 1)
 						L,a,b =  struct.unpack('B 2b',file.read(3))
-						item.values['Lab'] = [L*100/0xFF,a,b]
+						item.values[('Lab',False)] = [L*100/0xFF,a,b]
 						file.seek(1, 1)
 					elif model2 == 15:
 						file.seek(2, 1)
 						Y,O,M,C,G,K =  struct.unpack('6B',file.read(6))
-						item.values['CMYKOG'] = [C/100,M/100,Y/100,K/100,O/100,G/100]
+						item.values[('6CLR',False)] = [Y/100,O/100,M/100,C/100,G/100,K/100]
 					elif model2 == 18:
 						file.seek(4, 1)
 						L,a,b =  struct.unpack('3B',file.read(3))
-						item.values['Lab'] = [L*100/0xFF,a-0x80,b-0x80]
+						item.values[('Lab',False)] = [L*100/0xFF,a-0x80,b-0x80]
 						file.seek(1, 1)
 					else:
 						file.seek(8, 1)
@@ -802,7 +807,7 @@ class corel_cpl(Codec):
 			if 'name' in item.info and (find(item.info['name'][0],'NONASSIGNED') >= 0 or find(item.info['name'][0],'UNASSIGNED') >= 0):
 				item = Spacer()
 			if id in book.ids:
-				sys.stderr.write('duplicate id ['+id+']\n')
+				#sys.stderr.write('duplicate id ['+id+']\n')
 				id = id+str(item)
 			if 'row' in vars() and i in row and row[i] > 0 and col[i] == 0 and col[i-1] < book.display['columns']-1:
 				bbreak = Break()
@@ -855,7 +860,7 @@ class quark_qcl(Codec):
 		for color in colors:
 			if i in breaks:
 				book.items['break'+str(i)] = Break()
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			name = unicode(color.getchildren()[eval(data_format['SAMPLE_ID'])-1].text)
 			if data_format.has_key('NAME_FORMAT_ID'):
@@ -864,20 +869,20 @@ class quark_qcl(Codec):
 			elif name > u'':
 				item.info['name'] = {0: name}
 			if data_format.has_key('LAB_L'):
-				item.values['Lab'] = [eval(color.getchildren()[eval(data_format['LAB_L'])-1].text),\
+				item.values[('Lab',False)] = [eval(color.getchildren()[eval(data_format['LAB_L'])-1].text),\
 											  eval(color.getchildren()[eval(data_format['LAB_A'])-1].text),\
 											  eval(color.getchildren()[eval(data_format['LAB_B'])-1].text)]
 			if data_format.has_key('RGB_R'):
-				item.values['RGB'] = [eval(color.getchildren()[eval(data_format['RGB_R'])-1].text)/0xFF,\
+				item.values[('RGB',False)] = [eval(color.getchildren()[eval(data_format['RGB_R'])-1].text)/0xFF,\
 											  eval(color.getchildren()[eval(data_format['RGB_G'])-1].text)/0xFF,\
 											  eval(color.getchildren()[eval(data_format['RGB_B'])-1].text)/0xFF]
 			if data_format.has_key('CMYK_C'):
-				item.values['CMYK'] = [eval(color.getchildren()[eval(data_format['CMYK_C'])-1].text)/100,\
+				item.values[('CMYK',False)] = [eval(color.getchildren()[eval(data_format['CMYK_C'])-1].text)/100,\
 											   eval(color.getchildren()[eval(data_format['CMYK_M'])-1].text)/100,\
 											   eval(color.getchildren()[eval(data_format['CMYK_Y'])-1].text)/100,\
 											   eval(color.getchildren()[eval(data_format['CMYK_K'])-1].text)/100]
 			if data_format.has_key('PC6_1'):
-				item.values['CMYKOG'] = [eval(color.getchildren()[eval(data_format['PC6_1'])-1].text)/100,\
+				item.values[('6CLR',False)] = [eval(color.getchildren()[eval(data_format['PC6_1'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_2'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_3'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_4'])-1].text)/100,\
@@ -911,10 +916,10 @@ class riff_pal(Codec):
 			chunk = struct.unpack('<4s L', file.read(8))
 		version, nbcolors = struct.unpack('<2H',file.read(4))
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			R,G,B = struct.unpack('3B',file.read(3))
-			item.values['RGB'] = [R/0xFF,G/0xFF,B/0xFF]
+			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 			file.seek(1, 1)
 			book.items[id] = item
 			book.ids[id] = (item,book)
@@ -925,12 +930,12 @@ class icc_nmcl(Codec):
 	ext = ('icc','icm')
 	@staticmethod
 	def test(file):
-		prof = ICCprofile(open(file))
+		prof = ICCprofile(file)
 		if prof.info['class'] == 'nmcl' and 'ncl2' in prof.info['tags']:
 			return True
 	@staticmethod
 	def read(book,file):
-		prof = ICCprofile(open(file))
+		prof = ICCprofile(file)
 		book.info['name'] = prof.info['desc']
 		book.info['copyright'] = prof.info['cprt']
 		file = open(file)
@@ -939,7 +944,7 @@ class icc_nmcl(Codec):
 		prefix,suffix = struct.unpack('>32s 32s',file.read(64))
 		colors = {}
 		for i in range(n):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			# This is supposed to be coded in plain ascii but X-Rite Pantone NCPs use Latin 1
 			item.info['name'] = {0: unicode(prefix.split('\x00', 1)[0]+struct.unpack('>32s',file.read(32))[0].split('\x00', 1)[0]+suffix.split('\x00', 1)[0],'latin_1')}
@@ -947,12 +952,12 @@ class icc_nmcl(Codec):
 				L,a,b = struct.unpack('>3H',file.read(6))
 				# I'm not really sure this is the right criterion
 				if prof.info['version'][0] == 4:
-					item.values['Lab'] = [L*100/0xFFFF,(a-0x8080)/0x101,(b-0x8080)/0x101]
+					item.values[('Lab',False)] = [L*100/0xFFFF,(a-0x8080)/0x101,(b-0x8080)/0x101]
 				elif prof.info['version'][0] == 2:
-					item.values['Lab'] = [L*100/0xFF00,(a-0x8000)/0x100,(b-0x8000)/0x100]
+					item.values[('Lab',False)] = [L*100/0xFF00,(a-0x8000)/0x100,(b-0x8000)/0x100]
 			elif prof.info['pcs'] == 'XYZ ':
 				X,Y,Z = struct.unpack('>3H',file.read(6))
-				item.values['XYZ'] = [X*100/0x8000,X*100/0x8000,X*100/0x8000]
+				item.values[('XYZ',False)] = [X*100/0x8000,X*100/0x8000,X*100/0x8000]
 			file.seek(m*2,1)
 			item.attr.append('spot')
 			book.items[id] = item
@@ -975,10 +980,10 @@ class colorschemer(Codec):
 		version, nbcolors = struct.unpack('<2H',file.read(4))
 		file.seek(4, 1)
 		for i in range(nbcolors):
-			item = Color()
+			item = Color(book)
 			id = 'col'+str(i+1)
 			R,G,B = struct.unpack('3B',file.read(3))
-			item.values['RGB'] = [R/0xFF,G/0xFF,B/0xFF]
+			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 			file.seek(1, 1)
 			length = struct.unpack('<L',file.read(4))[0]
 			if length > 0:
@@ -1018,9 +1023,9 @@ class gimp_gpl(Codec):
 			else:
 				entry = line.split(None,3)
 				if entry[0].isdigit() and entry[1].isdigit() and entry[2].isdigit():
-					item = Color()
+					item = Color(book)
 					id = 'col'+str(i+1)
-					item.values['RGB'] = [int(entry[0])/0xFF,int(entry[1])/0xFF,int(entry[2])/0xFF]
+					item.values[('RGB',False)] = [int(entry[0])/0xFF,int(entry[1])/0xFF,int(entry[2])/0xFF]
 					if len(entry) > 3 and entry[3].strip() not in ('Untitled','Sans titre'): # other languages to be added
 						item.info['name'] =  {0: unicode(entry[3].strip(),'utf-8')}
 					book.items[id] = item
@@ -1077,10 +1082,10 @@ class scribus(Codec):
 				values = unicc(item.values)
 				scsw_tmp += '\t<COLOR '
 				if 'CMYK' in values:
-					C,M,Y,K = values['CMYK']
+					C,M,Y,K = values[('CMYK',False)]
 					scsw_tmp += 'CMYK="#'+hex2(C*0xFF)+hex2(M*0xFF)+hex2(Y*0xFF)+hex2(K*0xFF)+'"'
-				elif 'Gray' in values:
-					K = values['Gray'][0]
+				elif 'GRAY' in values:
+					K = values[('GRAY',False)][0]
 					scsw_tmp += 'CMYK="#000000'+hex2(K*0xFF)+'"'
 				else:
 					if item.toRGB8():
@@ -1195,7 +1200,7 @@ class ooo(Codec):
 			draw = '{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}'
 		for elem in xml:
 			if elem.tag == draw+'color':
-				item = Color()
+				item = Color(book)
 				id = 'col'+str(i+1)
 				if draw+'name' in elem.attrib:
 					item.info['name'] = {0: unicode(elem.attrib[draw+'name'])}
@@ -1230,23 +1235,21 @@ class ooo(Codec):
 				soc += ooo.writem(item.items)
 		return soc
 
-class sbz(Codec):
-	"""SwatchBooker"""
-	ext = ('sbz',)
+class sbxml(Codec):
+	"""SwatchBook XML (deprecated)"""
+	ext = ('sb',)
 	@staticmethod
 	def test(file):
-		zip = ZipFile(file)
-		if 'swatchbook.xml' in zip.namelist():
-			format = 'sbz'
+		if etree.parse(file).getroot().tag == 'SwatchBook' and etree.parse(file).getroot().attrib['version'] == '0.1':
+			format = 'sbxml'
 			return True
 
 	@staticmethod
-	def read(book,uri):
-		zip = ZipFile(uri)
-		xml = etree.fromstring(zip.read('swatchbook.xml'))
+	def read(book,file):
+		xml = etree.parse(file).getroot()
 		for elem in xml:
 			if elem.tag in ('group','color','spacer','break'):
-				sbz.readitem(book,elem,book)
+				sbxml.readitem(book,elem)
 			elif elem.tag in ('name','description','copyright','license'):
 				if elem.tag not in book.info:
 					book.info[elem.tag] = {}
@@ -1259,20 +1262,17 @@ class sbz(Codec):
 			elif elem.tag in ('columns','rows'):
 				book.display[elem.tag] = int(elem.text)
 			elif elem.tag in ('colorspace'):
-				f = os.tmpfile()
-				f.write(zip.read('profiles/'+elem.attrib['href']))
-				book.profiles[elem.attrib['id']] = ICCprofile(f)
-				book.profiles[elem.attrib['id']].info['file'] = elem.attrib['href']
-				f.close()
+				book.profiles[elem.attrib['id']] = ICCprofile(elem.attrib['href'])
 
 	@staticmethod
-	def readitem(parent,item,book):
+	def readitem(parent,item):
 		if item.tag == 'group':
 			bitem = Group()
-			id = item.attrib['id']
+			if 'id' in item.attrib:
+				bitem.id = item.attrib['id']
 			for elem in item:
 				if elem.tag in ('group','color','spacer','break'):
-					sbz.readitem(bitem,elem,book)
+					sbxml.readitem(bitem,elem)
 				elif elem.tag in ('name','description'):
 					if elem.tag not in bitem.info:
 						bitem.info[elem.tag] = {}
@@ -1284,9 +1284,10 @@ class sbz(Codec):
 			bitem = Color()
 			if 'spot' in item.attrib and item.attrib['spot'] == '1':
 				bitem.attr.append('spot')
-			id = item.attrib['id']
+			if 'id' in item.attrib:
+				bitem.id = item.attrib['id']
 			for elem in item:
-				if elem.tag in ('RGB','CMYK','Lab','Gray','CMY','XYZ','YIQ','HSL','HSV','RGBa','CMYKOG'):
+				if elem.tag in ('RGB','CMYK','Lab','Gray','CMY','XYZ','YIQ','HSL','HSV','CMYKOG'):
 					values = map(eval,elem.text.split())
 					if 'space' in elem.attrib:
 						bitem.values[(elem.tag,elem.attrib['space'])] = values
@@ -1304,30 +1305,105 @@ class sbz(Codec):
 		elif item.tag == 'break':
 			bitem = Break()
 		if isinstance(bitem,Spacer) or isinstance(bitem,Break):
+			parent.items[str(bitem)] = bitem
+		else:
+			parent.items[bitem.id] = bitem
+
+class sbz(Codec):
+	"""SwatchBooker"""
+	ext = ('sbz',)
+	@staticmethod
+	def test(file):
+		zip = ZipFile(file)
+		if 'swatchbook.xml' in zip.namelist():
+			format = 'sbz'
+			return True
+
+	@staticmethod
+	def read(book,uri):
+		zip = ZipFile(uri)
+		xml = etree.fromstring(zip.read('swatchbook.xml'))
+		for zipped in zip.namelist():
+			if "profiles/" in zipped and zipped != "profiles/":
+				uri = tempfile.mkstemp()[1]
+				f = open(uri,'w')
+				f.write(zip.read(zipped))
+				f.close()
+				book.profiles[zipped[9:]] = ICCprofile(uri)
+		for elem in xml:
+			if elem.tag in ('group','color','spacer','break'):
+				sbz.readitem(book,elem,book)
+			elif elem.tag == 'info':
+				if elem.attrib['type'] in ('version'):
+					book.info['version'] = elem.text
+				else:
+					if elem.attrib['type'] not in book.info:
+						book.info[elem.attrib['type']] = {}
+					if 'lang' in elem.attrib:
+						book.info[elem.attrib['type']][elem.attrib['lang']] = elem.text
+					else:
+						book.info[elem.attrib['type']][0] = elem.text
+			elif elem.tag == 'display':
+				book.display[elem.attrib['type']] = int(elem.text)
+
+	@staticmethod
+	def readitem(parent,item,book):
+		if item.tag == 'group':
+			bitem = Group()
+			id = item.attrib['id']
+			for elem in item:
+				if elem.tag in ('group','color','spacer','break'):
+					sbz.readitem(bitem,elem,book)
+				elif elem.tag == 'info':
+					if elem.attrib['type'] not in bitem.info:
+						bitem.info[elem.attrib['type']] = {}
+					if 'lang' in elem.attrib:
+						bitem.info[elem.attrib['type']][elem.attrib['lang']] = elem.text
+					else:
+						bitem.info[elem.attrib['type']][0] = elem.text
+		elif item.tag == 'color':
+			bitem = Color(book)
+			if 'spot' in item.attrib and item.attrib['spot'] == '1':
+				bitem.attr.append('spot')
+			id = item.attrib['id']
+			for elem in item:
+				if elem.tag == 'values':
+					values = map(eval,elem.text.split())
+					if 'space' in elem.attrib:
+						bitem.values[(elem.attrib['model'],elem.attrib['space'])] = values
+					else:
+						bitem.values[(elem.attrib['model'],False)] = values
+				elif elem.tag == 'info':
+					if elem.attrib['type'] not in bitem.info:
+						bitem.info[elem.attrib['type']] = {}
+					if 'lang' in elem.attrib:
+						bitem.info[elem.attrib['type']][elem.attrib['lang']] = elem.text
+					else:
+						bitem.info[elem.attrib['type']][0] = elem.text
+		elif item.tag == 'spacer':
+			bitem = Spacer()
+		elif item.tag == 'break':
+			bitem = Break()
+		if isinstance(bitem,Spacer) or isinstance(bitem,Break):
 			id = str(bitem)
 		parent.items[id] = bitem
 		book.ids[id] = (bitem,parent)
 
 	@staticmethod
 	def write(book):
-		xml = '<?xml version="1.0" encoding = "UTF-8"?>\n<SwatchBook version="0.1">'
-		for info in ('name','description','copyright','license'):
-			if info in book.info:
+		xml = '<?xml version="1.0" encoding = "UTF-8"?>\n<SwatchBook version="0.2">'
+		for info in book.info:
+			if isinstance(book.info[info],dict):
 				for lang in book.info[info]:
 					if lang == 0:
-						xml += '<'+info+'>'+book.info[info][0]+'</'+info+'>'
+						xml += '<info type="'+info+'">'+book.info[info][0]+'</info>'
 					else:
-						xml += '<'+info+' lang="'+lang+'">'+book.info[info][lang]+'</'+info+'>'
-		if 'version' in book.info:
-			xml += '<version>'+book.info['version']+'</version>'
-		if 'columns' in book.display:
-			xml += '<columns>'+str(book.display['columns'])+'</columns>'
-		if 'rows' in book.display:
-			xml += '<rows>'+str(book.display['rows'])+'</rows>'
+						xml += '<info type="'+info+'" lang="'+lang+'">'+book.info[info][lang]+'</info>'
+			else:
+				xml += '<info type="'+info+'">'+book.info[info]+'</info>'
+		for display in book.display:
+			xml += '<display type="'+display+'">'+str(book.display[display])+'</display>'
 		xml += unicode(sbz.writem(book.items),'utf-8')
-		for profile in book.profiles:
-			xml += '<colorspace id="'+profile+'" href="'+os.path.basename(book.profiles[profile].info['file'])+'" />'
-
 		xml += '</SwatchBook>'
 		
 		tf = os.tmpfile()
@@ -1335,7 +1411,7 @@ class sbz(Codec):
 		zip.writestr('swatchbook.xml',xml.encode('utf-8'))
 		for profile in book.profiles:
 			#TODO: check if exists
-			zip.writestr('profiles/'+os.path.basename(book.profiles[profile].info['file']).encode('utf-8'),book.profiles[profile].file)
+			zip.write(book.profiles[profile].uri,'profiles/'+profile)
 		zip.close()
 		tf.seek(0)
 		return tf.read()
@@ -1346,13 +1422,15 @@ class sbz(Codec):
 		for id,item in items.items():
 			if isinstance(item,Group):
 				xml += '<group id="'+id+'">'
-				for info in ('name','description'):
-					if info in item.info:
+				for info in item.info:
+					if isinstance(item.info[info],dict):
 						for lang in item.info[info]:
 							if lang == 0:
-								xml += '<'+info+'>'+item.info[info][0]+'</'+info+'>'
+								xml += '<info type="'+info+'">'+item.info[info][0]+'</info>'
 							else:
-								xml += '<'+info+' lang="'+lang+'">'+item.info[info][lang]+'</'+info+'>'
+								xml += '<info type="'+info+'" lang="'+lang+'">'+item.info[info][lang]+'</info>'
+					else:
+						xml += '<info type="'+info+'">'+item.info[info]+'</info>'
 				xml += sbz.writem(item.items)
 				xml += '</group>'
 			elif isinstance(item,Color):
@@ -1360,18 +1438,20 @@ class sbz(Codec):
 				if 'spot' in item.attr:
 					xml += ' spot="1"'
 				xml += '>'
-				for info in ('name','description'):
-					if info in item.info:
+				for info in item.info:
+					if isinstance(item.info[info],dict):
 						for lang in item.info[info]:
 							if lang == 0:
-								xml += '<'+info+'>'+item.info[info][0]+'</'+info+'>'
+								xml += '<info type="'+info+'">'+item.info[info][0]+'</info>'
 							else:
-								xml += '<'+info+' label="'+lang+'">'+item.info[info][lang]+'</'+info+'>'
-				for model in item.values:
-					if isinstance(model,tuple):
-						xml += '<'+model[0]+' space="'+model[1]+'">'+' '.join(str(round(x,4)) for x in item.values[model])+'</'+model[0]+'>'
+								xml += '<info type="'+info+'" lang="'+lang+'">'+item.info[info][lang]+'</info>'
 					else:
-						xml += '<'+model+'>'+' '.join(str(round(x,4)) for x in item.values[model])+'</'+model+'>'
+						xml += '<info type="'+info+'">'+item.info[info]+'</info>'
+				for value in item.values:
+					xml += '<values model="'+value[0]+'"'
+					if value[1]:
+						xml += ' space="'+value[1]+'"'
+					xml += '>'+' '.join(str(round(x,4)) for x in item.values[value])+'</values>'
 				xml += '</color>'
 			elif isinstance(item,Spacer):
 				xml += '<spacer />'

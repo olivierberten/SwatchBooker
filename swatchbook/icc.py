@@ -24,11 +24,13 @@ import os
 import sys
 import struct
 
+# I need that class because littlecms can't currently deal with ICCv4 names. This will be solved with v2.
 class ICCprofile():
 	'''Gets basic informations about a profile'''
-	def __init__(self,file):
+	def __init__(self,uri):
+		file = open(uri)
 		file.seek(0)
-		self.file = file.read()
+		self.uri = uri
 		file.seek(8)
 		version = struct.unpack('>B 1s 2s',file.read(4))              # Profile version number
 		version1 = version[1].encode('hex')
@@ -49,9 +51,9 @@ class ICCprofile():
 
 		desc = self.info['tags']['desc']
 		self.info['desc'] = self.readfield(file,desc[1],desc[0])
-
-		file.close()
 		
+		file.close()
+
 	def readfield(self,file,size,start):
 		file.seek(start)
 		type,zero = struct.unpack('>4s L',file.read(8))
