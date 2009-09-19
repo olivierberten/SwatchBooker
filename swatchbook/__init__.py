@@ -178,12 +178,12 @@ class SwatchBook(object):
 				codec = False
 		if codec:
 			eval('codecs.'+codec).read(self,file)
-			if sys.getfilesystemencoding() == 'UTF-8':
-				self.info['filename'] =  os.path.splitext(os.path.basename(file))[0]
+			if sys.getfilesystemencoding() == 'UTF-8' and isinstance(file,unicode):
+				filename =  os.path.splitext(os.path.basename(file))[0]
 			else:
-				self.info['filename'] =  os.path.splitext(os.path.basename(file))[0].decode(sys.getfilesystemencoding())
+				filename =  os.path.splitext(os.path.basename(file))[0].decode(sys.getfilesystemencoding())
 			if 'name' not in self.info:
-				self.info['name'] = {0: self.info['filename'].replace('_',' ')}
+				self.info['name'] = {0: filename.replace('_',' ')}
 
 		else:
 			sys.stderr.write(file.encode('utf-8')+': unsupported input format\n')
@@ -227,19 +227,25 @@ class Color(Swatch):
 		self.values = SortedDict()
 		self.attr = []
 
-	def toRGB8(self,disprof=False):
+	def toRGB(self,prof_out=False):
 		for key in self.values:
 			if key[1]:
 				prof_in = self.book.profiles[key[1]].uri
 			else:
 				prof_in = False
-			if toRGB(key[0],self.values[key],prof_in,disprof):
-				R,G,B = toRGB(key[0],self.values[key],prof_in,disprof)
-				return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
+			if toRGB(key[0],self.values[key],prof_in,prof_out):
+				return toRGB(key[0],self.values[key],prof_in,prof_out)
 				break
 		else:
 			return False
 			
+	def toRGB8(self,prof_out=False):
+		if self.toRGB(prof_out):
+			R,G,B = self.toRGB(prof_out)
+			return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
+		else:
+			return False
+
 class Gradient(Swatch):
 	def __init__(self,book):
 		super(Gradient, self).__init__(book)

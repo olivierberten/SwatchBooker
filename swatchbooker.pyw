@@ -42,7 +42,7 @@ models['Lab'] = (('L',0),('a',0),('b',0))
 models['XYZ'] = (('X',0),('Y',0),('Z',0))
 models['RGB'] = (('R',1),('G',1),('B',1))
 models['CMY'] = (('C',1),('M',1),('Y',1))
-models['HSL'] = (('H',2),('S',1),('L',1))
+models['HLS'] = (('H',2),('L',1),('S',1))
 models['HSV'] = (('H',2),('S',1),('V',1))
 models['CMYK'] = (('C',1),('M',1),('Y',1),('K',1))
 models['GRAY'] = (('K',1),)
@@ -149,8 +149,7 @@ class ColorWidget(QGroupBox):
 		if hasattr(current_sw,'values') and len(current_sw.values) > 0:
 			self.delValAction.setEnabled(True)
 			settings = QSettings()
-			prof_in = settings.value("DisplayProfile").toString() or False
-			prof_out = settings.value("CMYKProfile").toString() or False
+			prof_out = settings.value("DisplayProfile").toString() or False
 			r,g,b = current_sw.toRGB8(prof_out)
 			self.sample.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
 			for model in current_sw.values:
@@ -276,7 +275,6 @@ class ColorWidget(QGroupBox):
 			icon = QIcon(swatchbooker_svg)
 		self.parent.itemTree[current_sw].setIcon(0,icon)
 		self.parent.itemList[current_sw].setIcon(icon)
-		
 
 	def sw_valedit(self):
 		global models
@@ -330,12 +328,12 @@ class ColorWidget(QGroupBox):
 	def addVal(self):
 		global models
 		global current_sw
-		model = str(self.sender().text())
+		model = (str(self.sender().text()),False)
 		if not hasattr(self,'val'):
 			self.val = {}
 		current_sw.values[model] = []
 		self.add_val_tab(model)
-		for elem in models[model]:
+		for elem in models[model[0]]:
 			current_sw.values[model].append(0)
 		self.swValues.setCurrentIndex(self.swValues.count()-1)
 		self.def_current_sp()
@@ -359,7 +357,8 @@ class MainWindow(QMainWindow):
 		self.setWindowTitle('SwatchBooker')
 		self.setWindowIcon(QIcon(swatchbooker_svg))
 		
-		self.filename = None
+		self.filename = False
+		self.codec = False
 
 		self.sbWidget = QSplitter(Qt.Horizontal)
 		# sbInfo
@@ -399,11 +398,11 @@ class MainWindow(QMainWindow):
 		self.butProf.setFixedSize(12,12)
 		self.menuProf = QMenu()
 		self.menuProf.addAction('Add',self.addProfile)
-		self.profEditAction = self.menuProf.addAction('Edit')
+		#self.profEditAction = self.menuProf.addAction('Edit')
 		self.profRemoveAction = self.menuProf.addAction('Remove',self.remProfile)
 		self.butProf.setPopupMode(QToolButton.InstantPopup)
 		self.butProf.setMenu(self.menuProf)
-		self.profEditAction.setEnabled(False)
+		#self.profEditAction.setEnabled(False)
 		self.profRemoveAction.setEnabled(False)
 
 		groupBoxInfo2 = QGroupBox("Color profiles")
@@ -519,7 +518,7 @@ class MainWindow(QMainWindow):
 		if self.treeWidget.selectedItems():
 			treeItem = self.treeWidget.selectedItems()[0]
 			current_sw = item = self.treeItems[treeItem]
-			if isinstance(item,Color):
+			if item.__class__.__name__ not in ('Group','Break'):
 				self.listWidget.setCurrentItem(self.itemList[item])
 			else:
 				self.listWidget.setCurrentItem(None)
@@ -577,7 +576,7 @@ class MainWindow(QMainWindow):
 
 	def fileOpen(self):
 		dir = os.path.dirname(self.filename) \
-				if self.filename is not None else "."
+				if self.filename else "."
 		import swatchbook.codecs as codecs
 		filetypes = []
 		for codec in codecs.reads:
@@ -588,7 +587,6 @@ class MainWindow(QMainWindow):
 			filetypes.append(codec_txt)
 		allexts = ["*.%s" % unicode(format).lower() \
 				   for format in codecs.readexts.keys()]
-		fname = self.sb.info['filename'] if 'filename' in self.sb.info else "."
 		filetype = QString()
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							"SwatchBooker - Choose file", dir,
@@ -597,7 +595,7 @@ class MainWindow(QMainWindow):
 			self.loadFile(fname)
 
 	def sb_flush(self):
-		self.filename = None
+		self.filename = False
 		self.sbName.clear()
 		self.sbDescription.clear()
 		self.copyright.clear()
@@ -638,6 +636,7 @@ class MainWindow(QMainWindow):
 		if fname:
 			self.sb_flush()
 			self.sb = SwatchBook(fname)
+			self.filename = fname
 			if 'name' in self.sb.info:
 				self.sbName.setText(self.sb.info['name'][0])
 			if 'description' in self.sb.info:
@@ -675,10 +674,10 @@ class MainWindow(QMainWindow):
 			self.populateTree()
 
 	def fileSave(self,codec):
-		if self.filename == None:
-			self.fileSaveAs()
-		else:
+		if self.filename:
 			self.sb.write(codec,self.filename)
+		else:
+			self.fileSaveAs()
 
 	def fileSaveAs(self):
 		import swatchbook.codecs as codecs
@@ -689,13 +688,13 @@ class MainWindow(QMainWindow):
 				codec_exts.append('*.'+ext)
 			codec_txt = eval('codecs.'+codec).__doc__ +' ('+" ".join(codec_exts)+')'
 			filetypes[codec_txt] = (codec,eval('codecs.'+codec).ext[0])
-		fname = self.sb.info['filename'] if 'filename' in self.sb.info else "."
+		fname = self.filename or "."
 		filetype = QString()
 		fname = unicode(QFileDialog.getSaveFileName(self,
 						"SwatchBooker - Save file", fname,
 						";;".join(filetypes.keys()),filetype))
 		if fname:
-			if "." not in fname:
+			if fname.rsplit(".",1)[1] != filetypes[unicode(filetype)][1]:
 				fname += "."+filetypes[unicode(filetype)][1]
 			self.filename = fname
 			self.fileSave(filetypes[unicode(filetype)][0])
@@ -758,8 +757,7 @@ class MainWindow(QMainWindow):
 
 	def colorswatch(self,swatch):
 		settings = QSettings()
-		prof_in = settings.value("DisplayProfile").toString() or False
-		prof_out = settings.value("CMYKProfile").toString() or False
+		prof_out = settings.value("DisplayProfile").toString() or False
 		r,g,b = swatch.toRGB8(prof_out)
 		icon = QPixmap(16,16)
 		paint = QPainter()
@@ -840,12 +838,27 @@ class MainWindow(QMainWindow):
 				return (self.sb.ids[item][1],item)
 		return False
 
+	def listitemforadd(self,item):
+		treeItem = self.itemTree[item]
+		if item.__class__.__name__ == 'Group':
+			lastchild = treeItem.child(treeItem.childCount()-1)
+			return self.treeItems[lastchild]
+		elif item.__class__.__name__ == 'Break':
+			if treeItem.parent() == None:
+				index = self.treeWidget.indexOfTopLevelItem(treeItem)
+				return self.treeItems[self.treeWidget.topLevelItem(index-1)]
+			else:
+				index = treeItem.parent().indexOfChild(treeItem)
+				return self.treeItems[treeItem.parent().child(index-1)]
+		else:
+			return item
+
 	def swAddColor(self):
 		global current_sw
-		item = Color()
+		item = Color(self.sb)
 		key = 'col'+str(int(time.mktime(time.gmtime())))
 		if key in self.sb.ids:
-			sys.stderr.write('duplicate id ['+key+']\n')
+			#sys.stderr.write('duplicate id ['+key+']\n')
 			key = key+str(item)
 		icon = QIcon(swatchbooker_svg)
 		listItem = QListWidgetItem()
@@ -861,9 +874,6 @@ class MainWindow(QMainWindow):
 			index = selItem[0].items.values().index(current_sw)
 			selItem[0].items.insert(index+1,key,item)
 			self.sb.ids[key] = (item,selItem[0])
-			selLItem = self.listWidget.selectedItems()[0]
-			lIndex = self.listWidget.indexFromItem(selLItem).row()
-			self.listWidget.insertItem(lIndex+1,self.itemList[item])
 			selTItem = self.treeWidget.selectedItems()[0]
 			if selTItem.parent() == None:
 				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
@@ -871,6 +881,15 @@ class MainWindow(QMainWindow):
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
+			if current_sw.__class__.__name__ not in ('Group','Break'):
+				selLItem = self.listWidget.selectedItems()[0]
+			else:
+				nitem = self.treeItems[selTItem]
+				while nitem.__class__.__name__ in ('Group','Break'):
+					nitem = self.listitemforadd(nitem)
+				selLItem = self.itemList[nitem]
+			lIndex = self.listWidget.indexFromItem(selLItem).row()
+			self.listWidget.insertItem(lIndex+1,self.itemList[item])
 		else:
 			self.sb.items[key] = item
 			self.sb.ids[key] = (item,self.sb)
@@ -889,7 +908,7 @@ class MainWindow(QMainWindow):
 		item = Break()
 		key = 'br'+str(int(time.mktime(time.gmtime())))
 		if key in self.sb.ids:
-			sys.stderr.write('duplicate id ['+key+']\n')
+			#sys.stderr.write('duplicate id ['+key+']\n')
 			key = key+str(item)
 		treeItem = QTreeWidgetItem([QString('<break>')])
 		font = QFont()
@@ -918,12 +937,15 @@ class MainWindow(QMainWindow):
 
 	def swAddSpacer(self):
 		global current_sw
-		item = Break()
+		item = Spacer()
 		key = 'sp'+str(int(time.mktime(time.gmtime())))
 		if key in self.sb.ids:
-			sys.stderr.write('duplicate id ['+key+']\n')
+			#sys.stderr.write('duplicate id ['+key+']\n')
 			key = key+str(item)
-		icon = QIcon(swatchbooker_svg)
+		listItem = QListWidgetItem()
+		listItem.setIcon(QIcon())
+		self.listItems[listItem] = item
+		self.itemList[item] = listItem
 		treeItem = QTreeWidgetItem([QString('<spacer>')])
 		font = QFont()
 		font.setItalic(True)
@@ -943,6 +965,15 @@ class MainWindow(QMainWindow):
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
+			if current_sw.__class__.__name__ not in ('Group','Break'):
+				selLItem = self.listWidget.selectedItems()[0]
+			else:
+				nitem = self.treeItems[selTItem]
+				while nitem.__class__.__name__ in ('Group','Break'):
+					nitem = self.listitemforadd(nitem)
+				selLItem = self.itemList[nitem]
+			lIndex = self.listWidget.indexFromItem(selLItem).row()
+			self.listWidget.insertItem(lIndex+1,self.itemList[item])
 		else:
 			self.sb.items[key] = item
 			self.sb.ids[key] = (item,self.sb)
@@ -956,7 +987,7 @@ class MainWindow(QMainWindow):
 
 	def prof_editable(self):
 		if self.sbProfiles.isItemSelected(self.sbProfiles.currentItem()):
-			self.profEditAction.setEnabled(True)
+			#self.profEditAction.setEnabled(True)
 			self.profRemoveAction.setEnabled(True)
 
 	def addProfile(self):
@@ -998,38 +1029,9 @@ class MainWindow(QMainWindow):
 		self.sbProfiles.removeRow(self.sbProfiles.currentItem().row())
 		self.profiles[self.sb.profiles[profid].info['space'].strip()].remove(profid)
 		del self.sb.profiles[profid]
-		self.profEditAction.setEnabled(False)
+		#self.profEditAction.setEnabled(False)
 		self.profRemoveAction.setEnabled(False)
 		# TODO remove profile from color values
-
-	def addRecentFile(self, fname):
-		if fname is None:
-			return
-		if not self.recentFiles.contains(fname):
-			self.recentFiles.prepend(QString(fname))
-			while self.recentFiles.count() > 9:
-				self.recentFiles.takeLast()
-
-	def updateFileMenu(self):
-		self.fileMenu.clear()
-		self.addActions(self.fileMenu, self.fileMenuActions[:-1])
-		current = QString(self.filename) \
-				if self.filename is not None else None
-		recentFiles = []
-		for fname in self.recentFiles:
-			if fname != current and QFile.exists(fname):
-				recentFiles.append(fname)
-		if recentFiles:
-			self.fileMenu.addSeparator()
-			for i, fname in enumerate(recentFiles):
-				action = QAction(QIcon(":/icon.png"), "&%d %s" % (
-				        i + 1, QFileInfo(fname).fileName()), self)
-				action.setData(QVariant(fname))
-				self.connect(action, SIGNAL("triggered()"),
-				             self.loadFile)
-				self.fileMenu.addAction(action)
-		self.fileMenu.addSeparator()
-		self.fileMenu.addAction(self.fileMenuActions[-1])
 
 class SettingsDlg(QDialog):
 	def __init__(self, parent=None):
@@ -1154,7 +1156,7 @@ class SettingsDlg(QDialog):
 		fname = QFileDialog.getOpenFileName(self, "Choose file", QDir.homePath(),"ICC profiles (*.icc *.icm)")
 		if fname:
 			import swatchbook.icc as icc
-			profile = icc.ICCprofile(CMYKfname)
+			profile = icc.ICCprofile(fname)
 			if profile.info['space'] == 'CMYK':
 				self.CMYKfname = fname
 				self.CMYKfileLabel.setText(self.CMYKfname)

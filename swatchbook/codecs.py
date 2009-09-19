@@ -31,6 +31,17 @@ from color import *
 from string import *
 from icc import *
 
+def hex2(val):
+	return hex(int(round(val)))[2:].rjust(2,'0')
+
+def unicc(values): # meant to disappear - used in the ASE and Scribus codecs
+	values = values.copy()
+	for val in values:
+		if isinstance(val,tuple):
+			values[val[0]] = values[val]
+			del values[val]
+	return values
+
 class Codec(object):
 	ext = False
 	read = False
@@ -260,41 +271,26 @@ class adobe_ase(Codec):
 						spot = '\x00\x02'
 					values = unicc(item.values)
 					if 'Lab' in values:
-						L,a,b = values[('Lab',False)]
+						L,a,b = values['Lab']
 						block_size += 12
 						values = 'LAB '+struct.pack('>3f',L/100,a,b)
-					elif 'RGB' in values:
-						R,G,B = values[('RGB',False)]
-						block_size += 12
-						values = 'RGB '+struct.pack('>3f',R,G,B)
 					elif 'CMYK' in values:
-						C,M,Y,K = values[('CMYK',False)]
+						C,M,Y,K = values['CMYK']
 						block_size += 16
 						values = 'CMYK'+struct.pack('>4f',C,M,Y,K)
 					elif 'GRAY' in values:
-						Gray = values[('GRAY',False)][0]
+						Gray = values['GRAY'][0]
 						block_size += 4
 						values = 'Gray'+struct.pack('>f',1-Gray)
-					elif 'HLS' in values:
-						H,L,S = values[('HLS',False)]
-						R,G,B = HLS2RGB(H,L,S)
-						block_size += 12
-						values = 'RGB '+struct.pack('>3f',R,G,B)
-					elif 'HSV' in values:
-						H,S,V = values[('HSV',False)]
-						R,G,B = HSV2RGB(H,S,V)
-						block_size += 12
-						values = 'RGB '+struct.pack('>3f',R,G,B)
-					elif 'CMY' in values:
-						C,M,Y = values[('CMY',False)]
-						R,G,B = CMY2RGB(C,M,Y)
-						block_size += 12
-						values = 'RGB '+struct.pack('>3f',R,G,B)
 					elif 'XYZ' in values:
-						X,Y,Z = values[('XYZ',False)]
+						X,Y,Z = values['XYZ']
 						L,a,b = XYZ2Lab(X,Y,Z)
 						block_size += 12
 						values = 'LAB '+struct.pack('>3f',L/100,a,b)
+					elif item.toRGB():
+						R,G,B = item.toRGB()
+						block_size += 12
+						values = 'RGB '+struct.pack('>3f',R,G,B)
 					else:
 						values = ''
 					ase_tmp += '\x00\x01'+struct.pack('>L',block_size)+name+values+spot
@@ -1082,10 +1078,10 @@ class scribus(Codec):
 				values = unicc(item.values)
 				scsw_tmp += '\t<COLOR '
 				if 'CMYK' in values:
-					C,M,Y,K = values[('CMYK',False)]
+					C,M,Y,K = values['CMYK']
 					scsw_tmp += 'CMYK="#'+hex2(C*0xFF)+hex2(M*0xFF)+hex2(Y*0xFF)+hex2(K*0xFF)+'"'
 				elif 'GRAY' in values:
-					K = values[('GRAY',False)][0]
+					K = values['GRAY'][0]
 					scsw_tmp += 'CMYK="#000000'+hex2(K*0xFF)+'"'
 				else:
 					if item.toRGB8():
@@ -1206,7 +1202,7 @@ class ooo(Codec):
 					item.info['name'] = {0: unicode(elem.attrib[draw+'name'])}
 				if draw+'color' in elem.attrib:
 					rgb = elem.attrib[draw+'color']
-					item.values['RGB'] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]
+					item.values['RGB',False] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]
 				book.items[id] = item
 				book.ids[id] = (item,book)
 				i += 1

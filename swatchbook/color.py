@@ -24,13 +24,6 @@ from lcms import *
 from icc import *
 import os.path
 
-def unicc(values): # meant to disappear - used in the ASE and Scribus codecs
-	for val in values:
-		if isinstance(val,tuple):
-			values[val[0]] = values[val]
-			del values[val]
-	return values
-
 def toRGB(model,values,prof_in=False,prof_out=False):
 	if prof_in:
 		icc_in = ICCprofile(prof_in)
@@ -55,6 +48,9 @@ def toRGB(model,values,prof_in=False,prof_out=False):
 	elif model == 'Lab':
 		L,a,b = values
 		R,G,B = Lab2RGB(L,a,b,prof_out)
+	elif model == 'XYZ':
+		X,Y,Z = values
+		R,G,B = XYZ2RGB(X,Y,Z,prof_out)
 	elif model == 'CMYK':
 		C,M,Y,K = values
 		R,G,B = CMYK2RGB(C,M,Y,K,prof_in,prof_out)
