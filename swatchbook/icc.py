@@ -28,7 +28,7 @@ import struct
 class ICCprofile():
 	'''Gets basic informations about a profile'''
 	def __init__(self,uri):
-		file = open(uri)
+		file = open(uri,'rb')
 		file.seek(0)
 		self.uri = uri
 		file.seek(8)

@@ -52,7 +52,7 @@ class adobe_acb(Codec):
 	ext = ('acb',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(4)
 		file.close()
 		if struct.unpack('4s', data)[0] == '8BCB':
@@ -64,7 +64,7 @@ class adobe_acb(Codec):
 			if str[0:4] == '$$$/':
 				str = str.partition('=')[2]
 			return str.replace('^C',u'©').replace('^R',u'®')
-		file = open(file)
+		file = open(file,'rb')
 		file.seek(8, 1)
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
@@ -127,7 +127,7 @@ class adobe_aco(Codec):
 	ext = ('aco',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(2)
 		file.close()
 		if struct.unpack('>h', data)[0] in (1,2):
@@ -136,7 +136,7 @@ class adobe_aco(Codec):
 	@staticmethod
 	def read(book,file):
 		filesize = os.path.getsize(file)
-		file = open(file)
+		file = open(file,'rb')
 		version, nbcolors = struct.unpack('>2H',file.read(4))
 		if version == 1 and filesize > 4+nbcolors*10:
 			file.seek(4+nbcolors*10)
@@ -183,7 +183,7 @@ class adobe_ase(Codec):
 	ext = ('ase',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(4)
 		file.close()
 		if struct.unpack('4s', data)[0] == 'ASEF':
@@ -191,7 +191,7 @@ class adobe_ase(Codec):
 
 	@staticmethod
 	def read(book,file):
-		file = open(file)
+		file = open(file,'rb')
 		file.seek(4)
 		version = struct.unpack('>2H',file.read(4))
 		nbblocks = struct.unpack('>L',file.read(4))[0]
@@ -315,13 +315,13 @@ class adobe_act(Codec):
 	def read(book,file):
 		filesize = os.path.getsize(file)
 		if filesize == 772: # CS2
-			file = open(file)
+			file = open(file,'rb')
 			file.seek(768, 0)
 			nbcolors = struct.unpack('>H',file.read(2))[0]
 			file.seek(0, 0)
 		else:
 			nbcolors = int(filesize/3)
-			file = open(file)
+			file = open(file,'rb')
 		for i in range(nbcolors):
 			item = Color(book)
 			id = 'col'+str(i+1)
@@ -410,7 +410,7 @@ class adobe_bcf(Codec):
 	"""Binary Color Format"""
 	ext = ('bcf',)
 	@staticmethod
-	def test(file):
+	def test(file,'rb'):
 		file = open(file)
 		data = file.read(7)
 		file.close()
@@ -418,7 +418,7 @@ class adobe_bcf(Codec):
 			return True
 	@staticmethod
 	def read(book,file):
-		file = open(file)
+		file = open(file,'rb')
 		version = struct.unpack('8s',file.read(8))[0].split('\x00', 1)[0]
 		name = struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0]
 		if name > '':
@@ -500,14 +500,14 @@ class adobe_clr(Codec):
 	ext = ('clr',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(4)
 		file.close()
 		if data == '\xff\xff\x00\x00':
 			return True
 	@staticmethod
 	def read(book,file):
-		file = open(file)
+		file = open(file,'rb')
 		file.seek(16, 1)
 		nbcolors = struct.unpack('<H',file.read(2))[0]
 		file.seek(15, 1)
@@ -567,13 +567,13 @@ class ral_bcs(Codec):
 	ext = ('bcs',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(4)
 		file.close()
 		if struct.unpack('b3s', data)[1].lower() in ('clf','rgb','atl'):
 			return True
 	@staticmethod
-	def read(book,file):
+	def read(book,file,'rb'):
 		filesize = os.path.getsize(file)
 		file = open(file)
 		offset, sig = struct.unpack('B 3s',file.read(4))
@@ -604,7 +604,7 @@ class corel_cpl(Codec):
 	ext = ('cpl',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(2)
 		file.close()
 		if data in ('\xcc\xbc','\xcc\xdc','\xcd\xbc','\xcd\xdc','\xdd\xdc','\xdc\xdc','\xcd\xdd'):
@@ -612,7 +612,7 @@ class corel_cpl(Codec):
 	@staticmethod
 	def read(book,file):
 		spot=False
-		file = open(file)
+		file = open(file,'rb')
 		version = file.read(2)
 		if version == '\xdc\xdc': #custom palettes
 			length = struct.unpack('B',file.read(1))[0]
@@ -896,7 +896,7 @@ class riff_pal(Codec):
 	ext = ('pal',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(12)
 		RIFF, size, PAL = struct.unpack('<4s L 4s', data)
 		file.close()
@@ -904,7 +904,7 @@ class riff_pal(Codec):
 			return True
 	@staticmethod
 	def read(book,file):
-		file = open(file)
+		file = open(file,'rb')
 		file.seek(12, 0)
 		chunk = struct.unpack('<4s L', file.read(8))
 		while chunk[0] != 'data':
@@ -965,14 +965,14 @@ class colorschemer(Codec):
 	ext = ('cs',)
 	@staticmethod
 	def test(file):
-		file = open(file)
+		file = open(file,'rb')
 		data = file.read(2)
 		file.close()
 		if struct.unpack('<H', data)[0] == 3:
 			return True
 	@staticmethod
 	def read(book,file):
-		file = open(file)
+		file = open(file,'rb')
 		version, nbcolors = struct.unpack('<2H',file.read(4))
 		file.seek(4, 1)
 		for i in range(nbcolors):
