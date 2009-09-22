@@ -1322,7 +1322,7 @@ class sbz(Codec):
 		for zipped in zip.namelist():
 			if "profiles/" in zipped and zipped != "profiles/":
 				uri = tempfile.mkstemp()[1]
-				f = open(uri,'w')
+				f = open(uri,'wb')
 				f.write(zip.read(zipped))
 				f.close()
 				book.profiles[zipped[9:]] = ICCprofile(uri)
