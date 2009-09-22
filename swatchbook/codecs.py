@@ -410,8 +410,8 @@ class adobe_bcf(Codec):
 	"""Binary Color Format"""
 	ext = ('bcf',)
 	@staticmethod
-	def test(file,'rb'):
-		file = open(file)
+	def test(file):
+		file = open(file,'rb')
 		data = file.read(7)
 		file.close()
 		if struct.unpack('7s', data)[0] in ('ACF 1.0','ACF 2.1','BCF 2.0'):
@@ -573,9 +573,9 @@ class ral_bcs(Codec):
 		if struct.unpack('b3s', data)[1].lower() in ('clf','rgb','atl'):
 			return True
 	@staticmethod
-	def read(book,file,'rb'):
+	def read(book,file):
 		filesize = os.path.getsize(file)
-		file = open(file)
+		file = open(file,'rb')
 		offset, sig = struct.unpack('B 3s',file.read(4))
 		file.seek(offset+1, 0)
 		nbcolors = struct.unpack('<H',file.read(2))[0]
