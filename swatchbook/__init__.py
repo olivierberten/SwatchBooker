@@ -197,7 +197,7 @@ class SwatchBook(object):
 			else:
 				content = codec.write(self)
 				# TODO check if writable
-				bookfile = open(output, 'w')
+				bookfile = open(output, 'wb')
 				bookfile.write(content)
 				bookfile.close()
 		else:

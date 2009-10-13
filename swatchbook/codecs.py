@@ -989,6 +989,49 @@ class colorschemer(Codec):
 			book.ids[id] = (item,book)
 		file.close()
 
+class viva_xml(Codec):
+	"""VivaDesigner"""
+	ext = ('xml',)
+	@staticmethod
+	def test(file):
+		if etree.parse(file).getroot().tag == 'VivaColors':
+			format = 'viva_xml'
+			return True
+	@staticmethod
+	def read(book,file):
+		xml = etree.parse(file).getroot()
+		if 'name' in xml.attrib:
+			book.info['name'] = {0: unicode(xml.attrib['name'])}
+		if len(list(xml.getiterator('copyright'))) > 0:
+			book.info['copyright'] = {0: unicode(list(xml.getiterator('copyright'))[0].text)}
+		if 'mask' in xml.attrib:
+			prefix, suffix = unicode(xml.attrib['mask']).split('%1')
+		else:
+			prefix = suffix = ''
+		if 'visiblerows' in xml.attrib:
+			book.display['columns'] = eval(xml.attrib['visiblerows'])
+		colors = xml.getiterator('color')
+		i = 0
+		for color in colors:
+			item = Color(book)
+			id = 'col'+str(i+1)
+			name = unicode(color.attrib['name'])
+			if name > u'':
+				item.info['name'] = {0: prefix+name+suffix}
+			if color.attrib['type'] == 'rgb':
+				item.values[('RGB',False)] = [eval(color.find('red').text)/0xFF,\
+											  eval(color.find('green').text)/0xFF,\
+											  eval(color.find('blue').text)/0xFF]
+			elif color.attrib['type'] == 'cmyk':
+				item.values[('CMYK',False)] = [eval(color.find('cyan').text)/100,\
+											   eval(color.find('magenta').text)/100,\
+											   eval(color.find('yellow').text)/100,\
+											   eval(color.find('key').text)/100]
+			book.items[id] = item
+			book.ids[id] = (item,book)
+			i += 1
+
+
 class gimp_gpl(Codec):
 	"""Gimp Palette"""
 	ext = ('gpl',)

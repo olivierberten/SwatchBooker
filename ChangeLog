@@ -1,3 +1,10 @@
+2009-10-13  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/__init__.py:
+   Fixed writing binary files on Windows
+ * swatchbook/codecs.py:
+   Support for VivaDesigner color swatches
+
 2009-09-22  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbook/codecs.py,swatchbook/icc.py:
