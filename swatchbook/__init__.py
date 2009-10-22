@@ -160,7 +160,7 @@ class SwatchBook(object):
 		if file:
 			self.read(file)
 
-	def read(self,file):
+	def read(self,file,codec=False):
 		if not os.path.isfile(file):
 			sys.stderr.write('file '+file+' doesn\'t exist')
 			return
@@ -168,11 +168,22 @@ class SwatchBook(object):
 			sys.stderr.write('empty file')
 			return
 		import swatchbook.codecs as codecs
-		ext =  os.path.splitext(os.path.basename(file))[1].lower()[1:]
-		codec = False
-		if ext in codecs.readexts:
-			for codec in codecs.readexts[ext]:
-				test = eval('codecs.'+codec).test(file)
+		if not codec:
+			ext =  os.path.splitext(os.path.basename(file))[1].lower()[1:]
+			if ext in codecs.readexts:
+				codec_list = codecs.readexts[ext]
+			else:
+				codec_list = codecs.reads
+			for codec in codec_list:
+				test = False
+				try:
+					test = eval('codecs.'+codec).test(file)
+				except IOError:
+					pass
+				except SyntaxError:
+					pass
+				except struct.error:
+					pass
 				if test: break
 			else:
 				codec = False

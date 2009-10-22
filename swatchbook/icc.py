@@ -23,36 +23,49 @@ from __future__ import division
 import os
 import sys
 import struct
+import string
+
+class BadICCprofile(Exception):
+    pass
 
 # I need that class because littlecms can't currently deal with ICCv4 names. This will be solved with v2.
 class ICCprofile():
 	'''Gets basic informations about a profile'''
 	def __init__(self,uri):
-		file = open(uri,'rb')
-		file.seek(0)
-		self.uri = uri
-		file.seek(8)
-		version = struct.unpack('>B 1s 2s',file.read(4))              # Profile version number
-		version1 = version[1].encode('hex')
-		self.info = {}
-		self.info['version'] = (version[0],eval('0x'+version1[0]),eval('0x'+version1[1]))
-		self.info['class'] = struct.unpack('4s',file.read(4))[0]      # Profile/Device Class
-		self.info['space'] = struct.unpack('4s',file.read(4))[0]      # Color space of data
-		self.info['pcs'] = struct.unpack('4s',file.read(4))[0]        # Profile Connection Space
-		file.seek(128)
-		tags = struct.unpack('>L',file.read(4))[0]
-		self.info['tags'] = {}
-		for i in range(tags):
-			tag = struct.unpack('>4s 2L',file.read(12))
-			self.info['tags'][tag[0]] = (tag[1],tag[2])
+		if os.path.getsize(uri) < 128:
+			raise BadICCprofile, "That file doesn't seem to be an ICC color profile"
+		else:
+			file = open(uri,'rb')
+			self.uri = uri
+			file.seek(0)
+			size,cmm = struct.unpack('>L 4s',file.read(8))                    # Profile size
+			if os.path.getsize(uri) != size:
+				raise BadICCprofile, "That file doesn't have the expected size"
+			elif not (all(c in string.ascii_letters+' '+string.digits for c in cmm) or cmm == '\x00\x00\x00\x00'):
+				raise BadICCprofile, "That file doesn't seem to be an ICC color profile"
+			else:
+				file.seek(8)
+				version = struct.unpack('>B 1s 2s',file.read(4))              # Profile version number
+				version1 = version[1].encode('hex')
+				self.info = {}
+				self.info['version'] = (version[0],eval('0x'+version1[0]),eval('0x'+version1[1]))
+				self.info['class'] = struct.unpack('4s',file.read(4))[0]      # Profile/Device Class
+				self.info['space'] = struct.unpack('4s',file.read(4))[0]      # Color space of data
+				self.info['pcs'] = struct.unpack('4s',file.read(4))[0]        # Profile Connection Space
+				file.seek(128)
+				tags = struct.unpack('>L',file.read(4))[0]
+				self.info['tags'] = {}
+				for i in range(tags):
+					tag = struct.unpack('>4s 2L',file.read(12))
+					self.info['tags'][tag[0]] = (tag[1],tag[2])
 
-		cprt = self.info['tags']['cprt']
-		self.info['cprt'] = self.readfield(file,cprt[1],cprt[0])
+				cprt = self.info['tags']['cprt']
+				self.info['cprt'] = self.readfield(file,cprt[1],cprt[0])
 
-		desc = self.info['tags']['desc']
-		self.info['desc'] = self.readfield(file,desc[1],desc[0])
-		
-		file.close()
+				desc = self.info['tags']['desc']
+				self.info['desc'] = self.readfield(file,desc[1],desc[0])
+			
+			file.close()
 
 	def readfield(self,file,size,start):
 		file.seek(start)

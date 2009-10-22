@@ -309,7 +309,10 @@ class adobe_act(Codec):
 	@staticmethod
 	def test(file):
 		filesize = os.path.getsize(file)
-		if filesize == 772 or filesize%3 == 0:
+		file = open(file)
+		data = file.read()
+		file.close()
+		if '\x00' in data and (filesize == 772 or filesize%3 == 0) and filesize < 2048: #that limit is arbitrary as Fireworks has virtually no limit but I've never seen files bigger than 2 KB 
 			return True
 	@staticmethod
 	def read(book,file):
@@ -821,7 +824,6 @@ class quark_qcl(Codec):
 	@staticmethod
 	def test(file):
 		if etree.parse(file).getroot().tag == 'cgats17':
-			format = 'quark_qcl'
 			return True
 	@staticmethod
 	def read(book,file):
@@ -926,9 +928,12 @@ class icc_nmcl(Codec):
 	ext = ('icc','icm')
 	@staticmethod
 	def test(file):
-		prof = ICCprofile(file)
-		if prof.info['class'] == 'nmcl' and 'ncl2' in prof.info['tags']:
-			return True
+		try:
+			prof = ICCprofile(file)
+			if prof.info['class'] == 'nmcl' and 'ncl2' in prof.info['tags']:
+				return True
+		except BadICCprofile:
+			pass
 	@staticmethod
 	def read(book,file):
 		prof = ICCprofile(file)
@@ -995,7 +1000,6 @@ class viva_xml(Codec):
 	@staticmethod
 	def test(file):
 		if etree.parse(file).getroot().tag == 'VivaColors':
-			format = 'viva_xml'
 			return True
 	@staticmethod
 	def read(book,file):
@@ -1107,6 +1111,36 @@ class scribus(Codec):
 	"""Scribus Swatch"""
 	ext = ('xml',)
 	@staticmethod
+	def test(file):
+		if etree.parse(file).getroot().tag == 'SCRIBUSCOLORS':
+			return True
+
+	@staticmethod
+	def read(book,file):
+		xml = etree.parse(file).getroot()
+		if 'Name' in xml.attrib:
+			book.info['name'] = {0: unicode(xml.attrib['Name'])}
+		colors = xml.getiterator('COLOR')
+		i = 0
+		for color in colors:
+			item = Color(book)
+			id = 'col'+str(i+1)
+			name = unicode(color.attrib['NAME'])
+			if name > u'':
+				item.info['name'] = {0: name}
+			if "RGB" in color.attrib:
+				rgb = color.attrib['RGB']
+				item.values[('RGB',False)] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]
+			if "CMYK" in color.attrib:
+				cmyk = color.attrib['CMYK']
+				item.values[('CMYK',False)] = [int(cmyk[1:3],16)/0xFF,int(cmyk[3:5],16)/0xFF,int(cmyk[5:7],16)/0xFF,int(cmyk[7:],16)/0xFF]
+			if "Spot" in color.attrib and color.attrib['Spot'] == 1:
+				item.attr.append('spot')
+			book.items[id] = item
+			book.ids[id] = (item,book)
+			i += 1
+
+	@staticmethod
 	def write(book,lang=0):
 		scsw = '<?xml version="1.0" encoding="UTF-8"?>\n<SCRIBUSCOLORS Name="'+book.info['name'][lang]+'">\n'
 		scsw += scribus.writem(book.items)
@@ -1119,7 +1153,7 @@ class scribus(Codec):
 		for item in items.values():
 			if isinstance(item,Color):
 				values = unicc(item.values)
-				scsw_tmp += '\t<COLOR '
+				scsw_tmp += ' <COLOR '
 				if 'CMYK' in values:
 					C,M,Y,K = values['CMYK']
 					scsw_tmp += 'CMYK="#'+hex2(C*0xFF)+hex2(M*0xFF)+hex2(Y*0xFF)+hex2(K*0xFF)+'"'
@@ -1226,7 +1260,6 @@ class ooo(Codec):
 	@staticmethod
 	def test(file):
 		if etree.parse(file).getroot().tag in ('{http://openoffice.org/2000/office}color-table','{http://openoffice.org/2004/office}color-table'):
-			format = 'ooo'
 			return True
 
 	@staticmethod
@@ -1280,7 +1313,6 @@ class sbxml(Codec):
 	@staticmethod
 	def test(file):
 		if etree.parse(file).getroot().tag == 'SwatchBook' and etree.parse(file).getroot().attrib['version'] == '0.1':
-			format = 'sbxml'
 			return True
 
 	@staticmethod
@@ -1353,10 +1385,12 @@ class sbz(Codec):
 	ext = ('sbz',)
 	@staticmethod
 	def test(file):
-		zip = ZipFile(file)
-		if 'swatchbook.xml' in zip.namelist():
-			format = 'sbz'
-			return True
+		try:
+			zip = ZipFile(file)
+			if 'swatchbook.xml' in zip.namelist():
+				return True
+		except BadZipfile:
+			pass
 
 	@staticmethod
 	def read(book,uri):

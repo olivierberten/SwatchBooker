@@ -1,3 +1,10 @@
+2009-10-22  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/__init__.py,swatchbook/codecs.py,swatchbook/icc.py,swatchbooker.pyw:
+   Added file format detection
+ * swatchbook/codecs.py:
+   Support for reading Scribus color swatches
+
 2009-10-13  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbook/__init__.py:

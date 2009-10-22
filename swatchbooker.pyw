@@ -29,7 +29,7 @@ from PyQt4.QtGui import *
 
 from swatchbook import *
 
-__version__ = "0.4"
+__version__ = "0.5"
 
 current_sw = False
 current_sp = False
@@ -590,7 +590,7 @@ class MainWindow(QMainWindow):
 		filetype = QString()
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							"SwatchBooker - Choose file", dir,
-							("All supported files (%s)" % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))))
+							("All supported files (%s)" % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+";;All files (*)"))
 		if fname:
 			self.loadFile(fname)
 
