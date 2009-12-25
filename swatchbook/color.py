@@ -24,6 +24,14 @@ from lcms import *
 from icc import *
 import os.path
 
+def dirpath(name):
+	if not name:
+		return name
+	elif os.path.islink(name):
+		return os.path.dirname(os.path.abspath(os.path._resolve_link(name)))
+	else:
+		return os.path.dirname(name)
+
 def toRGB(model,values,prof_in=False,prof_out=False):
 	if prof_in:
 		icc_in = ICCprofile(prof_in)
@@ -120,7 +128,7 @@ def CMYK2RGB(C,M,Y,K,prof_in=False,prof_out=False):
 	if prof_in:
 		hCMYK = cmsOpenProfileFromFile(prof_in,'r')
 	else:
-		hCMYK = cmsOpenProfileFromFile((os.path.dirname(__file__) or ".")+"/Fogra27L.icm",'r')
+		hCMYK = cmsOpenProfileFromFile((dirpath(__file__) or ".")+"/Fogra27L.icm",'r')
 
 	xform = cmsCreateTransform(hCMYK, TYPE_CMYK_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
 
@@ -133,32 +141,34 @@ def CMYK2RGB(C,M,Y,K,prof_in=False,prof_out=False):
 	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
 def RGB2RGB(RR,GG,BB,prof_in=False,prof_out=False):
-	
-	RRGGBB = COLORW()
-	RGB = COLORW()
-	
-	RRGGBB[0] = int(RR*0xFFFF)
-	RRGGBB[1] = int(GG*0xFFFF)
-	RRGGBB[2] = int(BB*0xFFFF)
-
-	if prof_out:
-		hRGB = cmsOpenProfileFromFile(prof_out,'r')
+	if prof_in == prof_out:
+		return (RR,GG,BB)
 	else:
-		hRGB = cmsCreate_sRGBProfile()
-	if prof_in:
-		hRRGGBB = cmsOpenProfileFromFile(prof_in,'r')
-	else:
-		hRRGGBB = cmsCreate_sRGBProfile()
+		RRGGBB = COLORW()
+		RGB = COLORW()
+		
+		RRGGBB[0] = int(RR*0xFFFF)
+		RRGGBB[1] = int(GG*0xFFFF)
+		RRGGBB[2] = int(BB*0xFFFF)
 
-	xform = cmsCreateTransform(hRRGGBB, TYPE_RGB_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+		if prof_out:
+			hRGB = cmsOpenProfileFromFile(prof_out,'r')
+		else:
+			hRGB = cmsCreate_sRGBProfile()
+		if prof_in:
+			hRRGGBB = cmsOpenProfileFromFile(prof_in,'r')
+		else:
+			hRRGGBB = cmsCreate_sRGBProfile()
 
-	cmsDoTransform(xform, RRGGBB, RGB, 1)
+		xform = cmsCreateTransform(hRRGGBB, TYPE_RGB_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
 
-	cmsDeleteTransform(xform)
-	cmsCloseProfile(hRGB)
-	cmsCloseProfile(hRRGGBB)
+		cmsDoTransform(xform, RRGGBB, RGB, 1)
 
-	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+		cmsDeleteTransform(xform)
+		cmsCloseProfile(hRGB)
+		cmsCloseProfile(hRRGGBB)
+
+		return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
 #
 # color model conversion formulas: http://www.easyrgb.com/math.php

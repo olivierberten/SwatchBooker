@@ -23,6 +23,8 @@ import os
 import sys
 from color import *
 
+__version__ = "0.5"
+
 # from http://code.djangoproject.com/browser/django/trunk/django/utils/datastructures.py
 class SortedDict(dict):
 	"""
@@ -138,6 +140,9 @@ class SortedDict(dict):
 		super(SortedDict, self).clear()
 		self.keyOrder = []
 
+class FileFormatError(Exception):
+    pass
+
 class SwatchBook(object):
 	"""Output values
        RGB,HSV,HSL,CMY,CMYK,6CLR: 0 -> 1
@@ -145,7 +150,7 @@ class SwatchBook(object):
        Lab: L 0 -> 100 : ab -128 -> 127
        XYZ: 0 -> ~100 (cfr. ref)"""
 
-	def __init__(self, file=False):
+	def __init__(self, file=False,codec=False):
 		# Informations
 		self.info = {}
 		self.ids = {}
@@ -158,46 +163,55 @@ class SwatchBook(object):
 		self.items = SortedDict()
 
 		if file:
-			self.read(file)
+			self.read(file,codec)
 
-	def read(self,file,codec=False):
-		if not os.path.isfile(file):
-			sys.stderr.write('file '+file+' doesn\'t exist')
-			return
-		if os.path.getsize(file) == 0:
-			sys.stderr.write('empty file')
-			return
-		import swatchbook.codecs as codecs
-		if not codec:
-			ext =  os.path.splitext(os.path.basename(file))[1].lower()[1:]
-			if ext in codecs.readexts:
-				codec_list = codecs.readexts[ext]
-			else:
-				codec_list = codecs.reads
-			for codec in codec_list:
+	def test(self,file,codec=False):
+		# test 1: codec
+		test = False
+		if codec:
+			try:
+				test = eval('codecs.'+codec).test(file)
+			except (IOError,SyntaxError,struct.error):
+				codec = False
+			if test:
+				return codec
+		# test 2: extension
+		ext =  os.path.splitext(os.path.basename(file))[1].lower()[1:]
+		if ext in codecs.readexts:
+			for codec in codecs.readexts[ext]:
 				test = False
 				try:
 					test = eval('codecs.'+codec).test(file)
-				except IOError:
+				except (IOError,SyntaxError,struct.error):
 					pass
-				except SyntaxError:
-					pass
-				except struct.error:
-					pass
-				if test: break
+				if test:
+					return codec
 			else:
 				codec = False
-		if codec:
-			eval('codecs.'+codec).read(self,file)
+		# test 3: free
+		for codec in codecs.reads:
+			test = False
+			try:
+				test = eval('codecs.'+codec).test(file)
+			except (IOError,SyntaxError,struct.error):
+				pass
+			if test: return codec
+		else:
+			codec = False
+		return codec
+
+	def read(self,file,codec):
+		import swatchbook.codecs as codecs
+		if self.test(file,codec):
+			eval('codecs.'+self.test(file,codec)).read(self,file)
 			if sys.getfilesystemencoding() == 'UTF-8' and isinstance(file,unicode):
 				filename =  os.path.splitext(os.path.basename(file))[0]
 			else:
 				filename =  os.path.splitext(os.path.basename(file))[0].decode(sys.getfilesystemencoding())
 			if 'name' not in self.info:
 				self.info['name'] = {0: filename.replace('_',' ')}
-
 		else:
-			sys.stderr.write(file.encode('utf-8')+': unsupported input format\n')
+			raise FileFormatError,file+': unsupported file'
 
 	def write(self,format,output=None):
 		import swatchbook.codecs as codecs
@@ -212,7 +226,7 @@ class SwatchBook(object):
 				bookfile.write(content)
 				bookfile.close()
 		else:
-			sys.stderr.write('unsupported output format\n')
+			raise FileFormatError,'unsupported output format'
 
 class Group(object):
 	def __init__(self):
@@ -223,6 +237,8 @@ class Swatch(object):
 	def __init__(self,book):
 		self.info = {}
 		self.book = book
+		# Extra color/ink/paint/... informations
+		self.extra = {}
 
 class Spacer(object):
 	def __init__(self):

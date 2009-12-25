@@ -34,7 +34,7 @@ __version__ = "0.5"
 current_sw = False
 current_sp = False
 
-swatchbooker_svg = (os.path.dirname(__file__) or ".")+"/icons/swatchbooker.svg"
+swatchbooker_svg = (dirpath(__file__) or ".")+"/icons/swatchbooker.svg" 
 
 # 0: float, 1: percentage, 2: degrees
 models = SortedDict()
@@ -128,6 +128,28 @@ class ColorWidget(QGroupBox):
 		self.butVal.setPopupMode(QToolButton.InstantPopup)
 		self.butVal.setMenu(self.menuVal)
 		self.swValues.setCornerWidget(cornWid)
+
+		self.swExtra = QTableWidget()
+		self.swExtra.setColumnCount(2)
+		self.swExtra.horizontalHeader().setStretchLastSection(True)
+		self.swExtra.verticalHeader().hide()
+		self.swExtra.setHorizontalHeaderLabels(["Key","Value"])
+		self.swExtra.setSelectionBehavior(QAbstractItemView.SelectRows)
+		self.butExtra = QToolButton(self)
+		self.butExtra.setFixedSize(12,12)
+		self.menuExtra = QMenu()
+		self.menuExtra.addAction('Add',self.addExtra)
+		self.extraRemoveAction = self.menuExtra.addAction('Remove',self.remExtra)
+		self.butExtra.setPopupMode(QToolButton.InstantPopup)
+		self.butExtra.setMenu(self.menuExtra)
+		self.extraRemoveAction.setEnabled(False)
+
+		groupBoxExtra = QGroupBox("Extra info")
+		boxExtra = QHBoxLayout()
+		boxExtra.addWidget(self.swExtra)
+		boxExtra.addWidget(self.butExtra,0,Qt.AlignTop)
+		groupBoxExtra.setLayout(boxExtra)
+
 		swInfo = QGridLayout()
 		swInfo.addWidget(nameLabel, 0, 0)
 		swInfo.addWidget(self.swName, 0, 1)
@@ -136,6 +158,7 @@ class ColorWidget(QGroupBox):
 		swInfo.addWidget(self.sample, 3, 0, 1, 2)
 		swInfo.addWidget(self.swSpot, 4, 0, 1, 2)
 		swInfo.addWidget(self.swValues, 5, 0, 1, 2)
+		swInfo.addWidget(groupBoxExtra, 6, 0, 1, 2)
 		self.setLayout(swInfo)
 
 		if hasattr(current_sw,'info'):
@@ -157,6 +180,21 @@ class ColorWidget(QGroupBox):
 
 			self.def_current_sp()
 
+		if hasattr(current_sw,'extra'):
+			self.tExtra = []
+			row = 0
+			for extra in current_sw.extra:
+				self.swExtra.insertRow(row)
+				key = QTableWidgetItem(extra)
+				if current_sw.extra[extra]:
+					val = QTableWidgetItem(current_sw.extra[extra])
+				else:
+					val = QTableWidgetItem()
+				self.swExtra.setItem(row, 0, key)
+				self.swExtra.setItem(row, 1, val)
+				row += 1
+				self.tExtra.append([unicode(extra),unicode(current_sw.extra[extra])])
+			
 		# Actions
 		self.connect(self.swName,
 				SIGNAL("textEdited(QString)"), self.sw_edit)
@@ -166,6 +204,10 @@ class ColorWidget(QGroupBox):
 				SIGNAL("stateChanged(int)"), self.sw_edit)
 		self.connect(self.swValues,
 				SIGNAL("currentChanged(int)"), self.def_current_sp)
+		self.connect(self.swExtra,
+				SIGNAL("cellChanged(int,int)"), self.sw_edit)
+		self.connect(self.swExtra,
+				SIGNAL("cellClicked(int,int)"), self.extra_editable)
 
 	def add_val_tab(self,model,values=None):
 		global current_sw
@@ -261,6 +303,21 @@ class ColorWidget(QGroupBox):
 			else:
 				current_sw.attr.remove('spot')
 			self.set_preview()
+		if self.sender() == self.swExtra:
+			row,col = self.swExtra.currentRow(),self.swExtra.currentColumn()
+			print row,col
+			if col == 0:
+				if self.tExtra[row][0] in current_sw.extra:
+					del current_sw.extra[self.tExtra[row][0]]
+				self.tExtra[row][0] = unicode(self.swExtra.item(row,col).text())
+			else:
+				self.tExtra[row][0] = unicode(self.swExtra.item(row,col).text())
+				self.tExtra[row][col] = unicode(self.swExtra.item(row,col).text())
+			if self.swExtra.item(row,0):
+				if self.swExtra.item(row,1):
+					current_sw.extra[unicode(self.swExtra.item(row,0).text())] = unicode(self.swExtra.item(row,1).text())
+				else:
+					current_sw.extra[unicode(self.swExtra.item(row,0).text())] = None
 
 	def set_preview(self):
 		settings = QSettings()
@@ -340,7 +397,6 @@ class ColorWidget(QGroupBox):
 		self.delValAction.setEnabled(True)
 		self.set_preview()
 		
-
 	def getProfList(self,model):
 		profList = QStringList()
 		profList << ''
@@ -348,6 +404,23 @@ class ColorWidget(QGroupBox):
 			for prof in self.parent.profiles[model]:
 				profList << self.parent.sb.profiles[prof].info['desc'][0]
 		return profList
+
+	def extra_editable(self):
+		self.extraRemoveAction.setEnabled(True)
+
+	def addExtra(self):
+		self.swExtra.insertRow(self.swExtra.rowCount())
+		if not hasattr(self,"tExtra"):
+			self.tExtra = []
+		self.tExtra.append([None,None])
+		
+	def remExtra(self):
+		if self.swExtra.item(self.swExtra.currentRow(),0):
+			extra = unicode(self.swExtra.item(self.swExtra.currentRow(),0).text())
+			print extra
+			del current_sw.extra[extra]
+		self.swExtra.removeRow(self.swExtra.currentRow())
+		self.extraRemoveAction.setEnabled(False)
 
 class MainWindow(QMainWindow):
 
@@ -694,7 +767,7 @@ class MainWindow(QMainWindow):
 						"SwatchBooker - Save file", fname,
 						";;".join(filetypes.keys()),filetype))
 		if fname:
-			if fname.rsplit(".",1)[1] != filetypes[unicode(filetype)][1]:
+			if len(fname.rsplit(".",1)) == 1 or (len(fname.rsplit(".",1)) > 1 and fname.rsplit(".",1)[1] != filetypes[unicode(filetype)][1]):
 				fname += "."+filetypes[unicode(filetype)][1]
 			self.filename = fname
 			self.fileSave(filetypes[unicode(filetype)][0])

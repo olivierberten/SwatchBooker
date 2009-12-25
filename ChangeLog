@@ -1,3 +1,10 @@
+2009-12-25  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/__init__.py,swatchbooker.pyw:
+   Added extra swatch informations (like NCS,CBN,Munsell values)
+ * swatchbook/codecs/:
+   Modularization + improvements
+
 2009-10-22  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbook/__init__.py,swatchbook/codecs.py,swatchbook/icc.py,swatchbooker.pyw:
