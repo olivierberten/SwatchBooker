@@ -1,10 +1,10 @@
 2010-01-12  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbook/swatchbooker.pyw:
-   Added file history
+   Added recent files list
    First steps towards interface translatability
  * swatchbook/codecs/sbz.py:
-   Fixed a temp file error on windows
+   Some fixes
 
 2009-12-25  Olivier Berten  <olivier.berten@gmail.com>
 

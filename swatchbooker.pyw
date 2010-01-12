@@ -644,6 +644,7 @@ class MainWindow(QMainWindow):
 
 	def fileNew(self):
 		self.sb_flush()
+		self.sb = SwatchBook()
 
 	def fileOpen(self):
 		dir = os.path.dirname(self.filename) \
@@ -658,7 +659,6 @@ class MainWindow(QMainWindow):
 			filetypes.append(codec_txt)
 		allexts = ["*.%s" % unicode(format).lower() \
 				   for format in codecs.readexts.keys()]
-		filetype = QString()
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							self.tr("SwatchBooker - Choose file"), dir,
 							(unicode(self.tr("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+self.tr(";;All files (*)")))
@@ -687,6 +687,8 @@ class MainWindow(QMainWindow):
 		self.listItems = {}
 		self.itemList = {}
 		self.profiles = {}
+		self.sbProfiles.clear()
+		self.sbProfiles.setRowCount(0)
 		self.swnb = 0
 		self.swnbLabel.clear()
 		self.deleteAction.setEnabled(False)
@@ -705,16 +707,8 @@ class MainWindow(QMainWindow):
 			else:
 				return
 		if fname:
-			settings = QSettings()
-			files = settings.value("recentFileList").toStringList()
-			files.removeAll(fname)
-			files.prepend(fname)
-			while files.count() > MainWindow.MaxRecentFiles:
-				files.removeAt(files.count()-1)
-			settings.setValue("recentFileList", QVariant(files))
-			self.updateFileMenu()
-
 			self.sb_flush()
+			self.updateFileMenu(fname)
 			self.sb = SwatchBook(fname)
 			self.filename = fname
 			if 'name' in self.sb.info:
@@ -778,6 +772,7 @@ class MainWindow(QMainWindow):
 				fname += "."+filetypes[unicode(filetype)][1]
 			self.filename = fname
 			self.fileSave(filetypes[unicode(filetype)][0])
+			self.updateFileMenu(fname)
 
 	def populateTree(self):
 		self.fillTree(self.sb.items)
@@ -1113,11 +1108,22 @@ class MainWindow(QMainWindow):
 		self.profRemoveAction.setEnabled(False)
 		# TODO remove profile from color values
 
-	def updateFileMenu(self):
+	def updateFileMenu(self,fname=False):
 
 		settings = QSettings()
 		files = settings.value("recentFileList").toStringList()
+		for file in files:
+			if not QFile.exists(file):
+				files.removeAll(file)
 		
+		if fname:
+			files.removeAll(fname)
+			files.prepend(fname)
+			while files.count() > MainWindow.MaxRecentFiles:
+				files.removeAt(files.count()-1)
+
+		settings.setValue("recentFileList", QVariant(files))
+
 		numRecentFiles = min(files.count(), MainWindow.MaxRecentFiles)
 
 		recentFileActs = []
@@ -1152,7 +1158,6 @@ class MainWindow(QMainWindow):
 	def openRecentFile(self):
 		action = self.sender()
 		if action:
-			print action.data().toString()
 			self.loadFile(unicode(action.data().toString()))
 
 class SettingsDlg(QDialog):

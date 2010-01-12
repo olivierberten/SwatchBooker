@@ -114,14 +114,17 @@ class sbz(Codec):
 		for info in book.info:
 			if isinstance(book.info[info],dict):
 				for lang in book.info[info]:
-					if lang == 0:
-						xml += '  <info type="'+info+'">'+xmlescape(book.info[info][0])+'</info>\n'
-					else:
-						xml += '  <info type="'+info+'" lang="'+lang+'">'+xmlescape(book.info[info][lang])+'</info>\n'
+					if book.info[info][lang]:
+						if lang == 0:
+							xml += '  <info type="'+info+'">'+xmlescape(book.info[info][0])+'</info>\n'
+						else:
+							xml += '  <info type="'+info+'" lang="'+lang+'">'+xmlescape(book.info[info][lang])+'</info>\n'
 			else:
-				xml += '  <info type="'+info+'">'+xmlescape(book.info[info])+'</info>\n'
+				if book.info[info]:
+					xml += '  <info type="'+info+'">'+xmlescape(book.info[info])+'</info>\n'
 		for display in book.display:
-			xml += '  <display type="'+display+'">'+str(book.display[display])+'</display>\n'
+			if book.display[display]:
+				xml += '  <display type="'+display+'">'+str(book.display[display])+'</display>\n'
 		xml += unicode(sbz.writem(book.items,0),'utf-8')
 		xml += '</SwatchBook>\n'
 		
@@ -141,45 +144,42 @@ class sbz(Codec):
 		for id,item in items.items():
 			if isinstance(item,Group):
 				xml += '  '*(offset+1)+'<group id="'+id+'">\n'
-				for info in item.info:
-					if isinstance(item.info[info],dict):
-						for lang in item.info[info]:
-							if lang == 0:
-								xml += '  '*(offset+2)+'<info type="'+info+'">'+xmlescape(item.info[info][0])+'</info>\n'
-							else:
-								xml += '  '*(offset+2)+'<info type="'+info+'" lang="'+lang+'">'+xmlescape(item.info[info][lang])+'</info>\n'
-					else:
-						xml += '  '*(offset+2)+'<info type="'+info+'">'+xmlescape(item.info[info])+'</info>\n'
-				xml += sbz.writem(item.items,offset+1)
-				xml += '  '*(offset+1)+'</group>\n'
 			elif isinstance(item,Color):
 				xml += '  '*(offset+1)+'<color id="'+id+'"'
 				if 'spot' in item.attr:
 					xml += ' spot="1"'
 				xml += '>\n'
+			if isinstance(item,Spacer):
+				xml += '  '*(offset+1)+'<spacer />\n'
+			elif isinstance(item,Break):
+				xml += '  '*(offset+1)+'<break />\n'
+			else:
 				for info in item.info:
 					if isinstance(item.info[info],dict):
 						for lang in item.info[info]:
-							if lang == 0:
-								xml += '  '*(offset+2)+'<info type="'+info+'">'+xmlescape(item.info[info][0])+'</info>\n'
-							else:
-								xml += '  '*(offset+2)+'<info type="'+info+'" lang="'+xmlescape(lang+'">'+item.info[info][lang])+'</info>\n'
+							if item.info[info][lang]:
+								if lang == 0:
+									xml += '  '*(offset+2)+'<info type="'+info+'">'+xmlescape(item.info[info][0])+'</info>\n'
+								else:
+									xml += '  '*(offset+2)+'<info type="'+info+'" lang="'+lang+'">'+xmlescape(item.info[info][lang])+'</info>\n'
 					else:
-						xml += '  '*(offset+2)+'<info type="'+info+'">'+xmlescape(item.info[info])+'</info>\n'
+						if item.info[info]:
+							xml += '  '*(offset+2)+'<info type="'+info+'">'+xmlescape(item.info[info])+'</info>\n'
+			if isinstance(item,Group):
+				xml += sbz.writem(item.items,offset+1)
+				xml += '  '*(offset+1)+'</group>\n'
+			elif isinstance(item,Color):
 				for value in item.values:
 					xml += '  '*(offset+2)+'<values model="'+value[0]+'"'
 					if value[1]:
 						xml += ' space="'+value[1]+'"'
-					xml += '>'+' '.join(str(round(x,4)) for x in item.values[value])+'</values>\n'
+					xml += '>'+' '.join(str(round(x,16)) for x in item.values[value])+'</values>\n'
 				for extra in item.extra:
 					xml += '  '*(offset+2)+'<extra type="'+xmlescape(extra)+'">'
 					if item.extra[extra]:
 						xml += xmlescape(unicode(item.extra[extra]))
 					xml += '</extra>\n'
 				xml += '  '*(offset+1)+'</color>\n'
-			elif isinstance(item,Spacer):
-				xml += '  '*(offset+1)+'<spacer />\n'
-			elif isinstance(item,Break):
-				xml += '  '*(offset+1)+'<break />\n'
+
 		return xml.encode('utf-8')
 				
