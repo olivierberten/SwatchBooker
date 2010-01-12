@@ -423,6 +423,7 @@ class ColorWidget(QGroupBox):
 		self.extraRemoveAction.setEnabled(False)
 
 class MainWindow(QMainWindow):
+	MaxRecentFiles = 5
 
 	def __init__(self, file=False, parent=None):
 		super(MainWindow, self).__init__(parent)
@@ -549,14 +550,12 @@ class MainWindow(QMainWindow):
 		self.sbWidget.addWidget(groupBoxGrid)
 
 		self.setCentralWidget(self.sbWidget)
-		
-		fileMenu = self.menuBar().addMenu("&File")
-		fileMenu.addAction("&New...", self.fileNew, QKeySequence.New)
-		fileMenu.addAction("&Open...", self.fileOpen, QKeySequence.Open)
-		fileMenu.addAction("&Save As...", self.fileSaveAs, QKeySequence.Save)
+
+		self.fileMenu = self.menuBar().addMenu("&File")
 		self.menuBar().addAction("Settings", self.settings)
 		self.menuBar().addAction("&About", self.about)
-
+		self.updateFileMenu()
+		
 		# Actions
 		self.connect(self.sbName,
 				SIGNAL("textEdited(QString)"), self.sb_edit)
@@ -707,6 +706,15 @@ class MainWindow(QMainWindow):
 			else:
 				return
 		if fname:
+			settings = QSettings()
+			files = settings.value("recentFileList").toStringList()
+			files.removeAll(fname)
+			files.prepend(fname)
+			while files.count() > MainWindow.MaxRecentFiles:
+				files.removeAt(files.count()-1)
+			settings.setValue("recentFileList", QVariant(files))
+			self.updateFileMenu()
+
 			self.sb_flush()
 			self.sb = SwatchBook(fname)
 			self.filename = fname
@@ -1105,6 +1113,48 @@ class MainWindow(QMainWindow):
 		#self.profEditAction.setEnabled(False)
 		self.profRemoveAction.setEnabled(False)
 		# TODO remove profile from color values
+
+	def updateFileMenu(self):
+
+		settings = QSettings()
+		files = settings.value("recentFileList").toStringList()
+		
+		numRecentFiles = min(files.count(), MainWindow.MaxRecentFiles)
+
+		recentFileActs = []
+		
+		for h in range(MainWindow.MaxRecentFiles):
+			recentFileActs.append(QAction(self))
+			recentFileActs[h].setVisible(False)
+			self.connect(recentFileActs[h], SIGNAL("triggered()"),
+						 self.openRecentFile)
+
+		for i in range(numRecentFiles):
+			text = "&%1 %2".arg(i+1).arg(self.strippedName(files[i]))
+			recentFileActs[i].setText(text)
+			recentFileActs[i].setData(QVariant(files[i]))
+			recentFileActs[i].setVisible(True)
+			
+		for j in range(numRecentFiles, MainWindow.MaxRecentFiles):
+			recentFileActs[j].setVisible(False)
+
+		self.fileMenu.clear()
+		self.fileMenu.addAction("&New...", self.fileNew, QKeySequence.New)
+		self.fileMenu.addAction("&Open...", self.fileOpen, QKeySequence.Open)
+		self.fileMenu.addAction("Open from web", self.webOpen)
+		self.fileMenu.addAction("&Save As...", self.fileSaveAs, QKeySequence.Save)
+		self.fileMenu.addSeparator()
+		for k in range(MainWindow.MaxRecentFiles):
+			self.fileMenu.addAction(recentFileActs[k])
+
+	def strippedName(self, fullFileName):
+		return QFileInfo(fullFileName).fileName()
+
+	def openRecentFile(self):
+		action = self.sender()
+		if action:
+			print action.data().toString()
+			self.loadFile(unicode(action.data().toString()))
 
 class SettingsDlg(QDialog):
 	def __init__(self, parent=None):

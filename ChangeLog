@@ -1,3 +1,10 @@
+2010-01-12  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbook/swatchbooker.pyw:
+   Added file history
+ * swatchbook/codecs/sbz.py:
+   Fixed a temp file error on windows
+
 2009-12-25  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbook/__init__.py,swatchbooker.pyw:

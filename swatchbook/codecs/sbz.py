@@ -20,6 +20,7 @@
 #
 
 from swatchbook.codecs import *
+import tempfile
 
 class sbz(Codec):
 	"""SwatchBooker"""
@@ -124,7 +125,7 @@ class sbz(Codec):
 		xml += unicode(sbz.writem(book.items,0),'utf-8')
 		xml += '</SwatchBook>\n'
 		
-		tf = os.tmpfile()
+		tf = open(tempfile.mkstemp()[1],"w+b")
 		zip = ZipFile(tf,'w',ZIP_DEFLATED)
 		zip.writestr('swatchbook.xml',xml.encode('utf-8'))
 		for profile in book.profiles:

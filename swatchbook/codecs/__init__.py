@@ -23,7 +23,6 @@ from __future__ import division
 import os
 import sys
 import struct
-import tempfile
 import xml.etree.cElementTree as etree
 from xml.sax.saxutils import escape as xmlescape
 from zipfile import *
