@@ -2,6 +2,7 @@
 
  * swatchbook/swatchbooker.pyw:
    Added file history
+   First steps towards interface translatability
  * swatchbook/codecs/sbz.py:
    Fixed a temp file error on windows
 
