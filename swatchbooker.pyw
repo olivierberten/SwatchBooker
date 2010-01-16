@@ -1135,7 +1135,7 @@ class MainWindow(QMainWindow):
 						 self.openRecentFile)
 
 		for i in range(numRecentFiles):
-			text = self.tr("&%1 %2").arg(i+1).arg(self.strippedName(files[i]))
+			text = QString("&%1 %2").arg(i+1).arg(self.strippedName(files[i]))
 			recentFileActs[i].setText(text)
 			recentFileActs[i].setData(QVariant(files[i]))
 			recentFileActs[i].setVisible(True)
@@ -1144,8 +1144,8 @@ class MainWindow(QMainWindow):
 			recentFileActs[j].setVisible(False)
 
 		self.fileMenu.clear()
-		self.fileMenu.addAction(self.tr("&New..."), self.fileNew, QKeySequence.New)
-		self.fileMenu.addAction(self.tr("&Open..."), self.fileOpen, QKeySequence.Open)
+		self.fileMenu.addAction(self.tr("&New"), self.fileNew, QKeySequence.New)
+		self.fileMenu.addAction(self.tr("&Open"), self.fileOpen, QKeySequence.Open)
 		self.fileMenu.addAction(self.tr("Open from web"), self.webOpen)
 		self.fileMenu.addAction(self.tr("&Save As..."), self.fileSaveAs, QKeySequence.Save)
 		self.fileMenu.addSeparator()
@@ -1299,6 +1299,15 @@ if __name__ == "__main__":
 	app.setOrganizationName("Selapa")
 	app.setOrganizationDomain("selapa.net")
 	app.setApplicationName("SwatchBooker")
+	
+	locale = QLocale.system().name()
+	qtTranslator = QTranslator()
+	if qtTranslator.load("qt_" + locale, QLibraryInfo.location(QLibraryInfo.TranslationsPath)):
+		app.installTranslator(qtTranslator)
+	appTranslator = QTranslator()
+	if appTranslator.load("swatchbooker_" + locale):
+		app.installTranslator(appTranslator)
+
 	if len(sys.argv) > 1:
 		form = MainWindow(sys.argv[1])
 	else:
