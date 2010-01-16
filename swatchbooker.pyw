@@ -50,9 +50,9 @@ models['YIQ'] = (('Y',0),('I',0),('Q',0))
 
 class GroupWidget(QGroupBox):
 	def __init__(self, parent=None):
-		global current_sw
 		super(GroupWidget, self).__init__(parent)
 		
+		self.parent = parent
 		self.setTitle(self.tr("Group"))
 
 		nameLabel = QLabel(self.tr("Name:"))
@@ -80,14 +80,16 @@ class GroupWidget(QGroupBox):
 
 	def sw_edit(self):
 		global current_sw
-		if  self.sender() == self.swName:
+		if self.sender() == self.swName:
 			if self.swName.text() == '':
 				del current_sw.info['name'][0]
+				self.parent.itemTree[current_sw].setText(0,'')
 			else:
 				if 'name' not in current_sw.info:
 					current_sw.info['name'] = {}
 				current_sw.info['name'][0] = unicode(self.swName.text())
-		if  self.sender() == self.swDescription:
+				self.parent.itemTree[current_sw].setText(0,self.swName.text())
+		if self.sender() == self.swDescription:
 			if self.swDescription.toPlainText() == '':
 				del current_sw.info['description'][0]
 			else:
@@ -328,7 +330,7 @@ class ColorWidget(QGroupBox):
 			icon = self.parent.colorswatch(current_sw)
 		else:
 			self.sample.setStyleSheet("")
-			icon = QIcon(swatchbooker_svg)
+			icon = self.parent.emptyswatch()
 		self.parent.itemTree[current_sw].setIcon(0,icon)
 		self.parent.itemList[current_sw].setIcon(icon)
 
@@ -416,14 +418,11 @@ class ColorWidget(QGroupBox):
 	def remExtra(self):
 		if self.swExtra.item(self.swExtra.currentRow(),0):
 			extra = unicode(self.swExtra.item(self.swExtra.currentRow(),0).text())
-			print extra
 			del current_sw.extra[extra]
 		self.swExtra.removeRow(self.swExtra.currentRow())
 		self.extraRemoveAction.setEnabled(False)
 
 class MainWindow(QMainWindow):
-	MaxRecentFiles = 5
-
 	def __init__(self, file=False, parent=None):
 		super(MainWindow, self).__init__(parent)
 		
@@ -504,11 +503,9 @@ class MainWindow(QMainWindow):
 		self.swEditBut.setMaximumSize(12,12)
 		self.swEditMenu = QMenu()
 		self.swEditMenu.addAction(self.tr('Add Color'),self.swAddColor)
-		self.swEditMenu.addAction(self.tr('Add Gradient'),self.swAddGradient)
-		self.swEditMenu.addAction(self.tr('Add Pattern'),self.swAddPattern)
-		self.swEditMenu.addAction(self.tr('Add Texture'),self.swAddTexture)
 		self.swEditMenu.addAction(self.tr('Add Spacer'),self.swAddSpacer)
 		self.swEditMenu.addAction(self.tr('Add Break'),self.swAddBreak)
+		self.swEditMenu.addAction(self.tr('Add Group'),self.swAddGroup)
 		self.deleteAction = self.swEditMenu.addAction(self.tr('Delete'),self.swDelete)
 		self.swEditBut.setPopupMode(QToolButton.InstantPopup)
 		self.swEditBut.setMenu(self.swEditMenu)
@@ -589,7 +586,7 @@ class MainWindow(QMainWindow):
 		if self.treeWidget.selectedItems():
 			treeItem = self.treeWidget.selectedItems()[0]
 			current_sw = item = self.treeItems[treeItem]
-			if item.__class__.__name__ not in ('Group','Break'):
+			if item and item.__class__.__name__ not in ('Group','Break'):
 				self.listWidget.setCurrentItem(self.itemList[item])
 			else:
 				self.listWidget.setCurrentItem(None)
@@ -598,10 +595,13 @@ class MainWindow(QMainWindow):
 			if isinstance(item,Color):
 				self.sbSwatch = ColorWidget(self)
 			elif isinstance(item,Group):
-				self.sbSwatch = GroupWidget()
-			if not isinstance(item, Spacer) and not isinstance(item, Break):
+				self.sbSwatch = GroupWidget(self)
+			if not isinstance(item, Spacer) and not isinstance(item, Break) and not isinstance(self.treeWidget.selectedItems()[0], noChild):
 				self.sbWidget.addWidget(self.sbSwatch)
-			self.deleteAction.setEnabled(True)
+			if isinstance(self.treeWidget.selectedItems()[0], noChild):
+				self.deleteAction.setEnabled(False)
+			else:
+				self.deleteAction.setEnabled(True)
 
 	def sw_display_list(self):
 		global current_sw
@@ -778,10 +778,7 @@ class MainWindow(QMainWindow):
 		self.fillTree(self.sb.items)
 		self.treeWidget.resizeColumnToContents(0)
 		self.treeWidget.resizeColumnToContents(1)
-		swnbLabelText = str(self.swnb)+' swatch'
-		if self.swnb > 1:
-			swnbLabelText += 'es'
-		self.swnbLabel.setText(swnbLabelText)
+		self.updSwatchCount()
 
 	def fillTree(self,items,group = False):
 		for item in items.values():
@@ -790,8 +787,16 @@ class MainWindow(QMainWindow):
 			else:
 				parent = self.treeWidget
 			if isinstance(item,Group):
-				treeItem = QTreeWidgetItem(parent,[QString(item.info['name'][0])])
-				self.fillTree(item.items,treeItem)
+				if 'name' in item.info:
+					treeItem = QTreeWidgetItem(parent,[QString(item.info['name'][0])])
+				else:
+					treeItem = QTreeWidgetItem(parent)
+				if len(item.items) > 0:
+					self.fillTree(item.items,treeItem)
+				else:
+					nochild = noChild()
+					treeItem.addChild(nochild)
+					self.treeItems[nochild] = None
 			elif isinstance(item,Spacer):
 				listItem = QListWidgetItem(self.listWidget)
 				listItem.setIcon(QIcon())
@@ -813,7 +818,7 @@ class MainWindow(QMainWindow):
 				if isinstance(item,Color) and len(item.values) > 0:
 					icon = self.colorswatch(item)
 				else:
-					icon = QIcon(swatchbooker_svg)
+					icon = self.emptyswatch()
 				listItem.setIcon(icon)
 				self.listItems[listItem] = item
 				self.itemList[item] = listItem
@@ -827,7 +832,7 @@ class MainWindow(QMainWindow):
 			self.itemTree[item] = treeItem
 			if group:
 				self.treeWidget.expandItem(parent)
-			if not isinstance(item, Group) and not isinstance(item, Spacer) and not isinstance(item, Break):
+			if item.__class__.__name__ not in ('Group', 'Spacer', 'Break'):
 				self.swnb += 1
 
 	def colorswatch(self,swatch):
@@ -835,16 +840,25 @@ class MainWindow(QMainWindow):
 		prof_out = settings.value("DisplayProfile").toString() or False
 		r,g,b = swatch.toRGB8(prof_out)
 		icon = QPixmap(16,16)
+		icon.fill(Qt.transparent)
 		paint = QPainter()
 		paint.begin(icon)
+		paint.setBrush(QColor(r,g,b))
 		if 'spot' in swatch.attr:
-			paint.setBrush(QColor(255,255,255))
-			paint.drawRect(-1, -1, 17, 17)
-			paint.setBrush(QColor(r,g,b))
 			paint.drawEllipse(0, 0, 15, 15)
 		else:
-			paint.setBrush(QColor(r,g,b))
 			paint.drawRect(0, 0, 15, 15)
+		paint.end()
+		return QIcon(icon)
+
+	def emptyswatch(self):
+		icon = QPixmap(16,16)
+		icon.fill(Qt.transparent)
+		paint = QPainter()
+		paint.begin(icon)
+		paint.setPen(QPen(QColor(218,218,218),3.0))
+		paint.drawLine(QLine(3, 3, 12, 12))
+		paint.drawLine(QLine(12, 3, 3, 12))
 		paint.end()
 		return QIcon(icon)
 
@@ -867,13 +881,16 @@ class MainWindow(QMainWindow):
 				settings.setValue("CMYKProfile",QVariant(dialog.returnCMYKProf()))
 			else:
 				settings.remove("CMYKProfile")
-				
+			settings.setValue("MaxRecentFiles",QVariant(dialog.RecFilesSpin.value()))
+			self.updateFileMenu()
 
 	def swDelete(self):
 		global current_sw
 		sw_tbd = current_sw
+		current_sw = False
 		if hasattr(self,'sbSwatch'):
 			self.sbSwatch.setParent(None)
+		self.deleteAction.setEnabled(False)
 		tbd = self.get_parent(sw_tbd)
 		if isinstance(sw_tbd, Group):
 			self.del_group_from_list(tbd[0],tbd[1])
@@ -883,28 +900,31 @@ class MainWindow(QMainWindow):
 			self.listWidget.takeItem(self.listWidget.row(self.itemList[sw_tbd]))
 			del self.itemList[sw_tbd]
 			self.swnb -= 1
+		del tbd[0].items[tbd[1]]
+		del self.sb.ids[tbd[1]]
 		if self.itemTree[sw_tbd].parent() == None:
 			self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(self.itemTree[sw_tbd]))
 		else:
-			self.itemTree[sw_tbd].parent().takeChild(self.itemTree[sw_tbd].parent().indexOfChild(self.itemTree[sw_tbd]))
-		del tbd[0].items[tbd[1]]
-		del self.sb.ids[tbd[1]]
+			tParent = self.itemTree[sw_tbd].parent()
+			tParent.takeChild(self.itemTree[sw_tbd].parent().indexOfChild(self.itemTree[sw_tbd]))
+			if tParent.childCount() == 0:
+				nochild = noChild()
+				tParent.addChild(nochild)
+				self.treeItems[nochild] = None
 		del self.itemTree[sw_tbd]
-		swnbLabelText = str(self.swnb)+' swatch'
-		if self.swnb > 1:
-			swnbLabelText += 'es'
-		self.swnbLabel.setText(swnbLabelText)
-		current_sw = False
-		self.deleteAction.setEnabled(False)
+		self.updSwatchCount()
 	
 	def del_group_from_list(self,parent,group):
 		for sw in parent.items[group].items:
 			if isinstance(parent.items[group].items[sw], Group):
 				self.del_group_from_list(parent.items[group],sw)
+			elif isinstance(parent.items[group].items[sw], Break):
+				pass
 			else:
 				self.listWidget.takeItem(self.listWidget.row(self.itemList[parent.items[group].items[sw]]))
 				del self.itemList[parent.items[group].items[sw]]
-				self.swnb -= 1
+				if parent.items[group].items[sw].__class__.__name__ not in ('Group','Spacer'):
+					self.swnb -= 1
 			del self.sb.ids[sw]
 	
 	def get_parent(self,value):
@@ -913,20 +933,44 @@ class MainWindow(QMainWindow):
 				return (self.sb.ids[item][1],item)
 		return False
 
-	def listitemforadd(self,item):
-		treeItem = self.itemTree[item]
-		if item.__class__.__name__ == 'Group':
-			lastchild = treeItem.child(treeItem.childCount()-1)
-			return self.treeItems[lastchild]
+	def listitemforadd(self,treeItem):
+		item = self.treeItems[treeItem]
+		if treeItem.__class__.__name__ == 'noChild':
+			treeItem = treeItem.parent()
+			if treeItem.parent() == None:
+				index = self.treeWidget.indexOfTopLevelItem(treeItem)
+				if index > 0:
+					return self.treeWidget.topLevelItem(index-1)
+				else:
+					return False
+			else:
+				index = treeItem.parent().indexOfChild(treeItem)
+				return treeItem.parent().child(index-1)
+		elif item.__class__.__name__ == 'Group':
+			if len(item.items) > 0:
+				return treeItem.child(treeItem.childCount()-1)
+			else:
+				if treeItem.parent() == None:
+					index = self.treeWidget.indexOfTopLevelItem(treeItem)
+					if index > 0:
+						return self.treeWidget.topLevelItem(index-1)
+					else:
+						return False
+				else:
+					index = treeItem.parent().indexOfChild(treeItem)
+					return treeItem.parent().child(index-1)
 		elif item.__class__.__name__ == 'Break':
 			if treeItem.parent() == None:
 				index = self.treeWidget.indexOfTopLevelItem(treeItem)
-				return self.treeItems[self.treeWidget.topLevelItem(index-1)]
+				if index > 0:
+					return self.treeWidget.topLevelItem(index-1)
+				else:
+					return False
 			else:
 				index = treeItem.parent().indexOfChild(treeItem)
-				return self.treeItems[treeItem.parent().child(index-1)]
+				return treeItem.parent().child(index-1)
 		else:
-			return item
+			return treeItem
 
 	def swAddColor(self):
 		global current_sw
@@ -935,7 +979,7 @@ class MainWindow(QMainWindow):
 		if key in self.sb.ids:
 			#sys.stderr.write('duplicate id ['+key+']\n')
 			key = key+str(item)
-		icon = QIcon(swatchbooker_svg)
+		icon = self.emptyswatch()
 		listItem = QListWidgetItem()
 		listItem.setIcon(icon)
 		self.listItems[listItem] = item
@@ -945,26 +989,41 @@ class MainWindow(QMainWindow):
 		self.treeItems[treeItem] = item
 		self.itemTree[item] = treeItem
 		if self.treeWidget.selectedItems():
-			selItem = self.get_parent(current_sw)
-			index = selItem[0].items.values().index(current_sw)
-			selItem[0].items.insert(index+1,key,item)
-			self.sb.ids[key] = (item,selItem[0])
 			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.__class__.__name__ != 'noChild':
+				selItem = self.get_parent(current_sw)
+				index = selItem[0].items.values().index(current_sw)
+				selItem[0].items.insert(index+1,key,item)
+				self.sb.ids[key] = (item,selItem[0])
+			else:
+				selItem = self.treeItems[selTItem.parent()]
+				selItem.items.insert(0,key,item)
+				self.sb.ids[key] = (item,selItem)
 			if selTItem.parent() == None:
 				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
 				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
+				if selTItem.__class__.__name__ == 'noChild':
+					current_sw = self.treeItems[selTItem.parent()]
 			if current_sw.__class__.__name__ not in ('Group','Break'):
 				selLItem = self.listWidget.selectedItems()[0]
 			else:
-				nitem = self.treeItems[selTItem]
-				while nitem.__class__.__name__ in ('Group','Break'):
+				nitem = selTItem
+				while nitem and (self.treeItems[nitem].__class__.__name__ in ('Group','Break') or nitem.__class__.__name__ == 'noChild'):
 					nitem = self.listitemforadd(nitem)
-				selLItem = self.itemList[nitem]
-			lIndex = self.listWidget.indexFromItem(selLItem).row()
-			self.listWidget.insertItem(lIndex+1,self.itemList[item])
+				if nitem and self.treeItems[nitem]:
+					selLItem = self.itemList[self.treeItems[nitem]]
+				else:
+					selLItem = False
+			if selLItem:
+				lIndex = self.listWidget.indexFromItem(selLItem).row()
+				self.listWidget.insertItem(lIndex+1,self.itemList[item])
+			else:
+				self.listWidget.addItem(self.itemList[item])
+			if selTItem.__class__.__name__ == 'noChild':
+				selTItem.parent().takeChild(0)
 		else:
 			self.sb.items[key] = item
 			self.sb.ids[key] = (item,self.sb)
@@ -972,10 +1031,46 @@ class MainWindow(QMainWindow):
 			self.listWidget.addItem(self.itemList[item])
 		self.treeWidget.setCurrentItem(self.itemTree[item])
 		self.swnb += 1
-		swnbLabelText = str(self.swnb)+' swatch'
-		if self.swnb > 1:
-			swnbLabelText += 'es'
-		self.swnbLabel.setText(swnbLabelText)
+		self.updSwatchCount()
+		current_sw = item
+
+	def swAddGroup(self):
+		global current_sw
+		item = Group()
+		key = 'gr'+str(int(time.mktime(time.gmtime())))
+		if key in self.sb.ids:
+			#sys.stderr.write('duplicate id ['+key+']\n')
+			key = key+str(item)
+		treeItem = QTreeWidgetItem()
+		nochild = noChild()
+		treeItem.addChild(nochild)
+		self.treeItems[nochild] = None
+		self.treeItems[treeItem] = item
+		self.itemTree[item] = treeItem
+		if self.treeWidget.selectedItems():
+			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.__class__.__name__ != 'noChild':
+				selItem = self.get_parent(current_sw)
+				index = selItem[0].items.values().index(current_sw)
+				selItem[0].items.insert(index+1,key,item)
+				self.sb.ids[key] = (item,selItem[0])
+			else:
+				selItem = self.treeItems[selTItem.parent()]
+				selItem.items.insert(0,key,item)
+				self.sb.ids[key] = (item,selItem)
+			if selTItem.parent() == None:
+				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
+				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
+			else:
+				tIndex = selTItem.parent().indexOfChild(selTItem)
+				selTItem.parent().insertChild(tIndex+1,treeItem)
+			if selTItem.__class__.__name__ == 'noChild':
+				selTItem.parent().takeChild(0)
+		else:
+			self.sb.items[key] = item
+			self.sb.ids[key] = (item,self.sb)
+			self.treeWidget.addTopLevelItem(self.itemTree[item])
+		self.treeWidget.setCurrentItem(self.itemTree[item])
 		current_sw = item
 
 	def swAddBreak(self):
@@ -993,17 +1088,24 @@ class MainWindow(QMainWindow):
 		self.treeItems[treeItem] = item
 		self.itemTree[item] = treeItem
 		if self.treeWidget.selectedItems():
-			selItem = self.get_parent(current_sw)
-			index = selItem[0].items.values().index(current_sw)
-			selItem[0].items.insert(index+1,key,item)
-			self.sb.ids[key] = (item,selItem[0])
 			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.__class__.__name__ != 'noChild':
+				selItem = self.get_parent(current_sw)
+				index = selItem[0].items.values().index(current_sw)
+				selItem[0].items.insert(index+1,key,item)
+				self.sb.ids[key] = (item,selItem[0])
+			else:
+				selItem = self.treeItems[selTItem.parent()]
+				selItem.items.insert(0,key,item)
+				self.sb.ids[key] = (item,selItem)
 			if selTItem.parent() == None:
 				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
 				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
+			if selTItem.__class__.__name__ == 'noChild':
+				selTItem.parent().takeChild(0)
 		else:
 			self.sb.items[key] = item
 			self.sb.ids[key] = (item,self.sb)
@@ -1029,36 +1131,55 @@ class MainWindow(QMainWindow):
 		self.treeItems[treeItem] = item
 		self.itemTree[item] = treeItem
 		if self.treeWidget.selectedItems():
-			selItem = self.get_parent(current_sw)
-			index = selItem[0].items.values().index(current_sw)
-			selItem[0].items.insert(index+1,key,item)
-			self.sb.ids[key] = (item,selItem[0])
 			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.__class__.__name__ != 'noChild':
+				selItem = self.get_parent(current_sw)
+				index = selItem[0].items.values().index(current_sw)
+				selItem[0].items.insert(index+1,key,item)
+				self.sb.ids[key] = (item,selItem[0])
+			else:
+				selItem = self.treeItems[selTItem.parent()]
+				selItem.items.insert(0,key,item)
+				self.sb.ids[key] = (item,selItem)
 			if selTItem.parent() == None:
 				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
 				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
+				if selTItem.__class__.__name__ == 'noChild':
+					current_sw = self.treeItems[selTItem.parent()]
 			if current_sw.__class__.__name__ not in ('Group','Break'):
 				selLItem = self.listWidget.selectedItems()[0]
 			else:
-				nitem = self.treeItems[selTItem]
-				while nitem.__class__.__name__ in ('Group','Break'):
+				nitem = selTItem
+				while nitem and (self.treeItems[nitem].__class__.__name__ in ('Group','Break') or nitem.__class__.__name__ == 'noChild'):
 					nitem = self.listitemforadd(nitem)
-				selLItem = self.itemList[nitem]
-			lIndex = self.listWidget.indexFromItem(selLItem).row()
-			self.listWidget.insertItem(lIndex+1,self.itemList[item])
+				if nitem and self.treeItems[nitem]:
+					selLItem = self.itemList[self.treeItems[nitem]]
+				else:
+					selLItem = False
+			if selLItem:
+				lIndex = self.listWidget.indexFromItem(selLItem).row()
+				self.listWidget.insertItem(lIndex+1,self.itemList[item])
+			else:
+				self.listWidget.addItem(self.itemList[item])
+			if selTItem.__class__.__name__ == 'noChild':
+				selTItem.parent().takeChild(0)
 		else:
 			self.sb.items[key] = item
 			self.sb.ids[key] = (item,self.sb)
 			self.treeWidget.addTopLevelItem(self.itemTree[item])
+			self.listWidget.addItem(self.itemList[item])
 		self.treeWidget.setCurrentItem(self.itemTree[item])
 
-	def swAddTexture(self):
-		print 'unimplemented'
-
-	swAddGradient = swAddPattern = swAddTexture
+	def updSwatchCount(self):
+		swnbLabelText = str(self.swnb)+' '
+		if self.swnb > 1:
+			swnbLabelText += self.tr('swatches')
+		else:
+			swnbLabelText += self.tr('swatch')
+		self.swnbLabel.setText(swnbLabelText)
 
 	def prof_editable(self):
 		if self.sbProfiles.isItemSelected(self.sbProfiles.currentItem()):
@@ -1119,16 +1240,16 @@ class MainWindow(QMainWindow):
 		if fname:
 			files.removeAll(fname)
 			files.prepend(fname)
-			while files.count() > MainWindow.MaxRecentFiles:
+			while files.count() > settings.value("MaxRecentFiles").toInt()[0]:
 				files.removeAt(files.count()-1)
 
 		settings.setValue("recentFileList", QVariant(files))
 
-		numRecentFiles = min(files.count(), MainWindow.MaxRecentFiles)
+		numRecentFiles = min(files.count(), settings.value("MaxRecentFiles").toInt()[0])
 
 		recentFileActs = []
 		
-		for h in range(MainWindow.MaxRecentFiles):
+		for h in range(settings.value("MaxRecentFiles").toInt()[0]):
 			recentFileActs.append(QAction(self))
 			recentFileActs[h].setVisible(False)
 			self.connect(recentFileActs[h], SIGNAL("triggered()"),
@@ -1140,16 +1261,15 @@ class MainWindow(QMainWindow):
 			recentFileActs[i].setData(QVariant(files[i]))
 			recentFileActs[i].setVisible(True)
 			
-		for j in range(numRecentFiles, MainWindow.MaxRecentFiles):
+		for j in range(numRecentFiles, settings.value("MaxRecentFiles").toInt()[0]):
 			recentFileActs[j].setVisible(False)
 
 		self.fileMenu.clear()
 		self.fileMenu.addAction(self.tr("&New"), self.fileNew, QKeySequence.New)
 		self.fileMenu.addAction(self.tr("&Open"), self.fileOpen, QKeySequence.Open)
-		self.fileMenu.addAction(self.tr("Open from web"), self.webOpen)
 		self.fileMenu.addAction(self.tr("&Save As..."), self.fileSaveAs, QKeySequence.Save)
 		self.fileMenu.addSeparator()
-		for k in range(MainWindow.MaxRecentFiles):
+		for k in range(settings.value("MaxRecentFiles").toInt()[0]):
 			self.fileMenu.addAction(recentFileActs[k])
 
 	def strippedName(self, fullFileName):
@@ -1159,6 +1279,17 @@ class MainWindow(QMainWindow):
 		action = self.sender()
 		if action:
 			self.loadFile(unicode(action.data().toString()))
+
+class noChild(QTreeWidgetItem):
+	def __init__(self, parent=None):
+		super(noChild, self).__init__(parent)
+
+		font = QFont()
+		font.setItalic(True)
+		self.setText(0,QCoreApplication.translate('noChild','empty'))
+		self.setFont(0,font)
+		self.setTextColor(0,QColor(128,128,128))
+
 
 class SettingsDlg(QDialog):
 	def __init__(self, parent=None):
@@ -1196,9 +1327,19 @@ class SettingsDlg(QDialog):
 		CMYKprof.addLayout(CMYKfileLayout)
 		gCMYKProf.setLayout(CMYKprof)
 
+		self.RecFilesSpin = QSpinBox()
+		self.RecFilesSpin.setRange(0, 12)
+
+		gRecFiles = QGroupBox(self.tr("Recent files"))
+		RecFiles = QHBoxLayout()
+		RecFiles.addWidget(QLabel(self.tr("Number of files displayed:")))
+		RecFiles.addWidget(self.RecFilesSpin)
+		gRecFiles.setLayout(RecFiles)
+
 		sett = QVBoxLayout()
 		sett.addWidget(gDisProf)
 		sett.addWidget(gCMYKProf)
+		sett.addWidget(gRecFiles)
 		sett.addWidget(buttonBox)
 		self.setLayout(sett)
 
@@ -1215,6 +1356,11 @@ class SettingsDlg(QDialog):
 		else:
 			self.Fogra27L.setCheckState(2)
 			self.CMYKfileButton.setEnabled(False)
+		if settings.contains("MaxRecentFiles"):
+			self.RecFilesSpin.setValue(settings.value("MaxRecentFiles").toInt()[0])
+		else:
+			self.RecFilesSpin.setValue(6)
+			settings.setValue("MaxRecentFiles",QVariant(6))
 
 		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
 		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))

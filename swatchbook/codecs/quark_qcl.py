@@ -19,6 +19,7 @@
 #       MA 02110-1301, USA.
 #
 
+from __future__ import division
 from swatchbook.codecs import *
 
 class quark_qcl(Codec):

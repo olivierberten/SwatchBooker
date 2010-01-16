@@ -19,6 +19,7 @@
 #       MA 02110-1301, USA.
 #
 
+from __future__ import division
 from swatchbook.codecs import *
 
 bcf_model = {1: 'RGB', 2: 'CMYK',8: 'hifi', 16: 'Mixed'}

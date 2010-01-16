@@ -1,6 +1,18 @@
+2010-01-16  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbooker.pyw:
+   Improved group editing + bugfixes
+   Getting further with interface translatability
+ * swatchbooker_fr.ts,swatchbooker_fr.qm
+   Added french translation
+ * sbconvert.py
+   Added command-line conversion utility
+ * swatchbook/codecs/
+   Bugfixes
+
 2010-01-12  Olivier Berten  <olivier.berten@gmail.com>
 
- * swatchbook/swatchbooker.pyw:
+ * swatchbooker.pyw:
    Added recent files list
    First steps towards interface translatability
  * swatchbook/codecs/sbz.py:
