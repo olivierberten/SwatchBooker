@@ -1,3 +1,19 @@
+2010-01-22  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbooker_de.ts,swatchbooker_de.qm
+   Added german translation (thanks to Christoph Schäfer)
+ * swatchbooker.pro
+   Make it easier to update language files (pylupdate4 swatchbooker.pro)
+
+2010-01-18  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbooker_ru.ts,swatchbooker_ru.qm
+   Added russian translation (thanks to Alexandre Prokoudine)
+
+2010-01-17  Olivier Berten  <olivier.berten@gmail.com>
+
+ * New release: SwatchBooker 0.5
+
 2010-01-16  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbooker.pyw:
