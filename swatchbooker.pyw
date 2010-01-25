@@ -29,10 +29,11 @@ from PyQt4.QtGui import *
 
 from swatchbook import *
 
-__version__ = "0.5"
+__version__ = "0.6"
 
 current_sw = False
 current_sp = False
+breaks = []
 
 swatchbooker_svg = (dirpath(__file__) or ".")+"/icons/swatchbooker.svg" 
 
@@ -47,6 +48,32 @@ models['HSV'] = (('H',2),('S',1),('V',1))
 models['CMYK'] = (('C',1),('M',1),('Y',1),('K',1))
 models['GRAY'] = (('K',1),)
 models['YIQ'] = (('Y',0),('I',0),('Q',0))
+
+class sbListWidget(QListWidget):
+	def __init__(self, parent=None):
+		super(sbListWidget, self).__init__(parent)
+		self.setViewMode(QListView.IconMode)
+		self.setMovement(QListView.Static)
+		self.setResizeMode(QListView.Adjust)
+		self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+		self.update()
+
+	def update(self):
+		self.zWidth = 2*self.frameWidth() + self.verticalScrollBar().size().width() + 1
+		self.zHeight = 2*self.frameWidth()
+		global breaks
+		avail_width = self.size().width() - self.zWidth
+		breaks2 = {}
+		for item in breaks:
+			breaks2[self.row(item)] = item
+		for key in sorted(breaks2.iterkeys()):
+			width = (int((avail_width-self.visualItemRect(self.item(key-1)).left())/17)-1)*17
+			breaks2[key].setSizeHint(QSize(width,17))
+			self.doItemsLayout()
+
+	def resizeEvent(self,event):
+		QListWidget.resizeEvent(self,event)
+		self.update()
 
 class GroupWidget(QGroupBox):
 	def __init__(self, parent=None):
@@ -83,12 +110,11 @@ class GroupWidget(QGroupBox):
 		if self.sender() == self.swName:
 			if self.swName.text() == '':
 				del current_sw.info['name'][0]
-				self.parent.itemTree[current_sw].setText(0,'')
 			else:
 				if 'name' not in current_sw.info:
 					current_sw.info['name'] = {}
 				current_sw.info['name'][0] = unicode(self.swName.text())
-				self.parent.itemTree[current_sw].setText(0,self.swName.text())
+			self.parent.itemTree[current_sw].update()
 		if self.sender() == self.swDescription:
 			if self.swDescription.toPlainText() == '':
 				del current_sw.info['description'][0]
@@ -284,14 +310,12 @@ class ColorWidget(QGroupBox):
 		if self.sender() == self.swName:
 			if self.swName.text() == '':
 				del current_sw.info['name'][0]
-				self.parent.itemList[current_sw].setToolTip('')
-				self.parent.itemTree[current_sw].setText(0,'')
 			else:
 				if 'name' not in current_sw.info:
 					current_sw.info['name'] = {}
 				current_sw.info['name'][0] = unicode(self.swName.text())
-				self.parent.itemList[current_sw].setToolTip(self.swName.text())
-				self.parent.itemTree[current_sw].setText(0,self.swName.text())
+			self.parent.itemTree[current_sw].update()
+			self.parent.itemList[current_sw].update()
 		if self.sender() == self.swDescription:
 			if self.swDescription.toPlainText() == '':
 				del current_sw.info['description'][0]
@@ -327,12 +351,10 @@ class ColorWidget(QGroupBox):
 		if current_sw.toRGB8(prof_out):
 			r,g,b = current_sw.toRGB8(prof_out)
 			self.sample.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
-			icon = self.parent.colorswatch(current_sw)
 		else:
 			self.sample.setStyleSheet("")
-			icon = self.parent.emptyswatch()
-		self.parent.itemTree[current_sw].setIcon(0,icon)
-		self.parent.itemList[current_sw].setIcon(icon)
+		self.parent.itemTree[current_sw].update()
+		self.parent.itemList[current_sw].update()
 
 	def sw_valedit(self):
 		global models
@@ -497,8 +519,7 @@ class MainWindow(QMainWindow):
 		# sbTree
 		self.treeWidget = QTreeWidget()
 		self.treeWidget.setHeaderHidden(True)
-		self.treeWidget.setItemsExpandable(True)
-		self.swnbLabel = QLabel()
+ 		self.swnbLabel = QLabel()
 		self.swEditBut = QToolButton(self)
 		self.swEditBut.setMaximumSize(12,12)
 		self.swEditMenu = QMenu()
@@ -520,9 +541,7 @@ class MainWindow(QMainWindow):
 		self.sbWidget.addWidget(groupBoxTree)
 
 		# sbGrid
-		self.listWidget = QListWidget()
-		self.listWidget.setViewMode(QListView.IconMode)
-		self.listWidget.setMovement(QListView.Static)
+		self.listWidget = sbListWidget()
 		colsLabel = QLabel(self.tr("Columns:"))
 		self.cols = QSpinBox()
 		self.cols.setRange(0, 64)
@@ -586,7 +605,7 @@ class MainWindow(QMainWindow):
 		if self.treeWidget.selectedItems():
 			treeItem = self.treeWidget.selectedItems()[0]
 			current_sw = item = self.treeItems[treeItem]
-			if item and item.__class__.__name__ not in ('Group','Break'):
+			if item and not isinstance(item,Group):
 				self.listWidget.setCurrentItem(self.itemList[item])
 			else:
 				self.listWidget.setCurrentItem(None)
@@ -631,13 +650,13 @@ class MainWindow(QMainWindow):
 			self.sb.info['version'] = unicode(self.version.text())
 		if self.cols.value() > 0:
 			self.sb.display['columns'] = self.cols.value()
-			self.listWidget.setFixedWidth(self.sb.display['columns']*17 + 20)
+			self.listWidget.setFixedWidth(self.sb.display['columns']*17 + self.listWidget.zWidth)
 		elif self.cols.value() == 0:
 			self.listWidget.setMinimumWidth(0)
 			self.listWidget.setMaximumWidth(0xFFFFFF)
 		if self.rows.value() > 0:
 			self.sb.display['rows'] = self.rows.value()
-			self.listWidget.setFixedHeight(self.sb.display['rows']*17 + 5)
+			self.listWidget.setFixedHeight(self.sb.display['rows']*17 + self.listWidget.zHeight)
 		elif self.rows.value() == 0:
 			self.listWidget.setMinimumHeight(0)
 			self.listWidget.setMaximumHeight(0xFFFFFF)
@@ -666,6 +685,8 @@ class MainWindow(QMainWindow):
 			self.loadFile(fname)
 
 	def sb_flush(self):
+		global breaks
+		breaks = []
 		self.filename = False
 		self.sbName.clear()
 		self.sbDescription.clear()
@@ -678,8 +699,6 @@ class MainWindow(QMainWindow):
 		self.rows.clear()
 		self.treeWidget.clear()
 		self.listWidget.clear()
-		self.listWidget.setGridSize(QSize(17,17))
-		self.listWidget.setResizeMode(QListView.Adjust)
 		self.listWidget.setMinimumSize(QSize(0,0))
 		self.listWidget.setMaximumSize(QSize(0xFFFFFF,0xFFFFFF))
 		self.treeItems = {}
@@ -723,10 +742,10 @@ class MainWindow(QMainWindow):
 				self.version.setText(self.sb.info['version'])
 			if 'columns' in self.sb.display:
 				self.cols.setValue(self.sb.display['columns'])
-				self.listWidget.setFixedWidth(self.sb.display['columns']*17 + 20)
+				self.listWidget.setFixedWidth(self.sb.display['columns']*17 + self.listWidget.zWidth)
 			if 'rows' in self.sb.display:
 				self.rows.setValue(self.sb.display['rows'])
-				self.listWidget.setFixedHeight(self.sb.display['rows']*17 + 5)
+				self.listWidget.setFixedHeight(self.sb.display['rows']*17 + self.listWidget.zHeight)
 			self.sbProfiles.setRowCount(len(self.sb.profiles))
 			row = 0
 			for prof in self.sb.profiles:
@@ -787,10 +806,7 @@ class MainWindow(QMainWindow):
 			else:
 				parent = self.treeWidget
 			if isinstance(item,Group):
-				if 'name' in item.info:
-					treeItem = QTreeWidgetItem(parent,[QString(item.info['name'][0])])
-				else:
-					treeItem = QTreeWidgetItem(parent)
+				treeItem = treeItemGroup(parent,item)
 				if len(item.items) > 0:
 					self.fillTree(item.items,treeItem)
 				else:
@@ -798,69 +814,59 @@ class MainWindow(QMainWindow):
 					treeItem.addChild(nochild)
 					self.treeItems[nochild] = None
 			elif isinstance(item,Spacer):
-				listItem = QListWidgetItem(self.listWidget)
-				listItem.setIcon(QIcon())
+				treeItem = treeItemSpacer(parent)
+				listItem = listItemSpacer(self.listWidget)
 				self.listItems[listItem] = item
 				self.itemList[item] = listItem
-				treeItem = QTreeWidgetItem(parent,[QString('<spacer>')])
-				font = QFont()
-				font.setItalic(True)
-				treeItem.setFont(0,font)
-				treeItem.setTextColor(0,QColor(128,128,128))
 			elif isinstance(item,Break):
-				treeItem = QTreeWidgetItem(parent,[QString('<break>')])
-				font = QFont()
-				font.setItalic(True)
-				treeItem.setFont(0,font)
-				treeItem.setTextColor(0,QColor(128,128,128))
-			else:
-				listItem = QListWidgetItem(self.listWidget)
-				if isinstance(item,Color) and len(item.values) > 0:
-					icon = self.colorswatch(item)
-				else:
-					icon = self.emptyswatch()
-				listItem.setIcon(icon)
+				treeItem = treeItemBreak(parent)
+				listItem = listItemBreak(self.listWidget)
 				self.listItems[listItem] = item
 				self.itemList[item] = listItem
-				if 'name' in item.info:
-					treeItem = QTreeWidgetItem(parent,[QString(item.info['name'][0])])
-					listItem.setToolTip(item.info['name'][0])
-				else:
-					treeItem = QTreeWidgetItem(parent)
-				treeItem.setIcon(0,icon)
+			else:
+				treeItem = treeItemColor(parent,item)
+				listItem = listItemColor(self.listWidget,item)
+				self.listItems[listItem] = item
+				self.itemList[item] = listItem
 			self.treeItems[treeItem] = item
 			self.itemTree[item] = treeItem
 			if group:
 				self.treeWidget.expandItem(parent)
 			if item.__class__.__name__ not in ('Group', 'Spacer', 'Break'):
 				self.swnb += 1
+		self.listWidget.update()
 
-	def colorswatch(self,swatch):
-		settings = QSettings()
-		prof_out = settings.value("DisplayProfile").toString() or False
-		r,g,b = swatch.toRGB8(prof_out)
-		icon = QPixmap(16,16)
-		icon.fill(Qt.transparent)
-		paint = QPainter()
-		paint.begin(icon)
-		paint.setBrush(QColor(r,g,b))
-		if 'spot' in swatch.attr:
-			paint.drawEllipse(0, 0, 15, 15)
-		else:
-			paint.drawRect(0, 0, 15, 15)
-		paint.end()
-		return QIcon(icon)
+	@staticmethod
+	def colorswatch(swatch):
+		if swatch:
+			settings = QSettings()
+			prof_out = settings.value("DisplayProfile").toString() or False
+			r,g,b = swatch.toRGB8(prof_out)
+			pix = QPixmap(16,16)
+			pix.fill(Qt.transparent)
+			paint = QPainter()
+			paint.begin(pix)
+			paint.setBrush(QColor(r,g,b))
+			if 'spot' in swatch.attr:
+				paint.drawEllipse(0, 0, 15, 15)
+			else:
+				paint.drawRect(0, 0, 15, 15)
+			paint.end()
+			icon = QIcon(pix)
+			return icon
 
-	def emptyswatch(self):
-		icon = QPixmap(16,16)
-		icon.fill(Qt.transparent)
+	@staticmethod
+	def emptyswatch():
+		pix = QPixmap(16,16)
+		pix.fill(Qt.transparent)
 		paint = QPainter()
-		paint.begin(icon)
+		paint.begin(pix)
 		paint.setPen(QPen(QColor(218,218,218),3.0))
 		paint.drawLine(QLine(3, 3, 12, 12))
 		paint.drawLine(QLine(12, 3, 3, 12))
 		paint.end()
-		return QIcon(icon)
+		icon = QIcon(pix)
+		return icon
 
 	def about(self):
 		QMessageBox.about(self, self.tr("About SwatchBooker"),
@@ -894,9 +900,10 @@ class MainWindow(QMainWindow):
 		tbd = self.get_parent(sw_tbd)
 		if isinstance(sw_tbd, Group):
 			self.del_group_from_list(tbd[0],tbd[1])
-		elif isinstance(sw_tbd, Break):
-			pass
 		else:
+			if isinstance(sw_tbd, Break):
+				global breaks
+				breaks.remove(self.itemList[sw_tbd])
 			self.listWidget.takeItem(self.listWidget.row(self.itemList[sw_tbd]))
 			del self.itemList[sw_tbd]
 			self.swnb -= 1
@@ -913,17 +920,16 @@ class MainWindow(QMainWindow):
 				self.treeItems[nochild] = None
 		del self.itemTree[sw_tbd]
 		self.updSwatchCount()
+		self.listWidget.update()
 	
 	def del_group_from_list(self,parent,group):
 		for sw in parent.items[group].items:
 			if isinstance(parent.items[group].items[sw], Group):
 				self.del_group_from_list(parent.items[group],sw)
-			elif isinstance(parent.items[group].items[sw], Break):
-				pass
 			else:
 				self.listWidget.takeItem(self.listWidget.row(self.itemList[parent.items[group].items[sw]]))
 				del self.itemList[parent.items[group].items[sw]]
-				if parent.items[group].items[sw].__class__.__name__ not in ('Group','Spacer'):
+				if parent.items[group].items[sw].__class__.__name__ not in ('Group','Spacer','Break'):
 					self.swnb -= 1
 			del self.sb.ids[sw]
 	
@@ -935,7 +941,7 @@ class MainWindow(QMainWindow):
 
 	def listitemforadd(self,treeItem):
 		item = self.treeItems[treeItem]
-		if treeItem.__class__.__name__ == 'noChild':
+		if isinstance(treeItem,noChild):
 			treeItem = treeItem.parent()
 			if treeItem.parent() == None:
 				index = self.treeWidget.indexOfTopLevelItem(treeItem)
@@ -946,7 +952,7 @@ class MainWindow(QMainWindow):
 			else:
 				index = treeItem.parent().indexOfChild(treeItem)
 				return treeItem.parent().child(index-1)
-		elif item.__class__.__name__ == 'Group':
+		elif isinstance(item,Group):
 			if len(item.items) > 0:
 				return treeItem.child(treeItem.childCount()-1)
 			else:
@@ -959,16 +965,6 @@ class MainWindow(QMainWindow):
 				else:
 					index = treeItem.parent().indexOfChild(treeItem)
 					return treeItem.parent().child(index-1)
-		elif item.__class__.__name__ == 'Break':
-			if treeItem.parent() == None:
-				index = self.treeWidget.indexOfTopLevelItem(treeItem)
-				if index > 0:
-					return self.treeWidget.topLevelItem(index-1)
-				else:
-					return False
-			else:
-				index = treeItem.parent().indexOfChild(treeItem)
-				return treeItem.parent().child(index-1)
 		else:
 			return treeItem
 
@@ -979,18 +975,15 @@ class MainWindow(QMainWindow):
 		if key in self.sb.ids:
 			#sys.stderr.write('duplicate id ['+key+']\n')
 			key = key+str(item)
-		icon = self.emptyswatch()
-		listItem = QListWidgetItem()
-		listItem.setIcon(icon)
+		listItem = listItemColor()
 		self.listItems[listItem] = item
 		self.itemList[item] = listItem
-		treeItem = QTreeWidgetItem()
-		treeItem.setIcon(0,icon)
+		treeItem = treeItemColor()
 		self.treeItems[treeItem] = item
 		self.itemTree[item] = treeItem
 		if self.treeWidget.selectedItems():
 			selTItem = self.treeWidget.selectedItems()[0]
-			if selTItem.__class__.__name__ != 'noChild':
+			if not isinstance(selTItem,noChild):
 				selItem = self.get_parent(current_sw)
 				index = selItem[0].items.values().index(current_sw)
 				selItem[0].items.insert(index+1,key,item)
@@ -1005,13 +998,13 @@ class MainWindow(QMainWindow):
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
-				if selTItem.__class__.__name__ == 'noChild':
+				if isinstance(selTItem,noChild):
 					current_sw = self.treeItems[selTItem.parent()]
-			if current_sw.__class__.__name__ not in ('Group','Break'):
+			if not isinstance(current_sw,Group):
 				selLItem = self.listWidget.selectedItems()[0]
 			else:
 				nitem = selTItem
-				while nitem and (self.treeItems[nitem].__class__.__name__ in ('Group','Break') or nitem.__class__.__name__ == 'noChild'):
+				while nitem and (isinstance(self.treeItems[nitem],Group) or isinstance(nitem,noChild)):
 					nitem = self.listitemforadd(nitem)
 				if nitem and self.treeItems[nitem]:
 					selLItem = self.itemList[self.treeItems[nitem]]
@@ -1022,7 +1015,7 @@ class MainWindow(QMainWindow):
 				self.listWidget.insertItem(lIndex+1,self.itemList[item])
 			else:
 				self.listWidget.addItem(self.itemList[item])
-			if selTItem.__class__.__name__ == 'noChild':
+			if isinstance(selTItem,noChild):
 				selTItem.parent().takeChild(0)
 		else:
 			self.sb.items[key] = item
@@ -1032,6 +1025,7 @@ class MainWindow(QMainWindow):
 		self.treeWidget.setCurrentItem(self.itemTree[item])
 		self.swnb += 1
 		self.updSwatchCount()
+		self.listWidget.update()
 		current_sw = item
 
 	def swAddGroup(self):
@@ -1041,7 +1035,7 @@ class MainWindow(QMainWindow):
 		if key in self.sb.ids:
 			#sys.stderr.write('duplicate id ['+key+']\n')
 			key = key+str(item)
-		treeItem = QTreeWidgetItem()
+		treeItem = treeItemGroup()
 		nochild = noChild()
 		treeItem.addChild(nochild)
 		self.treeItems[nochild] = None
@@ -1049,7 +1043,7 @@ class MainWindow(QMainWindow):
 		self.itemTree[item] = treeItem
 		if self.treeWidget.selectedItems():
 			selTItem = self.treeWidget.selectedItems()[0]
-			if selTItem.__class__.__name__ != 'noChild':
+			if not isinstance(selTItem,noChild):
 				selItem = self.get_parent(current_sw)
 				index = selItem[0].items.values().index(current_sw)
 				selItem[0].items.insert(index+1,key,item)
@@ -1064,13 +1058,14 @@ class MainWindow(QMainWindow):
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
-			if selTItem.__class__.__name__ == 'noChild':
+			if isinstance(selTItem,noChild):
 				selTItem.parent().takeChild(0)
 		else:
 			self.sb.items[key] = item
 			self.sb.ids[key] = (item,self.sb)
 			self.treeWidget.addTopLevelItem(self.itemTree[item])
 		self.treeWidget.setCurrentItem(self.itemTree[item])
+		self.listWidget.update()
 		current_sw = item
 
 	def swAddBreak(self):
@@ -1080,59 +1075,15 @@ class MainWindow(QMainWindow):
 		if key in self.sb.ids:
 			#sys.stderr.write('duplicate id ['+key+']\n')
 			key = key+str(item)
-		treeItem = QTreeWidgetItem([QString('<break>')])
-		font = QFont()
-		font.setItalic(True)
-		treeItem.setFont(0,font)
-		treeItem.setTextColor(0,QColor(128,128,128))
-		self.treeItems[treeItem] = item
-		self.itemTree[item] = treeItem
-		if self.treeWidget.selectedItems():
-			selTItem = self.treeWidget.selectedItems()[0]
-			if selTItem.__class__.__name__ != 'noChild':
-				selItem = self.get_parent(current_sw)
-				index = selItem[0].items.values().index(current_sw)
-				selItem[0].items.insert(index+1,key,item)
-				self.sb.ids[key] = (item,selItem[0])
-			else:
-				selItem = self.treeItems[selTItem.parent()]
-				selItem.items.insert(0,key,item)
-				self.sb.ids[key] = (item,selItem)
-			if selTItem.parent() == None:
-				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
-				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
-			else:
-				tIndex = selTItem.parent().indexOfChild(selTItem)
-				selTItem.parent().insertChild(tIndex+1,treeItem)
-			if selTItem.__class__.__name__ == 'noChild':
-				selTItem.parent().takeChild(0)
-		else:
-			self.sb.items[key] = item
-			self.sb.ids[key] = (item,self.sb)
-			self.treeWidget.addTopLevelItem(self.itemTree[item])
-		self.treeWidget.setCurrentItem(self.itemTree[item])
-
-	def swAddSpacer(self):
-		global current_sw
-		item = Spacer()
-		key = 'sp'+str(int(time.mktime(time.gmtime())))
-		if key in self.sb.ids:
-			#sys.stderr.write('duplicate id ['+key+']\n')
-			key = key+str(item)
-		listItem = QListWidgetItem()
-		listItem.setIcon(QIcon())
+		listItem = listItemBreak()
 		self.listItems[listItem] = item
 		self.itemList[item] = listItem
-		treeItem = QTreeWidgetItem([QString('<spacer>')])
-		font = QFont()
-		font.setItalic(True)
-		treeItem.setFont(0,font)
-		treeItem.setTextColor(0,QColor(128,128,128))
+		treeItem = treeItemBreak()
 		self.treeItems[treeItem] = item
 		self.itemTree[item] = treeItem
 		if self.treeWidget.selectedItems():
 			selTItem = self.treeWidget.selectedItems()[0]
-			if selTItem.__class__.__name__ != 'noChild':
+			if not isinstance(selTItem,noChild):
 				selItem = self.get_parent(current_sw)
 				index = selItem[0].items.values().index(current_sw)
 				selItem[0].items.insert(index+1,key,item)
@@ -1147,13 +1098,13 @@ class MainWindow(QMainWindow):
 			else:
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
-				if selTItem.__class__.__name__ == 'noChild':
+				if isinstance(selTItem,noChild):
 					current_sw = self.treeItems[selTItem.parent()]
-			if current_sw.__class__.__name__ not in ('Group','Break'):
+			if not isinstance(current_sw,Group):
 				selLItem = self.listWidget.selectedItems()[0]
 			else:
 				nitem = selTItem
-				while nitem and (self.treeItems[nitem].__class__.__name__ in ('Group','Break') or nitem.__class__.__name__ == 'noChild'):
+				while nitem and (isinstance(self.treeItems[nitem],Group) or isinstance(nitem,noChild)):
 					nitem = self.listitemforadd(nitem)
 				if nitem and self.treeItems[nitem]:
 					selLItem = self.itemList[self.treeItems[nitem]]
@@ -1164,7 +1115,7 @@ class MainWindow(QMainWindow):
 				self.listWidget.insertItem(lIndex+1,self.itemList[item])
 			else:
 				self.listWidget.addItem(self.itemList[item])
-			if selTItem.__class__.__name__ == 'noChild':
+			if isinstance(selTItem,noChild):
 				selTItem.parent().takeChild(0)
 		else:
 			self.sb.items[key] = item
@@ -1172,6 +1123,64 @@ class MainWindow(QMainWindow):
 			self.treeWidget.addTopLevelItem(self.itemTree[item])
 			self.listWidget.addItem(self.itemList[item])
 		self.treeWidget.setCurrentItem(self.itemTree[item])
+		self.listWidget.update()
+
+	def swAddSpacer(self):
+		global current_sw
+		item = Spacer()
+		key = 'sp'+str(int(time.mktime(time.gmtime())))
+		if key in self.sb.ids:
+			#sys.stderr.write('duplicate id ['+key+']\n')
+			key = key+str(item)
+		listItem = listItemSpacer()
+		self.listItems[listItem] = item
+		self.itemList[item] = listItem
+		treeItem = treeItemSpacer()
+		self.treeItems[treeItem] = item
+		self.itemTree[item] = treeItem
+		if self.treeWidget.selectedItems():
+			selTItem = self.treeWidget.selectedItems()[0]
+			if not isinstance(selTItem,noChild):
+				selItem = self.get_parent(current_sw)
+				index = selItem[0].items.values().index(current_sw)
+				selItem[0].items.insert(index+1,key,item)
+				self.sb.ids[key] = (item,selItem[0])
+			else:
+				selItem = self.treeItems[selTItem.parent()]
+				selItem.items.insert(0,key,item)
+				self.sb.ids[key] = (item,selItem)
+			if selTItem.parent() == None:
+				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
+				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
+			else:
+				tIndex = selTItem.parent().indexOfChild(selTItem)
+				selTItem.parent().insertChild(tIndex+1,treeItem)
+				if isinstance(selTItem,noChild):
+					current_sw = self.treeItems[selTItem.parent()]
+			if not isinstance(current_sw,Group):
+				selLItem = self.listWidget.selectedItems()[0]
+			else:
+				nitem = selTItem
+				while nitem and (isinstance(self.treeItems[nitem],Group) or isinstance(nitem,noChild)):
+					nitem = self.listitemforadd(nitem)
+				if nitem and self.treeItems[nitem]:
+					selLItem = self.itemList[self.treeItems[nitem]]
+				else:
+					selLItem = False
+			if selLItem:
+				lIndex = self.listWidget.indexFromItem(selLItem).row()
+				self.listWidget.insertItem(lIndex+1,self.itemList[item])
+			else:
+				self.listWidget.addItem(self.itemList[item])
+			if isinstance(selTItem,noChild):
+				selTItem.parent().takeChild(0)
+		else:
+			self.sb.items[key] = item
+			self.sb.ids[key] = (item,self.sb)
+			self.treeWidget.addTopLevelItem(self.itemTree[item])
+			self.listWidget.addItem(self.itemList[item])
+		self.treeWidget.setCurrentItem(self.itemTree[item])
+		self.listWidget.update()
 
 	def updSwatchCount(self):
 		swnbLabelText = str(self.swnb)+' '
@@ -1290,6 +1299,86 @@ class noChild(QTreeWidgetItem):
 		self.setFont(0,font)
 		self.setTextColor(0,QColor(128,128,128))
 
+class treeItemColor(QTreeWidgetItem):
+	def __init__(self, parent=None, item=None):
+		super(treeItemColor, self).__init__(parent)
+		self.item = item
+		self.update()
+
+	def update(self):
+		if self.item and 'name' in self.item.info:
+			self.setText(0,QString(self.item.info['name'][0]))
+		else:
+			self.setText(0,QString())
+		self.setIcon(0,MainWindow.colorswatch(self.item) or MainWindow.emptyswatch())
+
+class listItemColor(QListWidgetItem):
+	def __init__(self, parent=None, item=None):
+		super(listItemColor, self).__init__(parent)
+		self.item = item
+		self.setSizeHint(QSize(17,17))
+		self.update()
+
+	def update(self):
+		if self.item and 'name' in self.item.info:
+			self.setToolTip(self.item.info['name'][0])
+		else:
+			self.setToolTip(QString())
+		self.setIcon(MainWindow.colorswatch(self.item) or MainWindow.emptyswatch())
+
+class treeItemGroup(QTreeWidgetItem):
+	def __init__(self, parent=None, item=None):
+		super(treeItemGroup, self).__init__(parent)
+		self.item = item
+		self.update()
+
+	def update(self):
+		if self.item and 'name' in self.item.info:
+			self.setText(0,QString(self.item.info['name'][0]))
+		else:
+			self.setText(0,QString())
+
+class treeItemSpacer(QTreeWidgetItem):
+	def __init__(self, parent=None):
+		super(treeItemSpacer, self).__init__(parent)
+
+		font = QFont()
+		font.setItalic(True)
+		self.setText(0,QString('<spacer>'))
+		self.setFont(0,font)
+		self.setTextColor(0,QColor(128,128,128))
+
+class listItemSpacer(QListWidgetItem):
+	def __init__(self, parent=None):
+		super(listItemSpacer, self).__init__(parent)
+
+		pix = QPixmap(1,1)
+		pix.fill(Qt.transparent)
+		self.setIcon(QIcon(pix))
+		self.setSizeHint(QSize(17,17))
+		self.setFlags(self.flags() & ~(Qt.ItemIsSelectable))
+
+class treeItemBreak(QTreeWidgetItem):
+	def __init__(self, parent=None):
+		super(treeItemBreak, self).__init__(parent)
+
+		font = QFont()
+		font.setItalic(True)
+		self.setText(0,QString('<break>'))
+		self.setFont(0,font)
+		self.setTextColor(0,QColor(128,128,128))
+
+class listItemBreak(QListWidgetItem):
+	def __init__(self, parent=None):
+		super(listItemBreak, self).__init__(parent)
+
+		global breaks
+		breaks.append(self)
+		pix = QPixmap(1,1)
+		pix.fill(Qt.transparent)
+		self.setIcon(QIcon(pix))
+		self.setSizeHint(QSize(0,17))
+		self.setFlags(self.flags() & ~(Qt.ItemIsSelectable))
 
 class SettingsDlg(QDialog):
 	def __init__(self, parent=None):
@@ -1459,4 +1548,7 @@ if __name__ == "__main__":
 	else:
 		form = MainWindow()
 	form.show()
+	form.listWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+	form.listWidget.update()
+
 	app.exec_()
