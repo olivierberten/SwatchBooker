@@ -55,7 +55,6 @@ class sbListWidget(QListWidget):
 		self.setViewMode(QListView.IconMode)
 		self.setMovement(QListView.Static)
 		self.setResizeMode(QListView.Adjust)
-		self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 		self.update()
 
 	def update(self):
@@ -717,14 +716,6 @@ class MainWindow(QMainWindow):
 		current_sp = False
 
 	def loadFile(self, fname=None):
-		if fname is None:
-			action = self.sender()
-			if isinstance(action, QAction):
-				fname = unicode(action.data().toString())
-				if not self.okToContinue():
-					return
-			else:
-				return
 		if fname:
 			self.sb_flush()
 			self.updateFileMenu(fname)
@@ -853,6 +844,19 @@ class MainWindow(QMainWindow):
 				paint.drawRect(0, 0, 15, 15)
 			paint.end()
 			icon = QIcon(pix)
+			paint.begin(pix)
+			paint.setPen(QColor(255,255,255))
+			if 'spot' in swatch.attr:
+				paint.drawEllipse(0, 0, 15, 15)
+			else:
+				paint.drawRect(0, 0, 15, 15)
+			paint.setPen(Qt.DotLine)
+			if 'spot' in swatch.attr:
+				paint.drawEllipse(0, 0, 15, 15)
+			else:
+				paint.drawRect(0, 0, 15, 15)
+			paint.end()
+			icon.addPixmap(pix,QIcon.Selected)
 			return icon
 
 	@staticmethod
@@ -866,6 +870,13 @@ class MainWindow(QMainWindow):
 		paint.drawLine(QLine(12, 3, 3, 12))
 		paint.end()
 		icon = QIcon(pix)
+		paint.begin(pix)
+		paint.setPen(QColor(255,255,255))
+		paint.drawRect(0, 0, 15, 15)
+		paint.setPen(Qt.DotLine)
+		paint.drawRect(0, 0, 15, 15)
+		paint.end()
+		icon.addPixmap(pix,QIcon.Selected)
 		return icon
 
 	def about(self):
@@ -1548,6 +1559,7 @@ if __name__ == "__main__":
 	else:
 		form = MainWindow()
 	form.show()
+	form.listWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
 	form.listWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 	form.listWidget.update()
 
