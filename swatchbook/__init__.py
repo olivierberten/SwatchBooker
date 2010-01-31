@@ -204,10 +204,14 @@ class SwatchBook(object):
 		import swatchbook.codecs as codecs
 		if self.test(file,codec):
 			eval('codecs.'+self.test(file,codec)).read(self,file)
-			if sys.getfilesystemencoding() == 'UTF-8' and isinstance(file,unicode):
-				filename =  os.path.splitext(os.path.basename(file))[0]
+			if sys.platform == 'win32':
+				encoding = "UTF-8"
 			else:
-				filename =  os.path.splitext(os.path.basename(file))[0].decode(sys.getfilesystemencoding())
+				encoding = sys.getfilesystemencoding()
+			if encoding == 'UTF-8' and isinstance(file,unicode):
+ 				filename =  os.path.splitext(os.path.basename(file))[0]
+ 			else:
+				filename =  os.path.splitext(os.path.basename(file))[0].decode(encoding)
 			if 'name' not in self.info:
 				self.info['name'] = {0: filename.replace('_',' ')}
 		else:

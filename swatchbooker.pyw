@@ -1294,9 +1294,9 @@ class MainWindow(QMainWindow):
 							(self.tr("ICC profiles (*.icc *.icm)"))))
 		if fname:
 			# the next 6 lines are a workaround for the unability of lcms to deal with unicode file names
-			fi = open(fname)
+			fi = open(fname, 'rb')
 			uri = tempfile.mkstemp()[1]
-			fo = open(uri,'w')
+			fo = open(uri,'wb')
 			fo.write(fi.read())
 			fi.close()
 			fo.close()
@@ -1541,13 +1541,13 @@ class SettingsDlg(QDialog):
 			self.RGBfname = settings.value("DisplayProfile").toString()
 			self.RGBfileLabel.setText(self.RGBfname)
 		else:
-			self.sRGB.setCheckState(2)
+			self.sRGB.setCheckState(Qt.Checked)
 			self.RGBfileButton.setEnabled(False)
 		if settings.contains("CMYKProfile"):
 			self.CMYKfname = settings.value("CMYKProfile").toString()
 			self.CMYKfileLabel.setText(self.CMYKfname)
 		else:
-			self.Fogra27L.setCheckState(2)
+			self.Fogra27L.setCheckState(Qt.Checked)
 			self.CMYKfileButton.setEnabled(False)
 		self.RecFilesSpin.setValue(settings.value("MaxRecentFiles").toInt()[0])
 
