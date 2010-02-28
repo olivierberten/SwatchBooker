@@ -164,26 +164,45 @@ class GroupWidget(QGroupBox):
 
 		nameLabel = QLabel(self.tr("Name:"))
 		self.swName = QLineEdit()
+		self.l10nName = l10nButton()
 		descriptionLabel = QLabel(self.tr("Description:"))
 		self.swDescription = QTextEdit()
+		self.l10nDescription = l10nButton()
+		self.l10nLicense = l10nButton()
 		swInfo = QGridLayout()
 		swInfo.addWidget(nameLabel, 0, 0)
 		swInfo.addWidget(self.swName, 0, 1)
+		swInfo.addWidget(self.l10nName, 0, 2)
 		swInfo.addWidget(descriptionLabel, 1, 0, 1, 2)
 		swInfo.addWidget(self.swDescription, 2, 0, 1, 2)
+		swInfo.addWidget(self.l10nDescription, 2, 2, Qt.AlignTop)
 		self.setLayout(swInfo)
 
 		if hasattr(current_sw,'info'):
 			if 'name' in current_sw.info:
-				self.swName.setText(current_sw.info['name'][0])
+				info = current_sw.info['name'].copy()
+				if 0 in info:
+					self.swName.setText(current_sw.info['name'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nName.setStyleSheet("l10nButton { font: bold }")
 			if 'description' in current_sw.info:
-				self.swDescription.setText(current_sw.info['description'][0])
+				info = current_sw.info['description'].copy()
+				if 0 in info:
+					self.swDescription.setText(current_sw.info['description'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nDescription.setStyleSheet("l10nButton { font: bold }")
 
 		# Actions
 		self.connect(self.swName,
 				SIGNAL("textEdited(QString)"), self.sw_edit)
 		self.connect(self.swDescription,
 				SIGNAL("textChanged()"), self.sw_edit)
+		self.connect(self.l10nName,
+				SIGNAL("pressed()"), self.sw_l10n)
+		self.connect(self.l10nDescription,
+				SIGNAL("pressed()"), self.sw_l10n)
 
 	def sw_edit(self):
 		global current_sw
@@ -207,6 +226,15 @@ class GroupWidget(QGroupBox):
 					current_sw.info['description'] = {}
 				current_sw.info['description'][0] = unicode(self.swDescription.toPlainText())
 
+	def sw_l10n(self):
+		if not self.sender().isChecked():
+			infos = {self.l10nName: 'name', self.l10nDescription: 'description' }
+			if infos[self.sender()] not in current_sw.info:
+				current_sw.info[infos[self.sender()]] = {}
+
+			l10nPopup = l10nWidget(self.sender(),current_sw.info[infos[self.sender()]],self)
+			l10nPopup.show()
+
 class ColorWidget(QGroupBox):
 	def __init__(self, parent=None):
 		super(ColorWidget, self).__init__(parent)
@@ -216,8 +244,11 @@ class ColorWidget(QGroupBox):
 
 		nameLabel = QLabel(self.tr("Name:"))
 		self.swName = QLineEdit()
+		self.l10nName = l10nButton()
 		descriptionLabel = QLabel(self.tr("Description:"))
 		self.swDescription = QTextEdit()
+		self.l10nDescription = l10nButton()
+		self.l10nLicense = l10nButton()
 		self.sample = QLabel()
 		self.sample.setMinimumHeight(30)
 		self.swSpot = QCheckBox(self.tr("Spot"))
@@ -269,19 +300,31 @@ class ColorWidget(QGroupBox):
 		swInfo = QGridLayout()
 		swInfo.addWidget(nameLabel, 0, 0)
 		swInfo.addWidget(self.swName, 0, 1)
+		swInfo.addWidget(self.l10nName, 0, 2)
 		swInfo.addWidget(descriptionLabel, 1, 0, 1, 2)
 		swInfo.addWidget(self.swDescription, 2, 0, 1, 2)
-		swInfo.addWidget(self.sample, 3, 0, 1, 2)
-		swInfo.addWidget(self.swSpot, 4, 0, 1, 2)
-		swInfo.addWidget(self.swValues, 5, 0, 1, 2)
-		swInfo.addWidget(groupBoxExtra, 6, 0, 1, 2)
+		swInfo.addWidget(self.l10nDescription, 2, 2, Qt.AlignTop)
+		swInfo.addWidget(self.sample, 3, 0, 1, 3)
+		swInfo.addWidget(self.swSpot, 4, 0, 1, 3)
+		swInfo.addWidget(self.swValues, 5, 0, 1, 3)
+		swInfo.addWidget(groupBoxExtra, 6, 0, 1, 3)
 		self.setLayout(swInfo)
 
 		if hasattr(current_sw,'info'):
 			if 'name' in current_sw.info:
-				self.swName.setText(current_sw.info['name'][0])
+				info = current_sw.info['name'].copy()
+				if 0 in info:
+					self.swName.setText(current_sw.info['name'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nName.setStyleSheet("l10nButton { font: bold }")
 			if 'description' in current_sw.info:
-				self.swDescription.setText(current_sw.info['description'][0])
+				info = current_sw.info['description'].copy()
+				if 0 in info:
+					self.swDescription.setText(current_sw.info['description'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nDescription.setStyleSheet("l10nButton { font: bold }")
 		if hasattr(current_sw,'attr') and 'spot' in current_sw.attr:
 			self.swSpot.setChecked(True)
 		self.val = {}
@@ -324,6 +367,10 @@ class ColorWidget(QGroupBox):
 				SIGNAL("cellChanged(int,int)"), self.sw_edit)
 		self.connect(self.swExtra,
 				SIGNAL("cellClicked(int,int)"), self.extra_editable)
+		self.connect(self.l10nName,
+				SIGNAL("pressed()"), self.sw_l10n)
+		self.connect(self.l10nDescription,
+				SIGNAL("pressed()"), self.sw_l10n)
 
 	def add_val_tab(self,model,values=None):
 		global current_sw
@@ -536,6 +583,15 @@ class ColorWidget(QGroupBox):
 		self.swExtra.removeRow(self.swExtra.currentRow())
 		self.extraRemoveAction.setEnabled(False)
 
+	def sw_l10n(self):
+		if not self.sender().isChecked():
+			infos = {self.l10nName: 'name', self.l10nDescription: 'description' }
+			if infos[self.sender()] not in current_sw.info:
+				current_sw.info[infos[self.sender()]] = {}
+
+			l10nPopup = l10nWidget(self.sender(),current_sw.info[infos[self.sender()]],self)
+			l10nPopup.show()
+
 class l10nButton(QToolButton):
 	def __init__(self, parent=None):
 		super(l10nButton, self).__init__(parent)
@@ -692,16 +748,16 @@ class MainWindow(QMainWindow):
 		sbInfo1.addWidget(self.sbName, 0, 1)
 		sbInfo1.addWidget(self.l10nName, 0, 2)
 		sbInfo1.addWidget(descriptionLabel, 1, 0, 1, 2)
-		sbInfo1.addWidget(self.sbDescription, 2, 0, 2, 2)
-		sbInfo1.addWidget(self.l10nDescription, 2, 2)
-		sbInfo1.addWidget(copyrightLabel, 4, 0)
-		sbInfo1.addWidget(self.copyright, 4, 1)
-		sbInfo1.addWidget(self.l10nCopyright, 4, 2)
-		sbInfo1.addWidget(versionLabel, 5, 0)
-		sbInfo1.addWidget(self.version, 5, 1, 1, 2)
-		sbInfo1.addWidget(licenseLabel, 6, 0, 1, 2)
-		sbInfo1.addWidget(self.sbLicense, 7, 0, 2, 2)
-		sbInfo1.addWidget(self.l10nLicense, 7, 2)
+		sbInfo1.addWidget(self.sbDescription, 2, 0, 1, 2)
+		sbInfo1.addWidget(self.l10nDescription, 2, 2, Qt.AlignTop)
+		sbInfo1.addWidget(copyrightLabel, 3, 0)
+		sbInfo1.addWidget(self.copyright, 3, 1)
+		sbInfo1.addWidget(self.l10nCopyright, 3, 2)
+		sbInfo1.addWidget(versionLabel, 4, 0)
+		sbInfo1.addWidget(self.version, 4, 1, 1, 2)
+		sbInfo1.addWidget(licenseLabel, 5, 0, 1, 2)
+		sbInfo1.addWidget(self.sbLicense, 6, 0, 1, 2)
+		sbInfo1.addWidget(self.l10nLicense, 6, 2, Qt.AlignTop)
 
 
 		self.sbProfiles = QTableWidget()
