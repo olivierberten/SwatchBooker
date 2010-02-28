@@ -1,3 +1,9 @@
+2010-02-28  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbooker.pyw:
+   Added interface for swatch info localization
+   Workaround for not using GTK+ style
+
 2010-01-31  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbook/__init__.py,swatchbooker.pyw:

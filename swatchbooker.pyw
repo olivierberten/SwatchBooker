@@ -125,7 +125,8 @@ class sbTreeWidget(QTreeWidget):
 	def mousePressEvent(self,event):
 		QTreeWidget.mousePressEvent(self,event)
 		self.item = self.itemAt(event.pos())
-		self.itemParent = self.item.parent()
+		if self.item:
+			self.itemParent = self.item.parent()
 
 class sbListWidget(QListWidget):
 	def __init__(self, parent=None):
@@ -133,6 +134,8 @@ class sbListWidget(QListWidget):
 		self.setViewMode(QListView.IconMode)
 		self.setMovement(QListView.Static)
 		self.setResizeMode(QListView.Adjust)
+		self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+		self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 		self.update()
 
 	def update(self):
@@ -221,6 +224,8 @@ class ColorWidget(QGroupBox):
 		self.swValues = QTabWidget()
 		self.butVal = QToolButton(self.swValues)
 		self.butVal.setFixedSize(12,12)
+		self.butVal.setArrowType(Qt.DownArrow)
+		self.butVal.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		cornLay = QVBoxLayout()
 		cornLay.setContentsMargins(20,0,0,20)
 		cornLay.addWidget(self.butVal)
@@ -246,6 +251,8 @@ class ColorWidget(QGroupBox):
 		self.swExtra.setSelectionBehavior(QAbstractItemView.SelectRows)
 		self.butExtra = QToolButton(self)
 		self.butExtra.setFixedSize(12,12)
+		self.butExtra.setArrowType(Qt.DownArrow)
+		self.butExtra.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		self.menuExtra = QMenu()
 		self.menuExtra.addAction(self.tr('Add'),self.addExtra)
 		self.extraRemoveAction = self.menuExtra.addAction(self.tr('Remove'),self.remExtra)
@@ -529,6 +536,129 @@ class ColorWidget(QGroupBox):
 		self.swExtra.removeRow(self.swExtra.currentRow())
 		self.extraRemoveAction.setEnabled(False)
 
+class l10nButton(QToolButton):
+	def __init__(self, parent=None):
+		super(l10nButton, self).__init__(parent)
+		self.setCheckable(True)
+		self.setText('l10n')
+
+class l10nItem(QWidget):
+	def __init__(self, lang='', text='', long=False, parent=None):
+		super(l10nItem, self).__init__(parent)
+		
+		self.lang = lang
+		self.text = text
+		self.parent = parent
+		
+		layout = QHBoxLayout()
+		layout.setContentsMargins(0,0,0,0)
+		self.langEdit = QLineEdit(lang)
+		self.langEdit.setFixedWidth(50)
+		if long:
+			self.textEdit = QTextEdit()
+		else:
+			self.textEdit = QLineEdit()
+		self.textEdit.setText(text)
+		delLoc = QPushButton('-')
+		delLoc.setFixedWidth(delLoc.sizeHint().height())
+		layout.addWidget(self.langEdit,0,Qt.AlignTop)
+		layout.addWidget(self.textEdit,0,Qt.AlignTop)
+		layout.addWidget(delLoc,0,Qt.AlignTop)
+		self.setLayout(layout)
+
+		self.connect(self.langEdit,
+				SIGNAL("editingFinished()"), self.langEdited)
+		self.connect(self.textEdit,
+				SIGNAL("textChanged(QString)"), self.textEdited)
+		self.connect(self.textEdit,
+				SIGNAL("textChanged()"), self.textEdited)
+		self.connect(delLoc,
+				SIGNAL("clicked()"), self.delLoc)
+
+	def langEdited(self):
+		if (unicode(self.langEdit.text()) != self.lang) and (unicode(self.langEdit.text()) not in self.parent.info) and (unicode(self.langEdit.text()) > ''):
+			if self.lang > '':
+				del self.parent.info[self.lang]
+			self.textEdited()
+			self.lang = unicode(self.langEdit.text())
+			self.parent.caller.setStyleSheet("l10nButton { font: bold }")
+		else:
+			self.langEdit.setText(self.lang)
+
+	def textEdited(self):
+		if isinstance(self.textEdit,QTextEdit):
+			text = self.textEdit.toPlainText()
+		else:
+			text = self.textEdit.text()
+		self.parent.info[unicode(self.langEdit.text())] = unicode(text)
+
+	def delLoc(self):
+		if self.langEdit.text() > '':
+			del self.parent.info[unicode(self.langEdit.text())]
+		self.parent.l10nList.removeWidget(self)
+		self.setParent(None)
+		if self.parent.l10nList.count() == 0:
+			self.parent.caller.setStyleSheet("l10nButton { font: normal }")
+
+class l10nWidget(QWidget):
+	def __init__(self, caller, info, parent=None):
+		super(l10nWidget, self).__init__(parent)
+		self.setWindowFlags(Qt.Popup)
+		
+		self.caller = caller
+		self.info = info
+		
+		list = QWidget()
+		self.l10nList = QVBoxLayout()
+		self.l10nList.setContentsMargins(0,0,0,0)
+		list.setLayout(self.l10nList)
+
+		addButton = QPushButton(self.tr('Add localization'))
+		scrollArea = QScrollArea()
+		scrollArea.setWidget(list)
+		scrollArea.setContentsMargins(0,0,0,0)
+		scrollArea.setWidgetResizable(True)
+		layout = QVBoxLayout()
+		layout.addWidget(addButton)
+		layout.addWidget(scrollArea)
+		self.setLayout(layout)
+
+		screen = QApplication.desktop().availableGeometry(caller)
+
+		x = caller.mapToGlobal(QPoint(0,0)).x() + caller.rect().width()
+		y = caller.mapToGlobal(QPoint(0,0)).y()
+		sh = QSize(300,150)
+
+		self.resize(sh)
+		if y + sh.height() > screen.height():
+			y = y - sh.height() + caller.rect().height()
+		if x + sh.width() > screen.width():
+			x = x - caller.rect().width() - sh.width()
+		self.move(QPoint(x,y))
+
+		for lang in info:
+			if lang != 0:
+				self.l10nList.addWidget(l10nItem(lang,info[lang],long=(self.caller in (self.parent().l10nDescription,self.parent().l10nLicense)),parent=self))
+
+		self.connect(addButton,
+				SIGNAL("clicked()"), self.addItem)
+
+	def addItem(self):
+		self.l10nList.addWidget(l10nItem(long=(self.caller in (self.parent().l10nDescription,self.parent().l10nLicense)),parent=self))
+		
+	def paintEvent(self, e):
+		p = QPainter(self)
+		frame = QStyleOptionFrame()
+		frame.rect = self.rect()
+		frame.palette = self.palette()
+		frame.state = QStyle.State_None
+		frame.lineWidth = self.style().pixelMetric(QStyle.PM_MenuPanelWidth)
+		frame.midLineWidth = 0
+		self.style().drawPrimitive(QStyle.PE_FrameMenu, frame, p, self)
+
+	def hideEvent(self, e):
+		self.caller.setDown(False)
+		
 class MainWindow(QMainWindow):
 	def __init__(self, file=False, parent=None):
 		super(MainWindow, self).__init__(parent)
@@ -543,27 +673,35 @@ class MainWindow(QMainWindow):
 		# sbInfo
 		nameLabel = QLabel(self.tr("Name:"))
 		self.sbName = QLineEdit()
+		self.l10nName = l10nButton()
 		descriptionLabel = QLabel(self.tr("Description:"))
 		self.sbDescription = QTextEdit()
+		self.l10nDescription = l10nButton()
 		copyrightLabel = QLabel(self.tr("Copyright:"))
 		self.copyright = QLineEdit()
+		self.l10nCopyright = l10nButton()
 		versionLabel = QLabel(self.tr("Version:"))
 		self.version = QLineEdit()
 		licenseLabel = QLabel(self.tr("License:"))
 		self.sbLicense = QTextEdit()
+		self.l10nLicense = l10nButton()
 		
 		groupBoxInfo1 = QGroupBox(self.tr("Information"))
 		sbInfo1 = QGridLayout()
 		sbInfo1.addWidget(nameLabel, 0, 0)
 		sbInfo1.addWidget(self.sbName, 0, 1)
+		sbInfo1.addWidget(self.l10nName, 0, 2)
 		sbInfo1.addWidget(descriptionLabel, 1, 0, 1, 2)
-		sbInfo1.addWidget(self.sbDescription, 2, 0, 1, 2)
-		sbInfo1.addWidget(copyrightLabel, 3, 0)
-		sbInfo1.addWidget(self.copyright, 3, 1)
-		sbInfo1.addWidget(versionLabel, 4, 0)
-		sbInfo1.addWidget(self.version, 4, 1)
-		sbInfo1.addWidget(licenseLabel, 5, 0, 1, 2)
-		sbInfo1.addWidget(self.sbLicense, 6, 0, 1, 2)
+		sbInfo1.addWidget(self.sbDescription, 2, 0, 2, 2)
+		sbInfo1.addWidget(self.l10nDescription, 2, 2)
+		sbInfo1.addWidget(copyrightLabel, 4, 0)
+		sbInfo1.addWidget(self.copyright, 4, 1)
+		sbInfo1.addWidget(self.l10nCopyright, 4, 2)
+		sbInfo1.addWidget(versionLabel, 5, 0)
+		sbInfo1.addWidget(self.version, 5, 1, 1, 2)
+		sbInfo1.addWidget(licenseLabel, 6, 0, 1, 2)
+		sbInfo1.addWidget(self.sbLicense, 7, 0, 2, 2)
+		sbInfo1.addWidget(self.l10nLicense, 7, 2)
 
 
 		self.sbProfiles = QTableWidget()
@@ -575,6 +713,8 @@ class MainWindow(QMainWindow):
 		self.sbProfiles.setEditTriggers(QAbstractItemView.NoEditTriggers)
 		self.butProf = QToolButton(self)
 		self.butProf.setFixedSize(12,12)
+		self.butProf.setArrowType(Qt.DownArrow)
+		self.butProf.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		self.menuProf = QMenu()
 		self.menuProf.addAction(self.tr('Add'),self.addProfile)
 		self.profRemoveAction = self.menuProf.addAction(self.tr('Remove'),self.remProfile)
@@ -586,7 +726,6 @@ class MainWindow(QMainWindow):
 		sbInfo2 = QHBoxLayout()
 		sbInfo2.addWidget(self.sbProfiles)
 		sbInfo2.addWidget(self.butProf,0,Qt.AlignTop)
-		
 
 		sbInfo = QVBoxLayout()
 		sbInfo.setContentsMargins(0,0,0,0)
@@ -604,6 +743,8 @@ class MainWindow(QMainWindow):
 		self.swnbLabel = QLabel()
 		self.swEditBut = QToolButton(self)
 		self.swEditBut.setMaximumSize(12,12)
+		self.swEditBut.setArrowType(Qt.DownArrow)
+		self.swEditBut.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		self.swEditMenu = QMenu()
 		self.swEditMenu.addAction(self.tr('Add Color'),self.swAddColor)
 		self.swEditMenu.addAction(self.tr('Add Spacer'),self.swAddSpacer)
@@ -674,6 +815,14 @@ class MainWindow(QMainWindow):
 				SIGNAL("itemSelectionChanged()"), self.sw_display_list)
 		self.connect(self.sbProfiles,
 				SIGNAL("itemSelectionChanged()"),self.prof_editable)
+		self.connect(self.l10nName,
+				SIGNAL("pressed()"), self.sb_l10n)
+		self.connect(self.l10nDescription,
+				SIGNAL("pressed()"), self.sb_l10n)
+		self.connect(self.l10nCopyright,
+				SIGNAL("pressed()"), self.sb_l10n)
+		self.connect(self.l10nLicense,
+				SIGNAL("pressed()"), self.sb_l10n)
 
 		#Initialisation
 		self.sb = SwatchBook()
@@ -775,6 +924,10 @@ class MainWindow(QMainWindow):
 		self.copyright.clear()
 		self.version.clear()
 		self.sbLicense.clear()
+		self.l10nName.setStyleSheet("l10nButton { font: normal }")
+		self.l10nDescription.setStyleSheet("l10nButton { font: normal }")
+		self.l10nCopyright.setStyleSheet("l10nButton { font: normal }")
+		self.l10nLicense.setStyleSheet("l10nButton { font: normal }")
 		self.cols.setValue(0)
 		self.cols.clear()
 		self.rows.setValue(0)
@@ -798,6 +951,15 @@ class MainWindow(QMainWindow):
 		current_sw = False
 		current_sp = False
 
+	def sb_l10n(self):
+		if not self.sender().isChecked():
+			infos = {self.l10nName: 'name', self.l10nDescription: 'description', self.l10nCopyright: 'copyright', self.l10nLicense: 'license' }
+			if infos[self.sender()] not in self.sb.info:
+				self.sb.info[infos[self.sender()]] = {}
+
+			l10nPopup = l10nWidget(self.sender(),self.sb.info[infos[self.sender()]],self)
+			l10nPopup.show()
+
 	def loadFile(self, fname=None):
 		if fname:
 			self.sb_flush()
@@ -805,13 +967,33 @@ class MainWindow(QMainWindow):
 			self.sb = SwatchBook(fname)
 			self.filename = fname
 			if 'name' in self.sb.info:
-				self.sbName.setText(self.sb.info['name'][0])
+				info = self.sb.info['name'].copy()
+				if 0 in info:
+					self.sbName.setText(self.sb.info['name'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nName.setStyleSheet("l10nButton { font: bold }")
 			if 'description' in self.sb.info:
-				self.sbDescription.setText(self.sb.info['description'][0])
+				info = self.sb.info['description'].copy()
+				if 0 in info:
+					self.sbDescription.setText(self.sb.info['description'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nDescription.setStyleSheet("l10nButton { font: bold }")
 			if 'copyright' in self.sb.info:
-				self.copyright.setText(self.sb.info['copyright'][0])
+				info = self.sb.info['copyright'].copy()
+				if 0 in info:
+					self.copyright.setText(self.sb.info['copyright'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nCopyright.setStyleSheet("l10nButton { font: bold }")
 			if 'license' in self.sb.info:
-				self.sbLicense.setText(self.sb.info['license'][0])
+				info = self.sb.info['license'].copy()
+				if 0 in info:
+					self.sbLicense.setText(self.sb.info['license'][0])
+					del info[0]
+				if len(info) > 0:
+					self.l10nLicense.setStyleSheet("l10nButton { font: bold }")
 			if 'version' in self.sb.info:
 				self.version.setText(self.sb.info['version'])
 			if 'columns' in self.sb.display:
@@ -1648,8 +1830,8 @@ if __name__ == "__main__":
 	else:
 		form = MainWindow()
 	form.show()
-	form.listWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-	form.listWidget.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 	form.listWidget.update()
 
+	if app.style().metaObject().className() == "QGtkStyle":
+		app.setStyle(QStyleFactory.create("Cleanlooks"))
 	app.exec_()

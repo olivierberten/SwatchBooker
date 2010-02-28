@@ -276,13 +276,3 @@ class Color(Swatch):
 			return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
 		else:
 			return False
-
-class Gradient(Swatch):
-	def __init__(self,book):
-		super(Gradient, self).__init__(book)
-
-class Pattern(Swatch):
-	def __init__(self,book):
-		super(Pattern, self).__init__(book)
-		self.colors = []
-
