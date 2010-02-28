@@ -952,6 +952,29 @@ class MainWindow(QMainWindow):
 		self.sb_flush()
 		self.sb = SwatchBook()
 
+	def webOpen(self):
+		dialog = webOpenDlg(self)
+		if dialog.exec_():
+			self.sb_flush()
+			self.sb = SwatchBook(websvc=dialog.svc,webid=dialog.id)
+			if 'name' in self.sb.info:
+				self.sbName.setText(self.sb.info['name'][0])
+			if 'description' in self.sb.info:
+				self.sbDescription.setText(self.sb.info['description'][0])
+			if 'copyright' in self.sb.info:
+				self.copyright.setText(self.sb.info['copyright'][0])
+			if 'license' in self.sb.info:
+				self.sbLicense.setText(self.sb.info['license'][0])
+			if 'version' in self.sb.info:
+				self.version.setText(self.sb.info['version'])
+			if 'columns' in self.sb.display:
+				self.cols.setValue(self.sb.display['columns'])
+				self.listWidget.setFixedWidth(self.sb.display['columns']*17 + self.listWidget.zWidth)
+			if 'rows' in self.sb.display:
+				self.rows.setValue(self.sb.display['rows'])
+				self.listWidget.setFixedHeight(self.sb.display['rows']*17 + self.listWidget.zHeight)
+			self.populateTree()
+
 	def fileOpen(self):
 		dir = os.path.dirname(self.filename) \
 				if self.filename else "."
@@ -1608,6 +1631,7 @@ class MainWindow(QMainWindow):
 		self.fileMenu.clear()
 		self.fileMenu.addAction(self.tr("&New"), self.fileNew, QKeySequence.New)
 		self.fileMenu.addAction(self.tr("&Open"), self.fileOpen, QKeySequence.Open)
+		self.fileMenu.addAction(self.tr("Open from web"), self.webOpen)
 		self.fileMenu.addAction(self.tr("&Save As..."), self.fileSaveAs, QKeySequence.Save)
 		self.fileMenu.addSeparator()
 		for k in range(settings.value("MaxRecentFiles").toInt()[0]):
@@ -1867,6 +1891,87 @@ class SettingsDlg(QDialog):
 				msgBox.setText(self.tr("This isn't a CMYK profile"))
 				msgBox.exec_()
 		
+class webOpenDlg(QDialog):
+	def __init__(self, parent=None):
+		super(webOpenDlg, self).__init__(parent)
+		import swatchbook.websvc as websvc
+		self.svc = False
+		self.id = False
+
+		self.tabWidget = QTabWidget()
+		self.webWidgets = {}
+		for svc in websvc.list:
+			current_svc = eval('websvc.'+svc+'()')
+			if current_svc.type == 'list':
+				webWidget = QTreeWidget()
+				webWidget.setHeaderHidden(True)
+				webWidget.setColumnHidden(1,True)
+				self.webWidgets[webWidget] = [svc,False]
+				self.connect(webWidget,
+						SIGNAL("itemSelectionChanged()"), self.activate)
+				self.connect(webWidget,
+						SIGNAL("itemExpanded(QTreeWidgetItem *)"), self.nextLevel)
+			if(QFile.exists('swatchbook/websvc/'+svc+'.png')):
+				self.tabWidget.addTab(webWidget,QIcon('swatchbook/websvc/'+svc+'.png'),websvc.list[svc])
+			else:
+				tabWidget.addTab(webWidget,websvc.list[svc])
+		self.changeTab()
+		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+
+		webl = QVBoxLayout()
+		webl.addWidget(self.tabWidget)
+		webl.addWidget(buttonBox)
+		self.setLayout(webl)
+
+		self.setWindowTitle(self.tr("SwatchBooker - Open from web"))
+		self.connect(self.tabWidget,
+				SIGNAL("currentChanged(int)"), self.changeTab)
+		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
+		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
+
+	def activate(self):
+		if self.sender().selectedItems():
+			treeItem = self.sender().selectedItems()[0]
+			self.svc = unicode(self.webWidgets[self.tabWidget.currentWidget()][0])
+			self.id = unicode(treeItem.text(1))
+
+	def changeTab(self):
+		self.svc = False
+		self.id = False
+		import swatchbook.websvc as websvc
+		svc,activated = self.webWidgets[self.tabWidget.currentWidget()]
+		if not activated:
+			current_svc = eval('websvc.'+svc+'()')
+			root = current_svc.level0()
+			for item in root:
+				itemtext = QStringList()
+				itemtext << root[item] << item
+				titem = QTreeWidgetItem(self.tabWidget.currentWidget(),itemtext)
+				if current_svc.nbLevels > 1:
+					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
+					titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
+			self.webWidgets[self.tabWidget.currentWidget()][1] = True
+
+	def nextLevel(self,treeItem):
+		if treeItem.childCount() == 0:
+			import swatchbook.websvc as websvc
+			svc = self.webWidgets[self.tabWidget.currentWidget()][0]
+			current_svc = eval('websvc.'+svc+'()')
+			level = 1
+			parent = treeItem.parent()
+			while parent:
+				parent = parent.parent()
+				level += 1
+			llist = eval('current_svc.level'+str(level))(unicode(treeItem.text(1)))
+			for item in llist:
+				itemtext = QStringList()
+				itemtext << llist[item] << item
+				titem = QTreeWidgetItem(treeItem,itemtext)
+				if current_svc.nbLevels > level+1:
+					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
+					titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
+					
+
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	app.setOrganizationName("Selapa")

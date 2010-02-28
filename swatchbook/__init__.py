@@ -145,12 +145,12 @@ class FileFormatError(Exception):
 
 class SwatchBook(object):
 	"""Output values
-       RGB,HSV,HSL,CMY,CMYK,6CLR: 0 -> 1
+       RGB,HSV,HSL,CMY,CMYK,nCLR: 0 -> 1
        YIQ: Y 0 -> 1 : IQ -0.5 -> 0.5
        Lab: L 0 -> 100 : ab -128 -> 127
        XYZ: 0 -> ~100 (cfr. ref)"""
 
-	def __init__(self, file=False,codec=False):
+	def __init__(self, file=False,codec=False,websvc=False,webid=False):
 		# Informations
 		self.info = {}
 		self.ids = {}
@@ -164,6 +164,8 @@ class SwatchBook(object):
 
 		if file:
 			self.read(file,codec)
+		elif websvc:
+			self.webread(websvc,webid)
 
 	def test(self,file,codec=False):
 		# test 1: codec
@@ -199,6 +201,11 @@ class SwatchBook(object):
 		else:
 			codec = False
 		return codec
+
+	def webread(self,websvc,webid):
+		import swatchbook.websvc as web
+		svc = eval('web.'+websvc+'()')
+		svc.read(self,webid)
 
 	def read(self,file,codec):
 		import swatchbook.codecs as codecs
