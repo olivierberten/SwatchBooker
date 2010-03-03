@@ -23,13 +23,13 @@ from __future__ import division
 import sys
 import time
 import tempfile
-
+import gettext
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from swatchbook import *
 
-__version__ = "0.6"
+__version__ = "0.7"
 
 current_sw = False
 current_sp = False
@@ -160,12 +160,12 @@ class GroupWidget(QGroupBox):
 		super(GroupWidget, self).__init__(parent)
 		
 		self.parent = parent
-		self.setTitle(self.tr("Group"))
+		self.setTitle(_("Group"))
 
-		nameLabel = QLabel(self.tr("Name:"))
+		nameLabel = QLabel(_("Name:"))
 		self.swName = QLineEdit()
 		self.l10nName = l10nButton()
-		descriptionLabel = QLabel(self.tr("Description:"))
+		descriptionLabel = QLabel(_("Description:"))
 		self.swDescription = QTextEdit()
 		self.l10nDescription = l10nButton()
 		self.l10nLicense = l10nButton()
@@ -240,18 +240,18 @@ class ColorWidget(QGroupBox):
 		super(ColorWidget, self).__init__(parent)
 		
 		self.parent = parent
-		self.setTitle(self.tr("Color"))
+		self.setTitle(_("Color"))
 
-		nameLabel = QLabel(self.tr("Name:"))
+		nameLabel = QLabel(_("Name:"))
 		self.swName = QLineEdit()
 		self.l10nName = l10nButton()
-		descriptionLabel = QLabel(self.tr("Description:"))
+		descriptionLabel = QLabel(_("Description:"))
 		self.swDescription = QTextEdit()
 		self.l10nDescription = l10nButton()
 		self.l10nLicense = l10nButton()
 		self.sample = QLabel()
 		self.sample.setMinimumHeight(30)
-		self.swSpot = QCheckBox(self.tr("Spot"))
+		self.swSpot = QCheckBox(_("Spot"))
 		self.swValues = QTabWidget()
 		self.butVal = QToolButton(self.swValues)
 		self.butVal.setFixedSize(12,12)
@@ -264,11 +264,11 @@ class ColorWidget(QGroupBox):
 		cornWid.setLayout(cornLay)
 		cornWid.setMinimumSize(12,12)
 		self.menuVal = QMenu()
-		self.menuValModl = self.menuVal.addMenu(self.tr('Add'))
+		self.menuValModl = self.menuVal.addMenu(_('Add'))
 		global models
 		for model in models:
 			self.menuValModl.addAction(model,self.addVal)
-		self.delValAction = self.menuVal.addAction(self.tr('Remove'),self.delVal)
+		self.delValAction = self.menuVal.addAction(_('Remove'),self.delVal)
 		self.delValAction.setEnabled(False)
 		self.butVal.setPopupMode(QToolButton.InstantPopup)
 		self.butVal.setMenu(self.menuVal)
@@ -278,20 +278,20 @@ class ColorWidget(QGroupBox):
 		self.swExtra.setColumnCount(2)
 		self.swExtra.horizontalHeader().setStretchLastSection(True)
 		self.swExtra.verticalHeader().hide()
-		self.swExtra.setHorizontalHeaderLabels([self.tr("Key"),self.tr("Value")])
+		self.swExtra.setHorizontalHeaderLabels([_("Key"),_("Value")])
 		self.swExtra.setSelectionBehavior(QAbstractItemView.SelectRows)
 		self.butExtra = QToolButton(self)
 		self.butExtra.setFixedSize(12,12)
 		self.butExtra.setArrowType(Qt.DownArrow)
 		self.butExtra.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		self.menuExtra = QMenu()
-		self.menuExtra.addAction(self.tr('Add'),self.addExtra)
-		self.extraRemoveAction = self.menuExtra.addAction(self.tr('Remove'),self.remExtra)
+		self.menuExtra.addAction(_('Add'),self.addExtra)
+		self.extraRemoveAction = self.menuExtra.addAction(_('Remove'),self.remExtra)
 		self.butExtra.setPopupMode(QToolButton.InstantPopup)
 		self.butExtra.setMenu(self.menuExtra)
 		self.extraRemoveAction.setEnabled(False)
 
-		groupBoxExtra = QGroupBox(self.tr("Extra info"))
+		groupBoxExtra = QGroupBox(_("Extra info"))
 		boxExtra = QHBoxLayout()
 		boxExtra.addWidget(self.swExtra)
 		boxExtra.addWidget(self.butExtra,0,Qt.AlignTop)
@@ -424,7 +424,7 @@ class ColorWidget(QGroupBox):
 				count += 1
 				
 		if modell not in ('Lab','XYZ'):
-			grid.addWidget(QLabel(self.tr("Profile")), count, 0, 1, width)
+			grid.addWidget(QLabel(_("Profile")), count, 0, 1, width)
 			if modell in ('RGB','HSL','HSV','YIQ','CMY'):
 				modellist = 'RGB'
 			else:
@@ -669,7 +669,7 @@ class l10nWidget(QWidget):
 		self.l10nList.setContentsMargins(0,0,0,0)
 		list.setLayout(self.l10nList)
 
-		addButton = QPushButton(self.tr('Add localization'))
+		addButton = QPushButton(_('Add localization'))
 		scrollArea = QScrollArea()
 		scrollArea.setWidget(list)
 		scrollArea.setContentsMargins(0,0,0,0)
@@ -727,22 +727,22 @@ class MainWindow(QMainWindow):
 
 		self.sbWidget = QSplitter(Qt.Horizontal)
 		# sbInfo
-		nameLabel = QLabel(self.tr("Name:"))
+		nameLabel = QLabel(_("Name:"))
 		self.sbName = QLineEdit()
 		self.l10nName = l10nButton()
-		descriptionLabel = QLabel(self.tr("Description:"))
+		descriptionLabel = QLabel(_("Description:"))
 		self.sbDescription = QTextEdit()
 		self.l10nDescription = l10nButton()
-		copyrightLabel = QLabel(self.tr("Copyright:"))
+		copyrightLabel = QLabel(_("Copyright:"))
 		self.copyright = QLineEdit()
 		self.l10nCopyright = l10nButton()
-		versionLabel = QLabel(self.tr("Version:"))
+		versionLabel = QLabel(_("Version:"))
 		self.version = QLineEdit()
-		licenseLabel = QLabel(self.tr("License:"))
+		licenseLabel = QLabel(_("License:"))
 		self.sbLicense = QTextEdit()
 		self.l10nLicense = l10nButton()
 		
-		groupBoxInfo1 = QGroupBox(self.tr("Information"))
+		groupBoxInfo1 = QGroupBox(_("Information"))
 		sbInfo1 = QGridLayout()
 		sbInfo1.addWidget(nameLabel, 0, 0)
 		sbInfo1.addWidget(self.sbName, 0, 1)
@@ -772,13 +772,13 @@ class MainWindow(QMainWindow):
 		self.butProf.setArrowType(Qt.DownArrow)
 		self.butProf.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		self.menuProf = QMenu()
-		self.menuProf.addAction(self.tr('Add'),self.addProfile)
-		self.profRemoveAction = self.menuProf.addAction(self.tr('Remove'),self.remProfile)
+		self.menuProf.addAction(_('Add'),self.addProfile)
+		self.profRemoveAction = self.menuProf.addAction(_('Remove'),self.remProfile)
 		self.butProf.setPopupMode(QToolButton.InstantPopup)
 		self.butProf.setMenu(self.menuProf)
 		self.profRemoveAction.setEnabled(False)
 
-		groupBoxInfo2 = QGroupBox(self.tr("Color profiles"))
+		groupBoxInfo2 = QGroupBox(_("Color profiles"))
 		sbInfo2 = QHBoxLayout()
 		sbInfo2.addWidget(self.sbProfiles)
 		sbInfo2.addWidget(self.butProf,0,Qt.AlignTop)
@@ -802,16 +802,16 @@ class MainWindow(QMainWindow):
 		self.swEditBut.setArrowType(Qt.DownArrow)
 		self.swEditBut.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		self.swEditMenu = QMenu()
-		self.swEditMenu.addAction(self.tr('Add Color'),self.swAddColor)
-		self.swEditMenu.addAction(self.tr('Add Spacer'),self.swAddSpacer)
-		self.swEditMenu.addAction(self.tr('Add Break'),self.swAddBreak)
-		self.swEditMenu.addAction(self.tr('Add Group'),self.swAddGroup)
-		self.deleteAction = self.swEditMenu.addAction(self.tr('Delete'),self.swDelete)
+		self.swEditMenu.addAction(_('Add Color'),self.swAddColor)
+		self.swEditMenu.addAction(_('Add Spacer'),self.swAddSpacer)
+		self.swEditMenu.addAction(_('Add Break'),self.swAddBreak)
+		self.swEditMenu.addAction(_('Add Group'),self.swAddGroup)
+		self.deleteAction = self.swEditMenu.addAction(_('Delete'),self.swDelete)
 		self.swEditBut.setPopupMode(QToolButton.InstantPopup)
 		self.swEditBut.setMenu(self.swEditMenu)
 		self.deleteAction.setEnabled(False)
 		
-		groupBoxTree = QGroupBox(self.tr("Tree view"))
+		groupBoxTree = QGroupBox(_("Tree view"))
 		sbTree = QGridLayout()
 		sbTree.addWidget(self.treeWidget,0,0,1,2)
 		sbTree.addWidget(self.swnbLabel,1,0)
@@ -821,14 +821,14 @@ class MainWindow(QMainWindow):
 
 		# sbGrid
 		self.listWidget = sbListWidget()
-		colsLabel = QLabel(self.tr("Columns:"))
+		colsLabel = QLabel(_("Columns:"))
 		self.cols = QSpinBox()
 		self.cols.setRange(0, 64)
-		rowsLabel = QLabel(self.tr("Rows:"))
+		rowsLabel = QLabel(_("Rows:"))
 		self.rows = QSpinBox()
 		self.rows.setRange(0, 64)
 
-		groupBoxGrid = QGroupBox(self.tr("Grid view"))
+		groupBoxGrid = QGroupBox(_("Grid view"))
 		sbGrid = QVBoxLayout()
 		dims = QGridLayout()
 		dims.addWidget(colsLabel, 0, 0)
@@ -845,9 +845,9 @@ class MainWindow(QMainWindow):
 
 		self.setCentralWidget(self.sbWidget)
 
-		self.fileMenu = self.menuBar().addMenu(self.tr("&File"))
-		self.menuBar().addAction(self.tr("Settings"), self.settings)
-		self.menuBar().addAction(self.tr("&About"), self.about)
+		self.fileMenu = self.menuBar().addMenu(_("&File"))
+		self.menuBar().addAction(_("Settings"), self.settings)
+		self.menuBar().addAction(_("&About"), self.about)
 		self.updateFileMenu()
 		
 		# Actions
@@ -989,8 +989,8 @@ class MainWindow(QMainWindow):
 		allexts = ["*.%s" % unicode(format).lower() \
 				   for format in codecs.readexts.keys()]
 		fname = unicode(QFileDialog.getOpenFileName(self,
-							self.tr("SwatchBooker - Choose file"), dir,
-							(unicode(self.tr("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+self.tr(";;All files (*)")))
+							_("Choose file"), dir,
+							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+_(";;All files (*)")))
 		if fname:
 			self.loadFile(fname)
 
@@ -1029,6 +1029,7 @@ class MainWindow(QMainWindow):
 			self.sbSwatch.setParent(None)
 		current_sw = False
 		current_sp = False
+		self.updSwatchCount()
 
 	def sb_l10n(self):
 		if not self.sender().isChecked():
@@ -1119,7 +1120,7 @@ class MainWindow(QMainWindow):
 		fname = self.filename or "."
 		filetype = QString()
 		fname = unicode(QFileDialog.getSaveFileName(self,
-						self.tr("SwatchBooker - Save file"), fname,
+						_("Save file"), fname,
 						";;".join(filetypes.keys()),filetype))
 		if fname:
 			if len(fname.rsplit(".",1)) == 1 or (len(fname.rsplit(".",1)) > 1 and fname.rsplit(".",1)[1] != filetypes[unicode(filetype)][1]):
@@ -1224,7 +1225,7 @@ class MainWindow(QMainWindow):
 		return icon
 
 	def about(self):
-		QMessageBox.about(self, self.tr("About SwatchBooker"),
+		QMessageBox.about(self, _("About SwatchBooker"),
                 """<b>SwatchBooker</b> %s
                 <p>&copy; 2008 Olivier Berten
                 <p>Qt %s - PyQt %s""" % (
@@ -1538,12 +1539,7 @@ class MainWindow(QMainWindow):
 		self.listWidget.update()
 
 	def updSwatchCount(self):
-		swnbLabelText = str(self.swnb)+' '
-		if self.swnb > 1:
-			swnbLabelText += self.tr('swatches')
-		else:
-			swnbLabelText += self.tr('swatch')
-		self.swnbLabel.setText(swnbLabelText)
+		self.swnbLabel.setText(n_('%s swatch','%s swatches',self.swnb) % self.swnb)
 
 	def prof_editable(self):
 		if self.sbProfiles.isItemSelected(self.sbProfiles.currentItem()):
@@ -1551,8 +1547,8 @@ class MainWindow(QMainWindow):
 
 	def addProfile(self):
 		fname = unicode(QFileDialog.getOpenFileName(self,
-							self.tr("SwatchBooker - Choose file"), ".",
-							(self.tr("ICC profiles (*.icc *.icm)"))))
+							_("Choose file"), ".",
+							(_("ICC profiles (*.icc *.icm)"))))
 		if fname:
 			# the next 6 lines are a workaround for the unability of lcms to deal with unicode file names
 			fi = open(fname, 'rb')
@@ -1629,10 +1625,10 @@ class MainWindow(QMainWindow):
 			recentFileActs[j].setVisible(False)
 
 		self.fileMenu.clear()
-		self.fileMenu.addAction(self.tr("&New"), self.fileNew, QKeySequence.New)
-		self.fileMenu.addAction(self.tr("&Open"), self.fileOpen, QKeySequence.Open)
-		self.fileMenu.addAction(self.tr("Open from web"), self.webOpen)
-		self.fileMenu.addAction(self.tr("&Save As..."), self.fileSaveAs, QKeySequence.Save)
+		self.fileMenu.addAction(_("&New"), self.fileNew, QKeySequence.New)
+		self.fileMenu.addAction(_("&Open"), self.fileOpen, QKeySequence.Open)
+		self.fileMenu.addAction(_("Open from web"), self.webOpen)
+		self.fileMenu.addAction(_("&Save As..."), self.fileSaveAs, QKeySequence.Save)
 		self.fileMenu.addSeparator()
 		for k in range(settings.value("MaxRecentFiles").toInt()[0]):
 			self.fileMenu.addAction(recentFileActs[k])
@@ -1651,7 +1647,7 @@ class noChild(QTreeWidgetItem):
 
 		font = QFont()
 		font.setItalic(True)
-		self.setText(0,QCoreApplication.translate('noChild','empty'))
+		self.setText(0,_('empty'))
 		self.setFont(0,font)
 		self.setTextColor(0,QColor(128,128,128))
 		self.setFlags(self.flags() & ~(Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled))
@@ -1755,13 +1751,13 @@ class SettingsDlg(QDialog):
 		self.sRGB = QCheckBox("sRGB")
 		self.RGBfileLabel = QLabel()
 		self.RGBfileLabel.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
-		self.RGBfileButton = QPushButton(self.tr("Choose file"))
+		self.RGBfileButton = QPushButton(_("Choose file"))
 
 		RGBfileLayout = QHBoxLayout()
 		RGBfileLayout.addWidget(self.RGBfileLabel, 1)
 		RGBfileLayout.addWidget(self.RGBfileButton)
 		
-		gDisProf = QGroupBox(self.tr("Display Profile"))
+		gDisProf = QGroupBox(_("Display Profile"))
 		disprof = QVBoxLayout()
 		disprof.addWidget(self.sRGB)
 		disprof.addLayout(RGBfileLayout)
@@ -1770,13 +1766,13 @@ class SettingsDlg(QDialog):
 		self.Fogra27L = QCheckBox("Fogra27L")
 		self.CMYKfileLabel = QLabel()
 		self.CMYKfileLabel.setFrameStyle(QFrame.StyledPanel|QFrame.Sunken)
-		self.CMYKfileButton = QPushButton(self.tr("Choose file"))
+		self.CMYKfileButton = QPushButton(_("Choose file"))
 
 		CMYKfileLayout = QHBoxLayout()
 		CMYKfileLayout.addWidget(self.CMYKfileLabel, 1)
 		CMYKfileLayout.addWidget(self.CMYKfileButton)
 
-		gCMYKProf = QGroupBox(self.tr("Default CMYK Profile"))
+		gCMYKProf = QGroupBox(_("Default CMYK Profile"))
 		CMYKprof = QVBoxLayout()
 		CMYKprof.addWidget(self.Fogra27L)
 		CMYKprof.addLayout(CMYKfileLayout)
@@ -1785,9 +1781,9 @@ class SettingsDlg(QDialog):
 		self.RecFilesSpin = QSpinBox()
 		self.RecFilesSpin.setRange(0, 12)
 
-		gRecFiles = QGroupBox(self.tr("Recent files"))
+		gRecFiles = QGroupBox(_("Recent files"))
 		RecFiles = QHBoxLayout()
-		RecFiles.addWidget(QLabel(self.tr("Number of files displayed:")))
+		RecFiles.addWidget(QLabel(_("Number of files displayed:")))
 		RecFiles.addWidget(self.RecFilesSpin)
 		gRecFiles.setLayout(RecFiles)
 
@@ -1819,20 +1815,20 @@ class SettingsDlg(QDialog):
 		self.connect(self.RGBfileButton, SIGNAL("clicked()"), self.setRGBFile)
 		self.connect(self.Fogra27L, SIGNAL("stateChanged (int)"), self.actProfile)
 		self.connect(self.CMYKfileButton, SIGNAL("clicked()"), self.setCMYKFile)
-		self.setWindowTitle(self.tr("SwatchBooker - Settings"))
+		self.setWindowTitle(_("Settings"))
 
 	def accept(self):
 		if self.sRGB.checkState() == 0 and not hasattr(self,'RGBfname'):
 			msgBox = QMessageBox(self)
-			msgBox.setWindowTitle(self.tr('Error'))
+			msgBox.setWindowTitle(_('Error'))
 			msgBox.setIcon(QMessageBox.Critical)
-			msgBox.setText(self.tr("You must choose either sRGB or a file"))
+			msgBox.setText(_("You must choose either sRGB or a file"))
 			msgBox.exec_()
 		elif self.Fogra27L.checkState() == 0 and not hasattr(self,'CMYKfname'):
 			msgBox = QMessageBox(self)
-			msgBox.setWindowTitle(self.tr('Error'))
+			msgBox.setWindowTitle(_('Error'))
 			msgBox.setIcon(QMessageBox.Critical)
-			msgBox.setText(self.tr("You must choose either Fogra27L or a file"))
+			msgBox.setText(_("You must choose either Fogra27L or a file"))
 			msgBox.exec_()
 		else:
 			QDialog.accept(self)
@@ -1862,7 +1858,7 @@ class SettingsDlg(QDialog):
 			self.CMYKfileButton.setEnabled(True)
 
 	def setRGBFile(self):
-		fname = QFileDialog.getOpenFileName(self, self.tr("Choose file"), QDir.homePath(),self.tr("ICC profiles (*.icc *.icm)"))
+		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm)"))
 		if fname:
 			import swatchbook.icc as icc
 			profile = icc.ICCprofile(fname)
@@ -1871,13 +1867,13 @@ class SettingsDlg(QDialog):
 				self.RGBfileLabel.setText(self.RGBfname)
 			else:
 				msgBox = QMessageBox(self)
-				msgBox.setWindowTitle(self.tr('Error'))
+				msgBox.setWindowTitle(_('Error'))
 				msgBox.setIcon(QMessageBox.Critical)
-				msgBox.setText(self.tr("This isn't a RGB monitor profile"))
+				msgBox.setText(_("This isn't a RGB monitor profile"))
 				msgBox.exec_()
 		
 	def setCMYKFile(self):
-		fname = QFileDialog.getOpenFileName(self, self.tr("Choose file"), QDir.homePath(),self.tr("ICC profiles (*.icc *.icm)"))
+		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm)"))
 		if fname:
 			import swatchbook.icc as icc
 			profile = icc.ICCprofile(fname)
@@ -1888,7 +1884,7 @@ class SettingsDlg(QDialog):
 				msgBox = QMessageBox(self)
 				msgBox.setWindowTitle('Error')
 				msgBox.setIcon(QMessageBox.Critical)
-				msgBox.setText(self.tr("This isn't a CMYK profile"))
+				msgBox.setText(_("This isn't a CMYK profile"))
 				msgBox.exec_()
 		
 class webOpenDlg(QDialog):
@@ -1923,7 +1919,7 @@ class webOpenDlg(QDialog):
 		webl.addWidget(buttonBox)
 		self.setLayout(webl)
 
-		self.setWindowTitle(self.tr("SwatchBooker - Open from web"))
+		self.setWindowTitle(_("Open from web"))
 		self.connect(self.tabWidget,
 				SIGNAL("currentChanged(int)"), self.changeTab)
 		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
@@ -1979,12 +1975,17 @@ if __name__ == "__main__":
 	app.setApplicationName("SwatchBooker")
 	
 	locale = QLocale.system().name()
+	lang = gettext.translation('swatchbooker', 'locale', languages=[str(locale)])
+	lang.install()
+	def _(msgid):
+		return lang.gettext(msgid).decode('utf-8')
+
+	def n_(msgid0,msgid1,n):
+		return lang.ngettext(msgid0,msgid1,n).decode('utf-8')
+
 	qtTranslator = QTranslator()
 	if qtTranslator.load("qt_" + locale, QLibraryInfo.location(QLibraryInfo.TranslationsPath)):
 		app.installTranslator(qtTranslator)
-	appTranslator = QTranslator()
-	if appTranslator.load("swatchbooker_" + locale):
-		app.installTranslator(appTranslator)
 
 	if len(sys.argv) > 1:
 		form = MainWindow(sys.argv[1])

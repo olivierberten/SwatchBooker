@@ -1,0 +1,240 @@
+# German translation for SwatchBooker
+# Copyright (C) 2008 Olivier Berten
+# This file is distributed under the same license as the SwatchBooker package.
+# Christoph Schäfer <christoph-schaefer@gmx.de>, 2010.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SwatchBooker\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-03-03 15:21+0100\n"
+"PO-Revision-Date: 2010-03-03 21:18+0100\n"
+"Last-Translator: Olivier Berten <olivier.berten@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: swatchbooker.pyw:169
+msgid "Group"
+msgstr "Gruppe"
+
+#: swatchbooker.pyw:171
+#: swatchbooker.pyw:251
+#: swatchbooker.pyw:736
+msgid "Name:"
+msgstr "Name :"
+
+#: swatchbooker.pyw:174
+#: swatchbooker.pyw:254
+#: swatchbooker.pyw:739
+msgid "Description:"
+msgstr "Beschreibung :"
+
+#: swatchbooker.pyw:249
+msgid "Color"
+msgstr "Farbe"
+
+#: swatchbooker.pyw:260
+msgid "Spot"
+msgstr "Schmuckfarbe"
+
+#: swatchbooker.pyw:273
+#: swatchbooker.pyw:294
+#: swatchbooker.pyw:781
+msgid "Add"
+msgstr "Hinzufügen"
+
+#: swatchbooker.pyw:277
+#: swatchbooker.pyw:295
+#: swatchbooker.pyw:782
+msgid "Remove"
+msgstr "Entfernen"
+
+#: swatchbooker.pyw:287
+msgid "Key"
+msgstr "Schlüssel"
+
+#: swatchbooker.pyw:287
+msgid "Value"
+msgstr "Wert"
+
+#: swatchbooker.pyw:300
+msgid "Extra info"
+msgstr "Zusätzliche Informationen"
+
+#: swatchbooker.pyw:433
+msgid "Profile"
+msgstr "Profil"
+
+#: swatchbooker.pyw:678
+msgid "Add localization"
+msgstr ""
+
+#: swatchbooker.pyw:742
+msgid "Copyright:"
+msgstr "Urheberrecht:"
+
+#: swatchbooker.pyw:745
+msgid "Version:"
+msgstr "Version:"
+
+#: swatchbooker.pyw:747
+msgid "License:"
+msgstr "Lizenz:"
+
+#: swatchbooker.pyw:751
+msgid "Information"
+msgstr "Information"
+
+#: swatchbooker.pyw:787
+msgid "Color profiles"
+msgstr "Farbprofile"
+
+#: swatchbooker.pyw:811
+msgid "Add Color"
+msgstr "Farbe hinzufügen"
+
+#: swatchbooker.pyw:812
+msgid "Add Spacer"
+msgstr "Schieber hinzufügen"
+
+#: swatchbooker.pyw:813
+msgid "Add Break"
+msgstr "Umbruch hinzufügen"
+
+#: swatchbooker.pyw:814
+msgid "Add Group"
+msgstr "Gruppe hinzufügen"
+
+#: swatchbooker.pyw:815
+msgid "Delete"
+msgstr "Entfernen"
+
+#: swatchbooker.pyw:820
+msgid "Tree view"
+msgstr "Baumansicht"
+
+#: swatchbooker.pyw:830
+msgid "Columns:"
+msgstr "Spalten:"
+
+#: swatchbooker.pyw:833
+msgid "Rows:"
+msgstr "Zeilen:"
+
+#: swatchbooker.pyw:837
+msgid "Grid view"
+msgstr "Rasteransicht"
+
+#: swatchbooker.pyw:854
+msgid "&File"
+msgstr "&Datei"
+
+#: swatchbooker.pyw:855
+#: swatchbooker.pyw:1824
+msgid "Settings"
+msgstr "Einstellungen"
+
+#: swatchbooker.pyw:856
+msgid "&About"
+msgstr "Ü&ber"
+
+#: swatchbooker.pyw:998
+#: swatchbooker.pyw:1556
+#: swatchbooker.pyw:1760
+#: swatchbooker.pyw:1775
+#: swatchbooker.pyw:1867
+#: swatchbooker.pyw:1882
+msgid "Choose file"
+msgstr "Datei auswählen"
+
+#: swatchbooker.pyw:999
+#, python-format
+msgid "All supported files (%s)"
+msgstr "Alle unterstützten Formate (%s)"
+
+#: swatchbooker.pyw:999
+msgid ";;All files (*)"
+msgstr ";;Alle Dateien (*)"
+
+#: swatchbooker.pyw:1129
+msgid "Save file"
+msgstr "Profil auswählen"
+
+#: swatchbooker.pyw:1234
+msgid "About SwatchBooker"
+msgstr "Über SwatchBooker"
+
+#: swatchbooker.pyw:1548
+#, python-format
+msgid "%s swatch"
+msgid_plural "%s swatches"
+msgstr[0] "%s Palette"
+msgstr[1] "%s Paletten"
+
+#: swatchbooker.pyw:1557
+#: swatchbooker.pyw:1867
+#: swatchbooker.pyw:1882
+msgid "ICC profiles (*.icc *.icm)"
+msgstr "ICC-Profile (*.icc *.icm)"
+
+#: swatchbooker.pyw:1634
+msgid "&New"
+msgstr "&Neu"
+
+#: swatchbooker.pyw:1635
+msgid "&Open"
+msgstr "Ö&ffnen"
+
+#: swatchbooker.pyw:1636
+#: swatchbooker.pyw:1928
+msgid "Open from web"
+msgstr "Aus dem Web öffnen"
+
+#: swatchbooker.pyw:1637
+msgid "&Save As..."
+msgstr "Speichern &unter ..."
+
+#: swatchbooker.pyw:1656
+msgid "empty"
+msgstr "leer"
+
+#: swatchbooker.pyw:1766
+msgid "Display Profile"
+msgstr "Wiedergabeprofil"
+
+#: swatchbooker.pyw:1781
+msgid "Default CMYK Profile"
+msgstr "Standard-CMYK-Profil"
+
+#: swatchbooker.pyw:1790
+msgid "Recent files"
+msgstr "Zuletzt geöffnete Dateien"
+
+#: swatchbooker.pyw:1792
+msgid "Number of files displayed:"
+msgstr "Anzahl der geöffneten Dateien:"
+
+#: swatchbooker.pyw:1829
+#: swatchbooker.pyw:1835
+#: swatchbooker.pyw:1876
+msgid "Error"
+msgstr "Fehler"
+
+#: swatchbooker.pyw:1831
+msgid "You must choose either sRGB or a file"
+msgstr "Sie müssen entweder sRGB oder eine Datei auswählen"
+
+#: swatchbooker.pyw:1837
+msgid "You must choose either Fogra27L or a file"
+msgstr "Sie müssen entweder Fogra27L oder eine Datei auswählen"
+
+#: swatchbooker.pyw:1878
+msgid "This isn't a RGB monitor profile"
+msgstr "Dies ist kein RGB-Monitorprofil"
+
+#: swatchbooker.pyw:1893
+msgid "This isn't a CMYK profile"
+msgstr "Dies ist kein CMYK-Profil"
+

@@ -1,0 +1,239 @@
+# Russian translation for SwatchBooker
+# Copyright (C) 2008 Olivier Berten
+# This file is distributed under the same license as the SwatchBooker package.
+# Alexandre Prokoudine <alexandre.prokoudine@gmail.com>, 2010.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SwatchBooker\n"
+"POT-Creation-Date: 2010-03-03 15:21+0100\n"
+"PO-Revision-Date: 2010-03-03 21:52+0100\n"
+"Last-Translator: Olivier Berten <olivier.berten@gmail.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+
+#: swatchbooker.pyw:169
+msgid "Group"
+msgstr "Группа"
+
+#: swatchbooker.pyw:171
+#: swatchbooker.pyw:251
+#: swatchbooker.pyw:736
+msgid "Name:"
+msgstr "Название:"
+
+#: swatchbooker.pyw:174
+#: swatchbooker.pyw:254
+#: swatchbooker.pyw:739
+msgid "Description:"
+msgstr "Описание:"
+
+#: swatchbooker.pyw:249
+msgid "Color"
+msgstr "Цвет"
+
+#: swatchbooker.pyw:260
+msgid "Spot"
+msgstr "Плашечный"
+
+#: swatchbooker.pyw:273
+#: swatchbooker.pyw:294
+#: swatchbooker.pyw:781
+msgid "Add"
+msgstr "Добавить"
+
+#: swatchbooker.pyw:277
+#: swatchbooker.pyw:295
+#: swatchbooker.pyw:782
+msgid "Remove"
+msgstr "Удалить"
+
+#: swatchbooker.pyw:287
+msgid "Key"
+msgstr "Ключ"
+
+#: swatchbooker.pyw:287
+msgid "Value"
+msgstr "Значение"
+
+#: swatchbooker.pyw:300
+msgid "Extra info"
+msgstr "Дополнительная информация"
+
+#: swatchbooker.pyw:433
+msgid "Profile"
+msgstr "Профиль"
+
+#: swatchbooker.pyw:678
+msgid "Add localization"
+msgstr ""
+
+#: swatchbooker.pyw:742
+msgid "Copyright:"
+msgstr "Авторские права:"
+
+#: swatchbooker.pyw:745
+msgid "Version:"
+msgstr "Версия:"
+
+#: swatchbooker.pyw:747
+msgid "License:"
+msgstr "Лицензия:"
+
+#: swatchbooker.pyw:751
+msgid "Information"
+msgstr "Информация"
+
+#: swatchbooker.pyw:787
+msgid "Color profiles"
+msgstr "Цветовые профили"
+
+#: swatchbooker.pyw:811
+msgid "Add Color"
+msgstr "Добавить цвет"
+
+#: swatchbooker.pyw:812
+msgid "Add Spacer"
+msgstr "Добавить интервал"
+
+#: swatchbooker.pyw:813
+msgid "Add Break"
+msgstr "Добавить разделитель"
+
+#: swatchbooker.pyw:814
+msgid "Add Group"
+msgstr "Добавить группу"
+
+#: swatchbooker.pyw:815
+msgid "Delete"
+msgstr "Удалить"
+
+#: swatchbooker.pyw:820
+msgid "Tree view"
+msgstr "В виде дерева"
+
+#: swatchbooker.pyw:830
+msgid "Columns:"
+msgstr "Столбцов:"
+
+#: swatchbooker.pyw:833
+msgid "Rows:"
+msgstr "Строк:"
+
+#: swatchbooker.pyw:837
+msgid "Grid view"
+msgstr "В виде сетки"
+
+#: swatchbooker.pyw:854
+msgid "&File"
+msgstr "&Файл"
+
+#: swatchbooker.pyw:855
+#: swatchbooker.pyw:1824
+msgid "Settings"
+msgstr "Параметры"
+
+#: swatchbooker.pyw:856
+msgid "&About"
+msgstr "&О программе"
+
+#: swatchbooker.pyw:998
+#: swatchbooker.pyw:1556
+#: swatchbooker.pyw:1760
+#: swatchbooker.pyw:1775
+#: swatchbooker.pyw:1867
+#: swatchbooker.pyw:1882
+msgid "Choose file"
+msgstr "Указать файл"
+
+#: swatchbooker.pyw:999
+#, python-format
+msgid "All supported files (%s)"
+msgstr "Все поддерживаемые файлы (%s)"
+
+#: swatchbooker.pyw:999
+msgid ";;All files (*)"
+msgstr ";;Все файлы (*)"
+
+#: swatchbooker.pyw:1129
+msgid "Save file"
+msgstr "Указать файл"
+
+#: swatchbooker.pyw:1234
+msgid "About SwatchBooker"
+msgstr "О SwatchBooker"
+
+#: swatchbooker.pyw:1548
+#, python-format
+msgid "%s swatch"
+msgid_plural "%s swatches"
+msgstr[0] "%s образец"
+msgstr[1] "%s образцов"
+
+#: swatchbooker.pyw:1557
+#: swatchbooker.pyw:1867
+#: swatchbooker.pyw:1882
+msgid "ICC profiles (*.icc *.icm)"
+msgstr "Профили ICC (*.icc *.icm)"
+
+#: swatchbooker.pyw:1634
+msgid "&New"
+msgstr "&Создать"
+
+#: swatchbooker.pyw:1635
+msgid "&Open"
+msgstr "&Открыть"
+
+#: swatchbooker.pyw:1636
+#: swatchbooker.pyw:1928
+msgid "Open from web"
+msgstr "Открыть из Сети"
+
+#: swatchbooker.pyw:1637
+msgid "&Save As..."
+msgstr "Сохранить &как..."
+
+#: swatchbooker.pyw:1656
+msgid "empty"
+msgstr "пусто"
+
+#: swatchbooker.pyw:1766
+msgid "Display Profile"
+msgstr "Профиль монитора"
+
+#: swatchbooker.pyw:1781
+msgid "Default CMYK Profile"
+msgstr "Профиль CMYK по умолчанию"
+
+#: swatchbooker.pyw:1790
+msgid "Recent files"
+msgstr "Недавние файлы"
+
+#: swatchbooker.pyw:1792
+msgid "Number of files displayed:"
+msgstr "Число отображаемых файлов:"
+
+#: swatchbooker.pyw:1829
+#: swatchbooker.pyw:1835
+#: swatchbooker.pyw:1876
+msgid "Error"
+msgstr "Ошибка"
+
+#: swatchbooker.pyw:1831
+msgid "You must choose either sRGB or a file"
+msgstr "Необходимо выбрать или sRGB, или файл профиля"
+
+#: swatchbooker.pyw:1837
+msgid "You must choose either Fogra27L or a file"
+msgstr "Необходимо выбрать или Fogra27L, или файл профиля"
+
+#: swatchbooker.pyw:1878
+msgid "This isn't a RGB monitor profile"
+msgstr "Это не профиль RGB для монитора"
+
+#: swatchbooker.pyw:1893
+msgid "This isn't a CMYK profile"
+msgstr "Это не профиль CMYK"
+
