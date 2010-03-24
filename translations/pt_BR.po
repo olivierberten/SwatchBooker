@@ -5,15 +5,14 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Swatchbooker\n"
+"Project-Id-Version: SwatchBooker\n"
 "POT-Creation-Date: 2010-03-03 15:21+0100\n"
-"PO-Revision-Date: 2010-03-06 15:13+0100\n"
-"Last-Translator: Farid Abdelnour <info@gunga.com.br>, 2010.\n"
+"PO-Revision-Date: 2010-03-06 15:16+0100\n"
+"Last-Translator: Farid Abdelnour <info@gunga.com.br>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n>1;\n"
-"Language-Team: \n"
 
 #: swatchbooker.pyw:169
 msgid "Group"

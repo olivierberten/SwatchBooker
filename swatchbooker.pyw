@@ -31,6 +31,11 @@ from swatchbook import *
 
 __version__ = "0.7"
 
+availables_lang = {'de': u'Deutsch',
+                   'fr': u'Français',
+                   'pt_BR': u'Português do Brasil',
+                   'ru': u'Русский'}
+
 current_sw = False
 current_sp = False
 breaks = []
@@ -330,7 +335,6 @@ class ColorWidget(QGroupBox):
 		self.val = {}
 		if hasattr(current_sw,'values') and len(current_sw.values) > 0:
 			self.delValAction.setEnabled(True)
-			settings = QSettings()
 			prof_out = settings.value("DisplayProfile").toString() or False
 			r,g,b = current_sw.toRGB8(prof_out)
 			self.sample.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
@@ -484,7 +488,6 @@ class ColorWidget(QGroupBox):
 					current_sw.extra[unicode(self.swExtra.item(row,0).text())] = None
 
 	def set_preview(self):
-		settings = QSettings()
 		prof_in = settings.value("DisplayProfile").toString() or False
 		prof_out = settings.value("CMYKProfile").toString() or False
 		if current_sw.toRGB8(prof_out):
@@ -1175,7 +1178,6 @@ class MainWindow(QMainWindow):
 	@staticmethod
 	def colorswatch(swatch):
 		if swatch and swatch.toRGB8():
-			settings = QSettings()
 			prof_out = settings.value("DisplayProfile").toString() or False
 			r,g,b = swatch.toRGB8(prof_out)
 			pix = QPixmap(16,16)
@@ -1233,7 +1235,6 @@ class MainWindow(QMainWindow):
 
 	def settings(self):
 		dialog = SettingsDlg(self)
-		settings = QSettings()
 		if dialog.exec_():
 			if dialog.returnDisProf():
 				settings.setValue("DisplayProfile",QVariant(dialog.returnDisProf()))
@@ -1244,6 +1245,10 @@ class MainWindow(QMainWindow):
 			else:
 				settings.remove("CMYKProfile")
 			settings.setValue("MaxRecentFiles",QVariant(dialog.RecFilesSpin.value()))
+			if dialog.lang:
+				settings.setValue("Language",dialog.lang)
+			else:
+				settings.remove("Language")
 			self.updateFileMenu()
 
 	def swDelete(self):
@@ -1588,8 +1593,6 @@ class MainWindow(QMainWindow):
 		# TODO remove profile from color values
 
 	def updateFileMenu(self,fname=False):
-
-		settings = QSettings()
 		if not settings.contains("MaxRecentFiles"):
 			settings.setValue("MaxRecentFiles",QVariant(6))
 		files = settings.value("recentFileList").toStringList()
@@ -1787,14 +1790,24 @@ class SettingsDlg(QDialog):
 		RecFiles.addWidget(self.RecFilesSpin)
 		gRecFiles.setLayout(RecFiles)
 
+		self.LangCombo = QComboBox()
+		self.LangCombo.addItem(_('(default)'))
+		for lang in sorted(availables_lang):
+			self.LangCombo.addItem(availables_lang[lang],QVariant(lang))
+
+		gLang = QGroupBox(_("Application language"))
+		Lang = QHBoxLayout()
+		Lang.addWidget(self.LangCombo)
+		gLang.setLayout(Lang)
+
 		sett = QVBoxLayout()
 		sett.addWidget(gDisProf)
 		sett.addWidget(gCMYKProf)
 		sett.addWidget(gRecFiles)
+		sett.addWidget(gLang)
 		sett.addWidget(buttonBox)
 		self.setLayout(sett)
 
-		settings = QSettings()
 		if settings.contains("DisplayProfile"):
 			self.RGBfname = settings.value("DisplayProfile").toString()
 			self.RGBfileLabel.setText(self.RGBfname)
@@ -1808,6 +1821,10 @@ class SettingsDlg(QDialog):
 			self.Fogra27L.setCheckState(Qt.Checked)
 			self.CMYKfileButton.setEnabled(False)
 		self.RecFilesSpin.setValue(settings.value("MaxRecentFiles").toInt()[0])
+		self.lang = False
+		if settings.contains("Language"):
+			self.lang = settings.value("Language")
+			self.LangCombo.setCurrentIndex(self.LangCombo.findData(self.lang))
 
 		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
 		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
@@ -1815,6 +1832,7 @@ class SettingsDlg(QDialog):
 		self.connect(self.RGBfileButton, SIGNAL("clicked()"), self.setRGBFile)
 		self.connect(self.Fogra27L, SIGNAL("stateChanged (int)"), self.actProfile)
 		self.connect(self.CMYKfileButton, SIGNAL("clicked()"), self.setCMYKFile)
+		self.connect(self.LangCombo, SIGNAL("currentIndexChanged(int)"), self.setLang)
 		self.setWindowTitle(_("Settings"))
 
 	def accept(self):
@@ -1887,6 +1905,12 @@ class SettingsDlg(QDialog):
 				msgBox.setText(_("This isn't a CMYK profile"))
 				msgBox.exec_()
 		
+	def setLang(self,index):
+		if self.sender().itemData(index).toString() > '':
+			self.lang = self.sender().itemData(index)
+		else:
+			self.lang = False
+
 class webOpenDlg(QDialog):
 	def __init__(self, parent=None):
 		super(webOpenDlg, self).__init__(parent)
@@ -1973,16 +1997,26 @@ if __name__ == "__main__":
 	app.setOrganizationName("Selapa")
 	app.setOrganizationDomain("selapa.net")
 	app.setApplicationName("SwatchBooker")
-	
-	locale = QLocale.system().name()
-	lang = gettext.translation('swatchbooker', 'locale', languages=[str(locale)])
-	lang.install()
-	def _(msgid):
-		return lang.gettext(msgid).decode('utf-8')
+	settings = QSettings()
 
-	def n_(msgid0,msgid1,n):
-		return lang.ngettext(msgid0,msgid1,n).decode('utf-8')
+	locale = settings.value("Language").toString() or QLocale.system().name()
+	# translation of the app
+	try:
+		lang = gettext.translation('swatchbooker', 'locale', languages=[str(locale)])
+		lang.install()
+		def _(msgid):
+			return lang.gettext(msgid).decode('utf-8')
 
+		def n_(msgid0,msgid1,n):
+			return lang.ngettext(msgid0,msgid1,n).decode('utf-8')
+	except IOError:
+		def _(msgid):
+			return gettext.gettext(msgid).decode('utf-8')
+
+		def n_(msgid0,msgid1,n):
+			return gettext.ngettext(msgid0,msgid1,n).decode('utf-8')
+
+	# translation of the built-in dialogs
 	qtTranslator = QTranslator()
 	if qtTranslator.load("qt_" + locale, QLibraryInfo.location(QLibraryInfo.TranslationsPath)):
 		app.installTranslator(qtTranslator)
