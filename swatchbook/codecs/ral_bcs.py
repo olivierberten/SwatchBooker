@@ -21,7 +21,7 @@
 
 from swatchbook.codecs import *
 
-class ral_bcs(Codec):
+class ral_bcs(SBCodec):
 	"""RAL"""
 	ext = ('bcs',)
 	@staticmethod
@@ -35,7 +35,7 @@ class ral_bcs(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		filesize = os.path.getsize(file)
 		file = open(file,'rb')
 		offset, sig = struct.unpack('B 3s',file.read(4))
@@ -43,21 +43,32 @@ class ral_bcs(Codec):
 		nbcolors = struct.unpack('<H',file.read(2))[0]
 		length = struct.unpack('B',file.read(1))[0]
 		name_tmp = struct.unpack(str(length)+'s',file.read(length))[0].split(':')
-		book.info['name'] = {0: unicode(name_tmp[0].split('English_')[1],'utf-8')}
-		if name_tmp[1].split('German_')[1] != book.info['name'][0]:
-			book.info['name']['de'] = unicode(name_tmp[1].split('German_')[1],'utf-8')
+		swatchbook.info.title = unicode(name_tmp[0].split('English_')[1],'latin1')
+		if name_tmp[1].split('German_')[1] != swatchbook.info.title:
+			swatchbook.info.title_l10n['de'] = unicode(name_tmp[1].split('German_')[1],'latin1')
 		file.seek(1, 1)
 		for i in range(nbcolors):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color(swatchbook)
+			id = False
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
-				item.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
+				id =  unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
 			item.values[('Lab',False)] = list(struct.unpack('<3f',file.read(12)))
 			if sig == 'clf':
-				item.attr.append('spot')
-			book.items[id] = item
-			book.ids[id] = (item,book)
+				item.usage.append('spot')
+			if not id or id == '':
+				id = str(item.values[('Lab',False)])
+			if id in swatchbook.swatches:
+				if item.values[('Lab',False)] == swatchbook.swatches[id].values[('Lab',False)]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					item.info.title = id
+					id = id+str(item.values[('Lab',False)])
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 			if file.tell() == filesize: break
 		file.close()
 

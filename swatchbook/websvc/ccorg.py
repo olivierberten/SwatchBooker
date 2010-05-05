@@ -25,55 +25,55 @@ from cgi import parse_qs
 from sgmllib import SGMLParser
 
 class MyParser(SGMLParser):
-    "A simple parser class."
+	"A simple parser class."
 
-    def parse(self, s):
-        "Parse the given string 's'."
-        self.feed(s)
-        self.close()
+	def parse(self, s):
+		"Parse the given string 's'."
+		self.feed(s)
+		self.close()
 
-    def __init__(self, verbose=0):
-        "Initialise an object, passing 'verbose' to the superclass."
+	def __init__(self, verbose=0):
+		"Initialise an object, passing 'verbose' to the superclass."
 
-        SGMLParser.__init__(self, verbose)
-        self.hyperlinks = []
-        self.descriptions = []
-        self.inside_a_element = 0
-        self.starting_description = 0
+		SGMLParser.__init__(self, verbose)
+		self.hyperlinks = []
+		self.descriptions = []
+		self.inside_a_element = 0
+		self.starting_description = 0
 
-    def start_a(self, attributes):
-        "Process a hyperlink and its 'attributes'."
+	def start_a(self, attributes):
+		"Process a hyperlink and its 'attributes'."
 
-        for name, value in attributes:
-            if name == "href":
-                self.hyperlinks.append(value)
-                self.inside_a_element = 1
-                self.starting_description = 1
+		for name, value in attributes:
+			if name == "href":
+				self.hyperlinks.append(value)
+				self.inside_a_element = 1
+				self.starting_description = 1
 
-    def end_a(self):
-        "Record the end of a hyperlink."
+	def end_a(self):
+		"Record the end of a hyperlink."
 
-        self.inside_a_element = 0
+		self.inside_a_element = 0
 
-    def handle_data(self, data):
-        "Handle the textual 'data'."
+	def handle_data(self, data):
+		"Handle the textual 'data'."
 
-        if self.inside_a_element:
-            if self.starting_description:
-                self.descriptions.append(data)
-                self.starting_description = 0
-            else:
-                self.descriptions[-1] += data
+		if self.inside_a_element:
+			if self.starting_description:
+				self.descriptions.append(data)
+				self.starting_description = 0
+			else:
+				self.descriptions[-1] += data
 
-    def get_hyperlinks(self):
-        "Return the list of hyperlinks."
+	def get_hyperlinks(self):
+		"Return the list of hyperlinks."
 
-        return self.hyperlinks
+		return self.hyperlinks
 
-    def get_descriptions(self):
-        "Return a list of descriptions."
+	def get_descriptions(self):
+		"Return a list of descriptions."
 
-        return self.descriptions
+		return self.descriptions
 
 class ccorg(WebSvc):
 	"""ColorCharts.org"""
@@ -163,7 +163,7 @@ class ccorg(WebSvc):
 
 		return collections
 
-	def read(self,book,coll):
+	def read(self,swatchbook,coll):
 		companyid,lineid = eval(coll)
 		url = self.url+"resources/colors.aspx?companyid="+companyid+"&lineid="+lineid
 		page = urllib.urlopen(url).read()
@@ -188,21 +188,30 @@ class ccorg(WebSvc):
 		deck['cbn'] = deck['cbn'].split('~')
 		deck['outofgamut'] = deck['outofgamut'].split('~')
 		cert = {'5': 'Product samples scanned on our UV/VIS Spectrophotometer',
-		        '4': 'Fandecks scanned on our UV/VIS Spectrophotometer',
-		        '3': 'Fandecks scanned on a X-Rite CFS-57 Spectrophotometer',
-		        '2': 'Samples based on RGB values as provided by manufacturer',
-		        '1': 'Samples determined from existing web display'}
-		book.info['name'] = {0: deck['company']+" - "+deck['collection']}
-		book.info['description'] = {0: 'Colorcharts.org certification: '+'*'*int(deck['stars'][:1])+'\n'+cert[deck['stars'][:1]]}
-		book.display['columns'] = int(deck['rows'])
+				'4': 'Fandecks scanned on our UV/VIS Spectrophotometer',
+				'3': 'Fandecks scanned on a X-Rite CFS-57 Spectrophotometer',
+				'2': 'Samples based on RGB values as provided by manufacturer',
+				'1': 'Samples determined from existing web display'}
+		swatchbook.info.title = deck['company']+" - "+deck['collection']
+		swatchbook.info.description = 'Colorcharts.org certification: '+'*'*int(deck['stars'][:1])+'\n'+cert[deck['stars'][:1]]
+		swatchbook.book.display['columns'] = int(deck['rows'])
 		
 		for i in range(len(deck['colours'])):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color(swatchbook)
 			rgb = deck['colours'][i]
-			item.values[('RGB',False)] = [int(rgb[0:2],16)/0xFF,int(rgb[2:4],16)/0xFF,int(rgb[4:],16)/0xFF]
-			item.info['name'] =  {0: deck['names'][i]}
-			item.extra['CBN'] =  deck['cbn'][i]
+			item.values[('sRGB',False)] = [int(rgb[0:2],16)/0xFF,int(rgb[2:4],16)/0xFF,int(rgb[4:],16)/0xFF]
+			if deck['names'][i] not in swatchbook.swatches:
+				id = deck['names'][i]
+			else:
+				if item.values[('sRGB',False)] == swatchbook.swatches[deck['names'][i]].values[('sRGB',False)]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+deck['names'][i]+'\n')
+					item.info.title = deck['names'][i]
+					id = str(item.toRGB8())
+			item.info.identifier = id
+			item.extra['CBN'] = deck['cbn'][i]
 			item.extra['outofgamut'] =  str(abs(int(deck['outofgamut'][i])))
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))

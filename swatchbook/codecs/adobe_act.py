@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class adobe_act(Codec):
+class adobe_act(SBCodec):
 	"""Adobe Color Table"""
 	ext = ('act',)
 	@staticmethod
@@ -37,7 +37,7 @@ class adobe_act(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		filesize = os.path.getsize(file)
 		if filesize == 772: # CS2
 			file = open(file,'rb')
@@ -48,11 +48,16 @@ class adobe_act(Codec):
 			nbcolors = int(filesize/3)
 			file = open(file,'rb')
 		for i in range(nbcolors):
-			item = Color(book)
+			item = Color(swatchbook)
 			id = 'col'+str(i+1)
 			R,G,B = struct.unpack('3B',file.read(3))
+			id = str((R,G,B))
 			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			if id in swatchbook.swatches:
+				swatchbook.book.items.append(Swatch(id))
+			else:
+				item.info.identifier = id
+				swatchbook.swatches[id] = item
+				swatchbook.book.items.append(Swatch(id))
 		file.close()
 

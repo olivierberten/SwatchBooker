@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class icc_nmcl(Codec):
+class icc_nmcl(SBCodec):
 	"""ICC Named Colors Profile"""
 	ext = ('icc','icm')
 	@staticmethod
@@ -37,20 +37,31 @@ class icc_nmcl(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		prof = ICCprofile(file)
-		book.info['name'] = prof.info['desc']
-		book.info['copyright'] = prof.info['cprt']
+		if 0 in prof.info['desc']:
+			swatchbook.info.title = prof.info['desc'][0]
+		else:
+			swatchbook.info.title = prof.info['desc'][prof.info['desc'].keys()[0]]
+			swatchbook.info.title_l10n = prof.info['desc']
+		if 0 in prof.info['cprt']:
+			swatchbook.info.rights = prof.info['cprt'][0]
+		else:
+			swatchbook.info.rights = prof.info['cprt'][prof.info['cprt'].keys()[0]]
+			swatchbook.info.rights_l10n = prof.info['cprt']
 		file = open(file)
 		file.seek(prof.info['tags']['ncl2'][0]+8)
 		tags,n,m = struct.unpack('>4s 2L',file.read(12))
 		prefix,suffix = struct.unpack('>32s 32s',file.read(64))
+		prefix = unicode(prefix.split('\x00', 1)[0],'latin_1')
+		suffix = unicode(suffix.split('\x00', 1)[0],'latin_1')
 		colors = {}
 		for i in range(n):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color(swatchbook)
 			# This is supposed to be coded in plain ascii but X-Rite Pantone NCPs use Latin 1
-			item.info['name'] = {0: unicode(prefix.split('\x00', 1)[0]+struct.unpack('>32s',file.read(32))[0].split('\x00', 1)[0]+suffix.split('\x00', 1)[0],'latin_1')}
+			id = unicode(struct.unpack('>32s',file.read(32))[0].split('\x00', 1)[0],'latin_1')
+			if prefix > '' or suffix > '':
+				item.info.title = prefix+id+suffix
 			if prof.info['pcs'] == 'Lab ':
 				L,a,b = struct.unpack('>3H',file.read(6))
 				# I'm not really sure this is the right criterion
@@ -62,8 +73,9 @@ class icc_nmcl(Codec):
 				X,Y,Z = struct.unpack('>3H',file.read(6))
 				item.values[('XYZ',False)] = [X*100/0x8000,X*100/0x8000,X*100/0x8000]
 			file.seek(m*2,1)
-			item.attr.append('spot')
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			item.usage.append('spot')
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 		file.close()
 

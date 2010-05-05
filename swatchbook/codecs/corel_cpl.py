@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class corel_cpl(Codec):
+class corel_cpl(SBCodec):
 	"""Corel Palette"""
 	ext = ('cpl',)
 	@staticmethod
@@ -36,14 +36,14 @@ class corel_cpl(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		spot=False
 		file = open(file,'rb')
 		version = file.read(2)
 		if version == '\xdc\xdc': #custom palettes
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
-				book.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
+				swatchbook.info.title = unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
 			nbcolors = struct.unpack('<H',file.read(2))[0]
 		elif version in ('\xcc\xbc','\xcc\xdc'):
 			nbcolors = struct.unpack('<H',file.read(2))[0]
@@ -58,9 +58,9 @@ class corel_cpl(Codec):
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
 				if version == '\xcd\xdc':
-					book.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
+					swatchbook.info.title = unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
 				else:
-					book.info['name'] =  {0: unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_le')}
+					swatchbook.info.title = unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_le')
 			# Header 1: Palette Type
 			file.seek(headers[1], 0)
 			type = struct.unpack('<H',file.read(2))[0]
@@ -71,22 +71,22 @@ class corel_cpl(Codec):
 			if 3 in headers:
 				file.seek(headers[3], 0)
 				nbinks = struct.unpack('<H',file.read(2))[0]
-				book.inks = struct.unpack('<'+str(nbinks)+'H',file.read(nbinks*2))
+				swatchbook.inks = struct.unpack('<'+str(nbinks)+'H',file.read(nbinks*2))
 			# Header 5: UI informations
 			if 5 in headers:
 				file.seek(headers[5], 0)
-				book.display['columns'],book.display['rows'] = struct.unpack('<2H',file.read(4))
+				swatchbook.book.display['columns'],swatchbook.book.display['rows'] = struct.unpack('<2H',file.read(4))
 			file.seek(headers[2]+2, 0)
-			if 'columns' not in book.display:
+			if not swatchbook.book.display['columns']:
 				if type in (38,):
-					book.display['columns'] = 9
-					book.display['rows'] = 8
+					swatchbook.book.display['columns'] = 9
+					swatchbook.book.display['rows'] = 8
 				elif type in (23,26,27,28,29,30,32,32,35,36,37,39):
-					book.display['columns'] = 7
-					book.display['rows'] = 6
+					swatchbook.book.display['columns'] = 7
+					swatchbook.book.display['rows'] = 6
 				elif type in (12,24,33,34):
-					book.display['columns'] = 7
-					book.display['rows'] = 7
+					swatchbook.book.display['columns'] = 7
+					swatchbook.book.display['rows'] = 7
 			if type in (3,8,9,10,11,16,17,18,20,21,22,23,26,27,28,29,30,31,32,35,36,37):
 				spot = True
 		if version in ('\xcd\xbc','\xcd\xdc','\xcd\xdd') and type < 38 and type not in(5,16):
@@ -96,11 +96,11 @@ class corel_cpl(Codec):
 		row = {}
 		col = {}
 		for i in range(nbcolors):
-			item = Color(book)
+			id = False
+			title = False
+			item = Color(swatchbook)
 			if long:
 				id = str(struct.unpack('<L',file.read(4))[0])
-			else:
-				id = 'col'+str(i+1)
 			model =  struct.unpack('<H',file.read(2))[0]
 			file.seek(2, 1)
 			if model == 2:
@@ -218,26 +218,39 @@ class corel_cpl(Codec):
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
 				if version in ('\xdc\xdc','\xcc\xdc') or (version == '\xcd\xdc' and type not in (16,)):
-					item.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
+					title = unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
 				else:
-					item.info['name'] =  {0: unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_le')}
+					title = unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_le')
 			if version == '\xcd\xdd':
 				row[i], col[i] = struct.unpack('<2L',file.read(8))
 				file.seek(4, 1)
 			if spot:
-				item.attr.append('spot')
-			if 'name' in item.info and (find(item.info['name'][0],'NONASSIGNED') >= 0 or find(item.info['name'][0],'UNASSIGNED') >= 0):
-				item = Spacer()
-			if id in book.ids:
-				#sys.stderr.write('duplicate id ['+id+']\n')
-				id = id+str(item)
-			if 'row' in vars() and i in row and row[i] > 0 and col[i] == 0 and col[i-1] < book.display['columns']-1:
-				bbreak = Break()
-				bid = 'break'+str(i)
-				book.items[bid] = bbreak
-				book.ids[bid] = (bbreak,book)
-			book.items[id] = item
-			book.ids[id] = (item,book)
+				item.usage.append('spot')
+			if 'title' in vars() and (find(title,'NONASSIGNED') >= 0 or find(title,'UNASSIGNED') >= 0):
+				swatchbook.book.items.append(Spacer())
+				continue
+			if 'row' in vars() and i in row and row[i] > 0 and col[i] == 0 and col[i-1] < swatchbook.book.display['columns']-1:
+				swatchbook.book.items.append(Break())
+			if not id or id == '':
+				if title and title > '':
+					id = title
+				else:
+					id = str(item.values[item.values.keys()[0]])
+			else:
+				if title and title > '':
+					item.info.title = title
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					if item.info.title == '':
+						item.info.title = id
+					id = id+str(item.values[item.values.keys()[0]])
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 			
 		file.close()
 

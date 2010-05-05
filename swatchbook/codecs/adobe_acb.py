@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class adobe_acb(Codec):
+class adobe_acb(SBCodec):
 	"""Adobe Color Book"""
 	ext = ('acb',)
 	@staticmethod
@@ -36,7 +36,7 @@ class adobe_acb(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		def decode_str(str):
 			if str[0:4] == '$$$/':
 				str = str.partition('=')[2]
@@ -45,33 +45,29 @@ class adobe_acb(Codec):
 		file.seek(8, 1)
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
-			name = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
-		if name > u'':
-			book.info['name'] = {0: name}
+			swatchbook.info.title = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
 			prefix = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		else:
-			prefix = u''
+			prefix = ''
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
 			suffix = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		else:
-			suffix = u''
+			suffix = ''
 		length = struct.unpack('>L',file.read(4))[0]
 		if length > 0:
-			description = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
-		if 'description' in vars() and description > u'':
-			book.info['copyright'] = {0: description}
+			swatchbook.info.rights = decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))
 		nbcolors = struct.unpack('>H',file.read(2))[0]
-		book.display['columns'] = struct.unpack('>H',file.read(2))[0]
+		swatchbook.book.display['columns'] = struct.unpack('>H',file.read(2))[0]
 		file.seek(2, 1)
 		model = struct.unpack('>H',file.read(2))[0]
 		for i in range(nbcolors):
-			item = Color(book)
+			item = Color(swatchbook)
 			length = struct.unpack('>L',file.read(4))[0]
 			if length > 0:
-				item.info['name'] = {0: prefix+decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))+suffix}
+				item.info.title = prefix+decode_str(unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be'))+suffix
 			id = struct.unpack('>6s',file.read(6))[0].strip()
 			if model == 0:
 				R,G,B = struct.unpack('>3B',file.read(3))
@@ -84,18 +80,25 @@ class adobe_acb(Codec):
 				item.values[('Lab',False)] = [L*100/0xFF,a-0x80,b-0x80]
 			else:
 				sys.stderr.write('unknown color model ['+str(model)+']\n')
-			if 'name' not in item.info and sum(item.values[item.values.keys()[0]]) == 0:
-				id = 'sp'+str(i)
-				item = Spacer()
-			if id in book.ids or len(id) == 0:
-				#sys.stderr.write('duplicate id ['+str(id)+']\n')
-				id = id+str(item)
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			if item.info.title == '' and sum(item.values[item.values.keys()[0]]) == 0:
+				swatchbook.book.items.append(Spacer())
+				continue
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					id = id+str(item.values[item.values.keys()[0]])
+			elif len(id) == 0:
+				id = str(item.values[item.values.keys()[0]])
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 		if file.read(4):
 			if struct.unpack('>4s',file.read(4))[0] == 'spot':
-				for id in book.items:
-					if isinstance(book.items[id],Color):
-						book.items[id].attr.append('spot')
+				for id in swatchbook.swatches:
+					if isinstance(swatchbook.swatches[id],Color):
+						swatchbook.swatches[id].usage.append('spot')
 		file.close()
 

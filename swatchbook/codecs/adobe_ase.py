@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class adobe_ase(Codec):
+class adobe_ase(SBCodec):
 	"""Adobe Swatch Exchange"""
 	ext = ('ase',)
 	@staticmethod
@@ -36,82 +36,100 @@ class adobe_ase(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		file = open(file,'rb')
 		file.seek(4)
 		version = struct.unpack('>2H',file.read(4))
 		nbblocks = struct.unpack('>L',file.read(4))[0]
 		group = False
-		col_count = 0
-		grp_count = 0
-		parent = book
+		parent = swatchbook.book
 		for i in range(nbblocks):
+			id = False
 			block_type,block_size = struct.unpack('>HL',file.read(6))
-			if block_type == 0xc001:
-				group = Group()
-				grp_count += 1
-				grpid = 'grp'+str(grp_count)
-				parent = group
-			elif block_type == 0xc002:
-				parent = book
-				parent.items[grpid] = group
-				book.ids[grpid] = (item,parent)
-			elif block_type == 0x0001:
-				item = Color(book)
-				col_count += 1
-				id = 'col'+str(col_count)
 			if block_size > 0:
 				length = struct.unpack('>H',file.read(2))[0]
 				if length > 0:
-					name = unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be').split('\x00', 1)[0]
-				if name > u'':
-					if block_type == 0xc001:
-						group.info['name'] = {0: name}
-					elif block_type == 0x0001:
-						item.info['name'] = {0: name}
-				if block_type == 0x0001:
-					model = struct.unpack('4s',file.read(4))[0]
-					if model == "CMYK":
-						item.values[('CMYK',False)] = list(struct.unpack('>4f',file.read(16)))
-					elif model == "RGB ":
-						item.values[('RGB',False)] = list(struct.unpack('>3f',file.read(12)))
-					elif model == "LAB ":
-						L,a,b = struct.unpack('>3f',file.read(12))
-						item.values[('Lab',False)] = [L*100,a,b]
-					elif model == "Gray":
-						item.values[('GRAY',False)] = [1-struct.unpack('>f',file.read(4))[0],]
-					type = struct.unpack('>H',file.read(2))[0]
-					if type == 0:
-						item.attr.append('global')
-					elif type == 1:
-						item.attr.append('spot')
-					parent.items[id] = item
-					book.ids[id] = (item,parent)
+					id = unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be').split('\x00', 1)[0]
+			if block_type == 0xc001:
+				item = Group()
+				if id:
+					item.info.title = id
+				parent.items.append(item)
+				parent = item
+			elif block_type == 0xc002:
+				parent = swatchbook.book
+			elif block_type == 0x0001:
+				item = Color(swatchbook)
+				model = struct.unpack('4s',file.read(4))[0]
+				if model == "CMYK":
+					item.values[('CMYK',False)] = list(struct.unpack('>4f',file.read(16)))
+				elif model == "RGB ":
+					item.values[('RGB',False)] = list(struct.unpack('>3f',file.read(12)))
+				elif model == "LAB ":
+					L,a,b = struct.unpack('>3f',file.read(12))
+					item.values[('Lab',False)] = [L*100,a,b]
+				elif model == "Gray":
+					item.values[('GRAY',False)] = [1-struct.unpack('>f',file.read(4))[0],]
+				type = struct.unpack('>H',file.read(2))[0]
+				if type == 0:
+					item.usage.append('global')
+				elif type == 1:
+					item.usage.append('spot')
+				if not id or id == '':
+					id = str(item.values[item.values.keys()[0]])
+				if id in swatchbook.swatches:
+					if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+						parent.items.append(Swatch(id))
+						continue
+					else:
+						sys.stderr.write('duplicated id: '+id+'\n')
+						item.info.title = id
+						id = id+str(item.values[item.values.keys()[0]])
+				item.info.identifier = id
+				swatchbook.swatches[id] = item
+				parent.items.append(Swatch(id))
 		file.close()
 
 	@staticmethod
-	def write(book,lang=0):
+	def write(swatchbook):
 		ase = 'ASEF\x00\x01\x00\x00'
-		nbblocks,content = adobe_ase.writem(book.items)
+		nbblocks,content = adobe_ase.writem(swatchbook,swatchbook.book.items)
 		ase += struct.pack('>L',nbblocks)+content
 		return ase
 
 	@staticmethod
-	def writem(items,nbblocks=0,lang=0):
+	def writem(swatchbook,items,nbblocks=0):
 		ase_tmp = ''
-		for item in items.values():
-			if isinstance(item,Color) or isinstance(item,Group):
-				block_size = 0
-				name = ''
-				if 'name' in item.info:
-					block_size += 4+len(item.info['name'][lang])*2
-					name = struct.pack('>H',len(item.info['name'][lang])+1)+item.info['name'][lang].encode('utf_16_be')+'\x00\x00'
+		for item in items:
+			block_size = 0
+			name = ''
+			name_txt = False
+			if isinstance(item,Group):
+				if item.info.title > '':
+					name_txt = item.info.title
+				if name_txt:
+					block_size += 4+len(name_txt)*2
+					name = struct.pack('>H',len(name_txt)+1)+name_txt.encode('utf_16_be')+'\x00\x00'
+				nbblocks += 2
+				ase_tmp += '\xc0\x01'+struct.pack('>L',block_size)+name
+				nbblocks,content_tmp = adobe_ase.writem(swatchbook,item.items,nbblocks)
+				ase_tmp += content_tmp
+				ase_tmp += '\xc0\x02'+'\x00\x00\x00\x00'
+			elif isinstance(item,Swatch):
+				item = swatchbook.swatches[item.id]
+				if item.info.title > '':
+					name_txt = item.info.title
+				else:
+					name_txt = item.info.identifier
+				if name_txt:
+					block_size += 4+len(name_txt)*2
+					name = struct.pack('>H',len(name_txt)+1)+name_txt.encode('utf_16_be')+'\x00\x00'
 				if isinstance(item,Color):
 					nbblocks += 1
 					block_size += 6
-					if 'spot' in item.attr:
+					if 'spot' in item.usage:
 						spot = '\x00\x01'
-					elif 'global' in item.attr:
+					elif 'global' in item.usage:
 						spot = '\x00\x00'
 					else:
 						spot = '\x00\x02'
@@ -140,12 +158,7 @@ class adobe_ase(Codec):
 					else:
 						values = ''
 					ase_tmp += '\x00\x01'+struct.pack('>L',block_size)+name+values+spot
-				elif isinstance(item,Group):
-					nbblocks += 2
-					ase_tmp += '\xc0\x01'+struct.pack('>L',block_size)+name
-					nbblocks,content_tmp = adobe_ase.writem(item.items,nbblocks)
-					ase_tmp += content_tmp
-					ase_tmp += '\xc0\x02'+'\x00\x00\x00\x00'
+
 		return nbblocks,ase_tmp
 
 

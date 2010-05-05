@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class autocad_acb(Codec):
+class autocad_acb(SBCodec):
 	"""AutoCAD Color Book"""
 	ext = ('acb',)
 	@staticmethod
@@ -33,32 +33,40 @@ class autocad_acb(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		xml = etree.parse(file).getroot()
-		book.info['name'] = {0: unicode(list(xml.getiterator('bookName'))[0].text)}
+		swatchbook.info.title = unicode(list(xml.getiterator('bookName'))[0].text)
 		if len(list(xml.getiterator('majorVersion'))) > 0:
-			book.info['version'] = list(xml.getiterator('majorVersion'))[0].text+'.'+list(xml.getiterator('minorVersion'))[0].text
+			swatchbook.info.version = list(xml.getiterator('majorVersion'))[0].text+'.'+list(xml.getiterator('minorVersion'))[0].text
 		nbcolors = len(list(xml.getiterator('colorEntry')))
-		book.display['columns'] = 0
+		for colorPage in xml.getiterator('colorPage'):
+			swatchbook.book.display['columns'] = max(swatchbook.book.display['columns'],len(list(colorPage.getiterator('colorEntry'))))
+		encrypted = False
 		i = 0
 		for colorPage in xml.getiterator('colorPage'):
-			book.display['columns'] = max(book.display['columns'],len(list(colorPage.getiterator('colorEntry'))))
-		encrypted = False
-		for colorPage in xml.getiterator('colorPage'):
 			for colorEntry in colorPage.getiterator('colorEntry'):
-				item = Color(book)
-				id = 'col'+str(i+1)
-				item.info['name'] = {0: unicode(colorEntry.find('colorName').text)}
+				item = Color(swatchbook)
 				if colorEntry.find('RGB8Encrypt'):
 					encrypted = True
 				elif colorEntry.find('RGB8'):
 					item.values[('RGB',False)] = [eval(colorEntry.find('RGB8').find('red').text)/0xFF,eval(colorEntry.find('RGB8').find('green').text)/0xFF,eval(colorEntry.find('RGB8').find('blue').text)/0xFF]
-				item.attr.append('spot')
-				book.items[id] = item
-				book.ids[id] = (item,book)
+				item.usage.append('spot')
+				id = unicode(colorEntry.find('colorName').text)
+				if id in swatchbook.swatches:
+					if len(item.values) > 0 and item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+						swatchbook.book.items.append(Swatch(id))
+						i += 1
+						continue
+					else:
+						sys.stderr.write('duplicated id: '+id+'\n')
+						item.info.title = id
+						id = str(item.toRGB8())
+				item.info.identifier = id
+				swatchbook.swatches[id] = item
+				swatchbook.book.items.append(Swatch(id))
 				i += 1
-			if len(list(colorPage.getiterator('colorEntry'))) < book.display['columns'] and i<nbcolors:
-				book.items['break'+str(i)] = Break()
+			if len(list(colorPage.getiterator('colorEntry'))) < swatchbook.book.display['columns'] and i<nbcolors:
+				swatchbook.book.items.append(Break())
 		if encrypted:
 			sys.stderr.write(file+": this script can't decode encrypted RGB values\n")
 

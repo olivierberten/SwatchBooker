@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class adobe_clr(Codec):
+class adobe_clr(SBCodec):
 	"""Flash Color Set"""
 	ext = ('clr',)
 	@staticmethod
@@ -36,24 +36,31 @@ class adobe_clr(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		file = open(file,'rb')
 		file.seek(16, 1)
 		nbcolors = struct.unpack('<H',file.read(2))[0]
 		file.seek(15, 1)
+		swatchbook.book.display['columns'] = 21
 		for i in range(nbcolors):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color(swatchbook)
 			file.seek(1, 1)
 			R,G,B,a = struct.unpack('4B',file.read(4))
+			id = [R,G,B]
 			item.values['RGB',False] = [R/0xFF,G/0xFF,B/0xFF]
 			if a < 0xFF:
-				item.extra['alpha'] = a/0xFF
+				item.extra['alpha'] = str(a/0xFF)
+				id.append(a)
+			id = str(tuple(id))
 			file.seek(2, 1)
 			H,S,L = struct.unpack('<3H',file.read(6))
 			item.values[('HLS',False)] = [H/240,L/240,S/240]
 			file.seek(2, 1)
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			if id in swatchbook.swatches:
+				swatchbook.book.items.append(Swatch(id))
+			else:
+				item.info.identifier = id
+				swatchbook.swatches[id] = item
+				swatchbook.book.items.append(Swatch(id))
 		file.close()
 

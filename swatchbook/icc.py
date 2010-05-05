@@ -26,7 +26,7 @@ import struct
 import string
 
 class BadICCprofile(Exception):
-    pass
+	pass
 
 # I need that class because littlecms can't currently deal with ICCv4 names. This will be solved with v2.
 class ICCprofile():
@@ -40,8 +40,9 @@ class ICCprofile():
 			file.seek(0)
 			size,cmm = struct.unpack('>L 4s',file.read(8))                    # Profile size
 			if os.path.getsize(uri) != size:
+				#sys.stderr.write("bad size: "+uri+"\n")
 				raise BadICCprofile, "That file doesn't have the expected size"
-			elif not (all(c in string.ascii_letters+' '+string.digits for c in cmm) or cmm == '\x00\x00\x00\x00'):
+			if not (all(c in string.ascii_letters+' '+string.digits for c in cmm) or cmm == '\x00\x00\x00\x00'):
 				raise BadICCprofile, "That file doesn't seem to be an ICC color profile"
 			else:
 				file.seek(8)

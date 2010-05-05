@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class adobe_aco(Codec):
+class adobe_aco(SBCodec):
 	"""Adobe Color Swatch"""
 	ext = ('aco',)
 	@staticmethod
@@ -36,7 +36,7 @@ class adobe_aco(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		filesize = os.path.getsize(file)
 		file = open(file,'rb')
 		version, nbcolors = struct.unpack('>2H',file.read(4))
@@ -44,8 +44,8 @@ class adobe_aco(Codec):
 			file.seek(4+nbcolors*10)
 			version, nbcolors = struct.unpack('>2H',file.read(4))
 		for i in range(nbcolors):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			id = False
+			item = Color(swatchbook)
 			model = struct.unpack('>H',file.read(2))[0]
 			if model == 2:
 				C,M,Y,K = struct.unpack('>4H',file.read(8))
@@ -75,8 +75,19 @@ class adobe_aco(Codec):
 			if version == 2:
 				length = struct.unpack('>L',file.read(4))[0]
 				if length > 0:
-					item.info['name'] = {0: unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be').split('\x00', 1)[0]}
-			book.items[id] = item
-			book.ids[id] = (item,book)
+					id = unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be').split('\x00', 1)[0]
+			if not id:
+				id = str(item.toRGB8())
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					item.info.title = id
+					id = id+'col'+str(i)
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 		file.close()
 

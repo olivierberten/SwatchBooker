@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class gimp_gpl(Codec):
+class gimp_gpl(SBCodec):
 	"""Gimp Palette"""
 	ext = ('gpl',)
 	@staticmethod
@@ -36,61 +36,73 @@ class gimp_gpl(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		file = open(file, 'U').readlines()[1:]
 		if file[0][:5] == 'Name:':
-			name = unicode(file[1].partition('Name: ')[2].strip(),'utf-8')
-			if name > u'':
-				book.info['name'] = {0: name}
+			swatchbook.info.title = unicode(file[1].partition('Name: ')[2].strip(),'utf-8')
 			file = file[1:]
 		if file[0][:8] == 'Columns:':
 			cols = int(file[0].partition('Columns: ')[2].strip()) # max 64 in Gimp 2.6
 			if cols > 0:
-				book.display['columns'] = cols
+				swatchbook.book.display['columns'] = cols
 			file = file[1:]
-		i = 0
 		for line in file:
+			id = False
 			if line[0] == '#':
 				continue
 			else:
 				entry = line.split(None,3)
 				if entry[0].isdigit() and entry[1].isdigit() and entry[2].isdigit():
-					item = Color(book)
-					id = 'col'+str(i+1)
+					item = Color(swatchbook)
 					item.values[('RGB',False)] = [int(entry[0])/0xFF,int(entry[1])/0xFF,int(entry[2])/0xFF]
 					if len(entry) > 3 and entry[3].strip() not in ('Untitled','Sans titre'): # other languages to be added
-						item.info['name'] =  {0: unicode(entry[3].strip(),'utf-8')}
-					book.items[id] = item
-					book.ids[id] = (item,book)
-					i += 1
+						id = unicode(entry[3].strip(),'utf-8')
+					if not id or id == '':
+						id = str(item.toRGB8())
+					if id in swatchbook.swatches:
+						if item.values[('RGB',False)] == swatchbook.swatches[id].values[('RGB',False)]:
+							swatchbook.book.items.append(Swatch(id))
+							continue
+						else:
+							sys.stderr.write('duplicated id: '+id+'\n')
+							item.info.title = id
+							id = id+str(item.toRGB8())
+					item.info.identifier = id
+					swatchbook.swatches[id] = item
+					swatchbook.book.items.append(Swatch(id))
 				else:	
 					sys.stderr.write('incorrect line: '+line.encode('utf-8'))
 				
 	@staticmethod
-	def write(book,lang=0):
+	def write(swatchbook):
 		gpl = 'GIMP Palette\n'
-		if 'name' in book.info:
-			gpl += 'Name: '+book.info['name'][lang]+'\n'
-		if 'columns' in book.display and book.display['columns'] > 0:
-			gpl += 'Columns: '+str(book.display['columns'])+'\n'
+		if swatchbook.info.title > '':
+			gpl += 'Name: '+swatchbook.info.title+'\n'
+		if swatchbook.book.display['columns']:
+			gpl += 'Columns: '+str(swatchbook.book.display['columns'])+'\n'
 		gpl += '#'
 		
-		gpl += gimp_gpl.writem(book.items)
+		gpl += gimp_gpl.writem(swatchbook,swatchbook.book.items)
 		
 		return gpl.encode('utf-8')
 
 	@staticmethod
-	def writem(items,lang=0):
+	def writem(swatchbook,items):
 		gpl_tmp = u''
-		for item in items.values():
-			if isinstance(item,Color):
-				R,G,B = item.toRGB8()
-				gpl_tmp += '\n'+str(R).rjust(3)+' '+str(G).rjust(3)+' '+str(B).rjust(3)
-				if item.info['name']:
-					gpl_tmp += '\t'+item.info['name'][lang]
+		for item in items:
+			if isinstance(item,Swatch):
+				item = swatchbook.swatches[item.id]
+				if isinstance(item,Color):
+					R,G,B = item.toRGB8()
+					gpl_tmp += '\n'+str(R).rjust(3)+' '+str(G).rjust(3)+' '+str(B).rjust(3)
+					if item.info.title > '':
+						name_txt = item.info.title
+					else:
+						name_txt = item.info.identifier
+					gpl_tmp += '\t'+name_txt
 			elif isinstance(item,Group):
-				gpl_tmp += '\n# '+item.info['name'][lang]
-				gpl_tmp += gimp_gpl.writem(item.items)
+				gpl_tmp += '\n# '+item.info.title
+				gpl_tmp += gimp_gpl.writem(swatchbook,item.items)
 			elif isinstance(item,Spacer):
 				gpl_tmp += '\n  0   0   0'
 		return gpl_tmp

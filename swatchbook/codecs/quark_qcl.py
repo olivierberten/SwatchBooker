@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class quark_qcl(Codec):
+class quark_qcl(SBCodec):
 	"""QuarkXPress Color Library"""
 	ext = ('qcl',)
 	@staticmethod
@@ -33,10 +33,10 @@ class quark_qcl(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		xml = etree.parse(file).getroot()
-		book.info['name'] = {0: unicode(list(xml.getiterator('file_descriptor'))[0].text)}
-		book.info['copyright'] = {0: unicode(list(xml.getiterator('originator'))[0].text)}
+		swatchbook.info.title = unicode(list(xml.getiterator('file_descriptor'))[0].text)
+		swatchbook.info.rights = unicode(list(xml.getiterator('originator'))[0].text)
 		preferredmodel = list(xml.getiterator('default_color_space'))[0].text.strip()
 		usage = list(xml.getiterator('color_usage_recommendation'))[0].text
 		name_field_info = list(xml.getiterator('name_field_info'))
@@ -49,7 +49,7 @@ class quark_qcl(Codec):
 		ui_spec =  os.path.dirname(file)+'/'+list(xml.getiterator('ui_spec'))[0].text
 		if os.path.isfile(ui_spec):
 			ui = etree.parse(ui_spec).getroot()
-			book.display['columns'] = eval(list(ui.getiterator('rows_per_page'))[0].text)
+			swatchbook.book.display['columns'] = eval(list(ui.getiterator('rows_per_page'))[0].text)
 			breaks = list(ui.getiterator('column_break'))
 			if len(breaks)>0:
 				for i in range(len(breaks)):
@@ -64,15 +64,12 @@ class quark_qcl(Codec):
 		i = 0
 		for color in colors:
 			if i in breaks:
-				book.items['break'+str(i)] = Break()
-			item = Color(book)
-			id = 'col'+str(i+1)
-			name = unicode(color.getchildren()[eval(data_format['SAMPLE_ID'])-1].text)
+				swatchbook.book.items.append(Break())
+			item = Color(swatchbook)
+			id = unicode(color.getchildren()[eval(data_format['SAMPLE_ID'])-1].text)
 			if data_format.has_key('NAME_FORMAT_ID'):
 				nid = eval(color.getchildren()[eval(data_format['NAME_FORMAT_ID'])-1].text)-1
-				item.info['name'] = {0: prefix[nid]+name+suffix[nid]}
-			elif name > u'':
-				item.info['name'] = {0: name}
+				item.info.title = prefix[nid]+id+suffix[nid]
 			if data_format.has_key('LAB_L'):
 				item.values[('Lab',False)] = [eval(color.getchildren()[eval(data_format['LAB_L'])-1].text),\
 											  eval(color.getchildren()[eval(data_format['LAB_A'])-1].text),\
@@ -93,10 +90,22 @@ class quark_qcl(Codec):
 											  eval(color.getchildren()[eval(data_format['PC6_4'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_5'])-1].text)/100,\
 											  eval(color.getchildren()[eval(data_format['PC6_6'])-1].text)/100]
-			item.preferredmodel = preferredmodel
+			item.values.insert(0,(preferredmodel,False),item.values.pop((preferredmodel,False)))
 			if usage in ('4','5'):
-				item.attr.append('spot')
-			book.items[id] = item
-			book.ids[id] = (item,book)
+				item.usage.append('spot')
+			if not id or id == '':
+				id = str(item.values[item.values.keys()[0]])
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					if item.info.title == '':
+						item.info.title = id
+					id = id+str(item.values[item.values.keys()[0]])
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 			i += 1
 

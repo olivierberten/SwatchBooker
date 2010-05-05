@@ -32,27 +32,27 @@ class ral(WebSvc):
 	def level0(self):
 		return {'0': u'RAL CLASSIC'}
 
-	def read(self,book,palette):
+	def read(self,swatchbook,palette):
 		webpage = urllib.urlopen(self.url).read()
 		data = webpage.split('<tbody>')[1].split('</tbody>')[0]
 		data = data.split('<tr')[1:]
-		book.info['name'] = {0: u'RAL CLASSIC'}
+		swatchbook.info.title = u'RAL CLASSIC'
 
 		swatch = []
 		i = 0
 		for line in data:
-			item = Color(book)
-			id = 'col'+str(i)
+			item = Color(swatchbook)
 			if line.find(' style="background: rgb(') >= 0:
 				line = line.split(' style="background: rgb(')[1]
 				R,G,B = eval("["+line.split(') none repeat scroll 0% 0%; -moz-background-clip: border; -moz-background-origin: padding; -moz-background-inline-policy: continuous;')[0]+"]")
-				item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
+				item.values[('sRGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 				line = line.split(';"')[1]
 			line = line.replace('                         <br />                         ','')
 			line = line.split('>                     <td><p>                         ',1)[1].split('                     </p></td>                 </tr>             ')[0]
-			name,de,en,fr,es,it,nl = line.split('                     </p></td>                     <td><p>                         ')
-			item.info['name'] =  {0: unicode(name)}
-			item.info['description'] =  {0: unicode(de,'UTF-8'),'de': unicode(de,'UTF-8'),'en': unicode(en,'UTF-8'),'fr': unicode(fr,'UTF-8'),'es': unicode(es,'UTF-8'),'it': unicode(it,'UTF-8'),'nl': unicode(nl,'UTF-8')}
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			code,de,en,fr,es,it,nl = line.split('                     </p></td>                     <td><p>                         ')
+			item.info.identifier = unicode(code)
+			item.info.title = unicode(de,'UTF-8')
+			item.info.title_l10n = {'de': unicode(de,'UTF-8'),'en': unicode(en,'UTF-8'),'fr': unicode(fr,'UTF-8'),'es': unicode(es,'UTF-8'),'it': unicode(it,'UTF-8'),'nl': unicode(nl,'UTF-8')}
+			swatchbook.swatches[code] = item
+			swatchbook.book.items.append(Swatch(code))
 			i += 1			

@@ -36,23 +36,51 @@ class dtpstudio(WebSvc):
 		systems = SortedDict()
 		for i in range(len(namelist)):
 			systems[syslist[i]] = namelist[i].split('">')[1]
+		# Fix for some mistakes in the color system list
+		if urllib.urlopen(self.url+"popup_d.htm").info().getdate('Last-Modified') == (2009, 10, 5, 7, 15, 57, 0, 1, 0) and urllib.urlopen(self.url+"Scripts/main.js").info().getdate('Last-Modified') == (2009, 10, 5, 13, 59, 20, 0, 1, 0):
+			systems['AVERY900SUPERCAST-PANTONE.js'] = 'Avery900SuperCast-Pantone'
+			systems['AVERY900SUPERCAST.js'] = 'Avery900SuperCast'
+			systems['BRILLUXSCALA.js'] = 'Brillux SCALA'
+			systems['BRILLUX_ACRYLCOLOR.js'] = 'Brillux AcrylColor'
+			systems['BRILLUX_FARBKOLLEKTION.js'] = 'Brillux Farbkollektion'
+			systems['BRILLUX_KUNSTHARZPUTZ.js'] = 'Brillux Kunstharzputz'
+			systems['BRILLUX_LACK.js'] = 'Brillux Lack'
+			systems['BRILLUX_MINERALPUTZ.js'] = 'Brillux Mineralputz'
+			systems['BRILLUX_MIX.js'] = 'Brillux Mix'
+			systems['COLORTREND_FACADE.js'] = 'Colortrend Facade'
+			systems['COLORTREND_FACADE_PLUS.js'] = 'Colortrend Facade plus'
+			systems['ORACAL_SERIE_8500.js'] = 'Oracal Serie 8500'
+			systems['ORACAL_SERIE_851.js'] = 'Oracal Serie 851'
+			systems['STOCOLORSYSTEM.js'] = 'StoColorSystem'
+			systems['STO_SILIKAT.js'] = 'sto Silikat'
+			systems['ZERO_COLORFASSFARBE.js'] = 'Zero ColorFassFarbe'
+			systems['ZERO_COLORSYSTEM.js'] = 'Zero ColorSystem'
+			systems['ZERO_COLOR_SYSTEM_720.js'] = 'zero Color System 720'
 		return systems
 
 	def read(self,book,system):
 		page = urllib.urlopen(self.url+"ColorSystems/"+system).readlines()
-		book.info['name'] = {0: page[1].split('// ...::: ')[1].split(' :::...')[0]}
+		book.info.title = page[1].split('// ...::: ')[1].split(' :::...')[0]
 		i=0
 		for line in page[2:]:
 			line = eval(line.split('completeColor')[1].split(";")[0].replace('false','False').replace('true','True'))
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color()
+			id = unicode(line[4])
 			if line[0] == 0:
 				item.values[('Lab',False)] = [line[1],line[2],line[3]]
 			elif line[0] == 1:
 				item.values[('Lhc',False)] = [line[2],line[1],line[3]]
 			elif line[0] == 2:
-				item.values[('RGB',False)] = [line[1],line[2],line[3]]
-			item.info['name'] =  {0: unicode(line[4])}
-			book.items[id] = item
-			book.ids[id] = (item,book)
+				item.values[('sRGB',False)] = [line[1],line[2],line[3]]
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					item.info.title = id
+					id = id+str(item.values[item.values.keys()[0]])
+			item.info.identifier = id
+			book.swatches[id] = item
+			book.book.items.append(Swatch(id))
 			i += 1

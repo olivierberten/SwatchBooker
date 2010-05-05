@@ -39,7 +39,7 @@ def unicc(values): # meant to disappear - used in the ASE and Scribus codecs
 			del values[val]
 	return values
 
-class Codec(object):
+class SBCodec(object):
 	ext = False
 	read = False
 	write = False
@@ -52,7 +52,7 @@ writes = []
 reads = []
 readexts = {}
 
-for codec in Codec.__subclasses__():
+for codec in SBCodec.__subclasses__():
 	cname = codec.__name__
 	exts = codec.ext
 	if codec.read:

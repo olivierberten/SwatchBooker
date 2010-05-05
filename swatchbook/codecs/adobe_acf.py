@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class adobe_acf(Codec):
+class adobe_acf(SBCodec):
 	"""ASCII Color Format"""
 	ext = ('acf',)
 	@staticmethod
@@ -36,21 +36,17 @@ class adobe_acf(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		spot=False
 		file = open(file, 'U').readlines()
 		version = file[0].strip()
-		book.info['name'] = {0: unicode(file[1].strip(),'macroman')}
-		book.info['version'] = unicode(file[2].partition('LibraryVersion: ')[2].strip(),'macroman')
-		copyright = {0: file[3].partition('Copyright: ')[2].strip()}
-		if copyright > '':
-			book.info['copyright'] = {0: unicode(copyright,'macroman')}
-		description = file[4].partition('AboutMessage: ')[2].strip()
-		if description > '':
-			book.info['description'] = {0: unicode(description,'macroman')}
+		swatchbook.info.title = unicode(file[1].strip(),'macroman')
+		swatchbook.info.version = unicode(file[2].partition('LibraryVersion: ')[2].strip(),'macroman')
+		swatchbook.info.rights = unicode(file[3].partition('Copyright: ')[2].strip(),'macroman')
+		swatchbook.info.description = unicode(file[4].partition('AboutMessage: ')[2].strip(),'macroman')
 		name_format = file[5].partition('Names: ')[2].strip().lower() # Full Partial
-		book.display['columns'] = eval(file[6].partition('Rows: ')[2].strip())
-		book.display['rows'] = eval(file[7].partition('Columns: ')[2].strip())
+		swatchbook.book.display['columns'] = eval(file[6].partition('Rows: ')[2].strip())
+		swatchbook.book.display['rows'] = eval(file[7].partition('Columns: ')[2].strip())
 		nbcolors = eval(file[8].partition('Entries: ')[2].strip())
 		prefix = file[9].partition('Prefix: ')[2].strip()
 		if prefix > '':
@@ -67,14 +63,13 @@ class adobe_acf(Codec):
 		if version == 'ACF 2.1':
 			nbinks = int(file[pos].partition('Inks: ')[2].strip())
 			pos = pos+1
-			book.inks = []
+			swatchbook.inks = []
 			for i in range(nbinks):
-				book.inks.append(file[pos].strip())
+				swatchbook.inks.append(file[pos].strip())
 				pos = pos+1
 		pos = pos+1
 		for i in range(nbcolors):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color(swatchbook)
 			for model in models:
 				colors = file[pos].strip().split()
 				for k in range(len(colors)):
@@ -83,18 +78,33 @@ class adobe_acf(Codec):
 					else:
 						colors[k] = eval(colors[k])
 				if model == "hifi" and len(colors) > 0:
-					item.values[("%X" % len(colors))+'CLR',False] = colors
+					nCLR = ("%X" % len(colors))+'CLR'
+					item.values[(nCLR,False)] = colors
+					if preferredmodel == 'hifi':
+						preferredmodel = nCLR
 				else:
-					item.values[model,False] = colors
+					item.values[(model,False)] = colors
 				pos = pos+1
+			item.values.insert(0,(preferredmodel,False),item.values.pop((preferredmodel,False)))
 			if type == 'Mixed':
 				col_type = file[pos].strip()
 				if col_type == 'Spot' or spot:
-					item.attr.append('spot')
+					item.usage.append('spot')
 				pos = pos+1
-			item.info['name'] = {0: prefix+unicode(file[pos].strip(),'macroman')+suffix}
-			item.preferredmodel = preferredmodel
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			id = unicode(file[pos].strip(),'macroman')
+			if prefix > '' or suffix > '':
+				item.info.title = prefix+id+suffix
 			pos = pos+1
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+str(id)+'\n')
+					if item.info.title == '':
+						item.info.title = id
+					id = str(id)+'col'+str(pos)
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 

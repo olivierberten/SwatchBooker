@@ -27,9 +27,7 @@ from swatchbook import *
 from string import *
 
 class WebSvc(object):
-	ext = False
-	read = False
-	write = False
+	about = False
 
 for websvc in os.listdir((dirpath(__file__) or ".")):
 	if os.path.splitext(websvc)[1] == '.py' and websvc not in ('__init__.py','template.py'):

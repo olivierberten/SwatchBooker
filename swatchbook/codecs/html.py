@@ -21,11 +21,11 @@
 
 from swatchbook.codecs import *
 
-class html(Codec):
+class html(SBCodec):
 	"""HTML document"""
 	ext = ('html','htm')
 	@staticmethod
-	def write(book,lang=0):
+	def write(swatchbook):
 		htm = '''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -41,7 +41,7 @@ class html(Codec):
 		border: 1px solid silver;
 		clear: both;
 	}
-	.group_name {
+	.group_title {
 		clear: both;
 	}
 	.group_descr {
@@ -55,45 +55,49 @@ class html(Codec):
 
 <body>
 '''
-		if 'name' in book.info:
-			htm += '<p id="name">'+book.info['name'][lang]+'</p>\n'
-		if 'description' in book.info:
-			htm += '<p id="description">'+book.info['description'][lang]+'</p>\n'
-		if 'copyright' in book.info:
-			htm += '<p id="copyright">'+book.info['copyright'][lang]+'</p>\n'
-		if 'version' in book.info:
-			htm += '<p id="version">'+book.info['version']+'</p>\n'
+		if swatchbook.info.title > '':
+			htm += '<p id="title">'+swatchbook.info.title+'</p>\n'
+		if swatchbook.info.description > '':
+			htm += '<p id="description">'+swatchbook.info.description+'</p>\n'
+		if swatchbook.info.rights:
+			htm += '<p id="rights">'+swatchbook.info.rights+'</p>\n'
+		if swatchbook.info.version > '':
+			htm += '<p id="version">'+swatchbook.info.version+'</p>\n'
 		htm += '<div id="swatchbook"'
-		if 'columns' in book.display:
-			htm += ' style="width:'+str(book.display['columns']*30)+'px"'
+		if swatchbook.book.display['columns']:
+			htm += ' style="width:'+str(swatchbook.book.display['columns']*30)+'px"'
 		htm += '>\n'
 
-		htm += html.writem(book.items)
+		htm += html.writem(swatchbook,swatchbook.book.items)
 
 		htm += '</div>\n</body>\n</html>'
 
 		return htm.encode('utf-8')
 
 	@staticmethod
-	def writem(items,lang=0):
+	def writem(swatchbook,items):
 		html_tmp = u''
-		for item in items.values():
+		for item in items:
 			if isinstance(item,Group):
-				html_tmp += '<div class="group"><div class="group_name">'+item.info['name'][0]+'</div>\n'
-				html_tmp += html.writem(item.items)
-				html_tmp += '\n<div class="group_descr">'
-				if 'description'in item.info:
-					html_tmp += item.info['description'][lang]
-				html_tmp += '</div></div>\n'
-			elif isinstance(item,Color):
-				if len(item.values) > 0:
-					R,G,B = item.toRGB8()
-				else:
-					R,G,B = [0,0,0]
-				html_tmp += '<div class="swatch" style="background-color:#'+hex2(R)+hex2(G)+hex2(B)
-				if 'name' in item.info:
-					html_tmp += '" title="'+item.info['name'][lang]
-				html_tmp += '"></div>\n'
+				html_tmp += '<div class="group">\n'
+				if item.info.title > '':
+					html_tmp += '<div class="group_title">'+item.info.title+'</div>\n'
+				html_tmp += html.writem(swatchbook,item.items)
+				if item.info.description > '':
+					html_tmp += '<div class="group_descr">'+item.info.description+'</div>\n'
+				html_tmp += '</div>\n'
+			elif isinstance(item,Swatch):
+				item = swatchbook.swatches[item.id]
+				if isinstance(item,Color):
+					if len(item.values) > 0:
+						R,G,B = item.toRGB8()
+					else:
+						R,G,B = [0,0,0]
+					if item.info.title > '':
+						title_txt = item.info.title
+					else:
+						title_txt = item.info.identifier
+					html_tmp += '<div class="swatch" style="background-color:#'+hex2(R)+hex2(G)+hex2(B)+'" title="'+title_txt+'"></div>\n'
 			elif isinstance(item,Spacer):
 				html_tmp += '<div class="swatch"></div>\n'
 			elif isinstance(item,Break):

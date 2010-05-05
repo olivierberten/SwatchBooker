@@ -24,7 +24,7 @@ from swatchbook.codecs import *
 
 bcf_model = {1: 'RGB', 2: 'CMYK',8: 'hifi', 16: 'Mixed'}
 
-class adobe_bcf(Codec):
+class adobe_bcf(SBCodec):
 	"""Binary Color Format"""
 	ext = ('bcf',)
 	@staticmethod
@@ -38,20 +38,14 @@ class adobe_bcf(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		file = open(file,'rb')
 		version = struct.unpack('8s',file.read(8))[0].split('\x00', 1)[0]
-		name = struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0]
-		if name > '':
-			book.info['name'] = {0: unicode(name,'macroman')}
-		book.info['version'] = unicode(struct.unpack('8s',file.read(8))[0].split('\x00', 1)[0],'macroman')
-		copyright = struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0]
-		if copyright > '':
-			book.info['copyright'] = {0: unicode(copyright,'macroman')}
-		description = struct.unpack('512s',file.read(512))[0].split('\x00', 1)[0]
-		if description > '':
-			book.info['description'] = {0: unicode(description,'macroman')}
-		names, book.display['columns'], book.display['rows'], nbcolors =  struct.unpack('>4H',file.read(8))
+		swatchbook.info.title = unicode(struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0],'macroman')
+		swatchbook.info.version = unicode(struct.unpack('8s',file.read(8))[0].split('\x00', 1)[0],'macroman')
+		swatchbook.info.rights = unicode(struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0],'macroman')
+		swatchbook.info.description = unicode(struct.unpack('512s',file.read(512))[0].split('\x00', 1)[0],'macroman')
+		names, swatchbook.book.display['columns'], swatchbook.book.display['rows'], nbcolors =  struct.unpack('>4H',file.read(8))
 		prefix =  struct.unpack('12s',file.read(12))[0].split('\x00', 1)[0]
 		if prefix > '':
 			prefix = unicode(prefix+' ','macroman')
@@ -64,16 +58,15 @@ class adobe_bcf(Codec):
 			extender = struct.unpack('>H',file.read(2))[0]
 			if extender  == 1:
 				description2 = struct.unpack('100s',file.read(100))[0].split('\x00', 1)[0]
-				book.info['description'][0] = book.info['description'][0]+unicode(description2,'macroman')
+				swatchbook.info.description = swatchbook.info.description+unicode(description2,'macroman')
 			inks,nbinks,Lab = struct.unpack('>3H',file.read(6))
 			file.seek(24, 1)
 			if inks  == 1:
-				book.inks = []
+				swatchbook.inks = []
 				for i in range(nbinks):
-					book.inks.append(struct.unpack('>10s 10s H 32s',file.read(54)))
+					swatchbook.inks.append(struct.unpack('>10s 10s H 32s',file.read(54)))
 		for i in range(nbcolors):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color(swatchbook)
 			if XYZ == 1:
 				X,Y,Z  = struct.unpack('>3H',file.read(6))
 				item.values[('XYZ',False)] = [X*100/0xFFFF,Y*100/0xFFFF,Z*100/0xFFFF]
@@ -93,26 +86,44 @@ class adobe_bcf(Codec):
 				file.seek(6, 1)
 			if version in ('ACF 2.1','BCF 2.0') and type in (8,16):
 				col_nbinks = struct.unpack('>H',file.read(2))[0]
+				nCLR = ("%X" % col_nbinks)+'CLR'
 				if col_nbinks > 0:
-					item.values[("%X" % col_nbinks)+'CLR',False] = {}
+					val_tmp_d = {}
 					for j in range(col_nbinks):
 						hifi = struct.unpack('>2H',file.read(4))
-						item.values[("%X" % col_nbinks)+'CLR',False][hifi[0]] = hifi[1]/0xFFFF
+						val_tmp_d[hifi[0]] = hifi[1]/0xFFFF
+					val_tmp_l = []
+					for j in range(col_nbinks):
+						val_tmp_l.append(val_tmp_d[j])
+					item.values[(nCLR,False)] = tuple(val_tmp_l)
 				file.seek((8-col_nbinks)*4, 1)
 			col_type = struct.unpack('>H',file.read(2))[0]
 			if col_type == 1:
-				item.attr.append('spot')
+				item.usage.append('spot')
 			if version in ('ACF 2.1','BCF 2.0') and type in (8,16):
-				col_preferredmodel = struct.unpack('>H',file.read(2))[0]
-				item.preferredmodel = bcf_model[col_preferredmodel]
-			else:
-				item.preferredmodel = preferredmodel
-			name = struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0]
-			if name > '':
-				item.info['name'] = {0: prefix+unicode(name,'macroman')+suffix}
-			elif sum(item.values[item.values.keys()[0]]) == 0:
-				item = Spacer()
-			book.items[id] = item
-			book.ids[id] = (item,book)
+				preferredmodel = bcf_model[struct.unpack('>H',file.read(2))[0]]
+			if preferredmodel == 'hifi':
+				preferredmodel = nCLR
+			if preferredmodel != '0CLR':
+				item.values.insert(0,(preferredmodel,False),item.values.pop((preferredmodel,False)))
+			id = unicode(struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0],'macroman').strip()
+			if prefix > '' or suffix > '':
+				item.info.title = prefix+id+suffix
+			if id == '':
+				if sum(item.values[item.values.keys()[0]]) == 0:
+					swatchbook.book.items.append(Spacer())
+					continue
+				else:
+					id = str(item.toRGB8())
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					id = id+str(item.values[item.values.keys()[0]])
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 		file.close()
 

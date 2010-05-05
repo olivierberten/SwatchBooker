@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class colorschemer(Codec):
+class colorschemer(SBCodec):
 	"""ColorSchemer"""
 	ext = ('cs',)
 	@staticmethod
@@ -36,21 +36,33 @@ class colorschemer(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		file = open(file,'rb')
 		version, nbcolors = struct.unpack('<2H',file.read(4))
 		file.seek(4, 1)
 		for i in range(nbcolors):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			id = False
+			item = Color(swatchbook)
 			R,G,B = struct.unpack('3B',file.read(3))
 			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 			file.seek(1, 1)
 			length = struct.unpack('<L',file.read(4))[0]
 			if length > 0:
-				item.info['name'] =  {0: unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')}
+				id =  unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
 			file.seek(11, 1)
-			book.items[item] = item
-			book.ids[id] = (item,book)
+			if not id or id == '':
+				id = str((R,G,B))
+			if id in swatchbook.swatches:
+				if item.values[('RGB',False)] == swatchbook.swatches[id].values[('RGB',False)]:
+					swatchbook.book.items.append(Swatch(id))
+					i += 1
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					item.info.title = id
+					id = str((R,G,B))
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 		file.close()
 

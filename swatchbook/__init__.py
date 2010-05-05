@@ -21,9 +21,10 @@
 
 import os
 import sys
+from datetime import *
 from color import *
 
-__version__ = "0.5"
+__version__ = "0.7"
 
 # from http://code.djangoproject.com/browser/django/trunk/django/utils/datastructures.py
 class SortedDict(dict):
@@ -141,26 +142,56 @@ class SortedDict(dict):
 		self.keyOrder = []
 
 class FileFormatError(Exception):
-    pass
+	pass
+
+class Info(object):
+	# Dublin Core (translatable,longtext)
+	dc = {'contributor': (True,True),
+	      'coverage': (True,False),
+	      'creator': (True,False),
+	      'description': (True,True),
+	      'identifier': (False,False),
+	      'language': (False,False),
+	      'publisher': (True,False),
+	      'relation': (True,False),
+	      'rights': (True,True),
+	      'source': (True,False),
+	      'subject': (True,False),
+	      'title': (True,False)}
+
+	def __init__(self):
+		self.format = 'application/swatchbook'
+		self.type = 'http://purl.org/dc/dcmitype/Dataset'
+		self.date = False
+		for dc in self.dc:
+			exec('self.'+dc+' = ""')
+			if self.dc[dc][0]:
+				exec('self.'+dc+'_l10n = {}')
+
+		# Creative Commons
+		self.license = ""
+		
+		self.version = ""
+
+class Book(object):
+	def __init__(self):
+		self.display = {'rows': False,
+		                'columns': False}
+		self.items = [] # Group,Swatch,Spacer,Break
 
 class SwatchBook(object):
 	"""Output values
-       RGB,HSV,HSL,CMY,CMYK,nCLR: 0 -> 1
+       sRGB,RGB,HSV,HSL,CMY,CMYK,nCLR: 0 -> 1
        YIQ: Y 0 -> 1 : IQ -0.5 -> 0.5
        Lab: L 0 -> 100 : ab -128 -> 127
        XYZ: 0 -> ~100 (cfr. ref)"""
 
 	def __init__(self, file=False,codec=False,websvc=False,webid=False):
-		# Informations
-		self.info = {}
-		self.ids = {}
-		self.inks = False
-		# Display informations
-		self.display = {}
-		# Color Profiles
+		self.info = Info()
 		self.profiles = {}
-		# Swatches
-		self.items = SortedDict()
+		self.swatches = {}
+		self.book = Book()
+		self.codec = False
 
 		if file:
 			self.read(file,codec)
@@ -209,20 +240,22 @@ class SwatchBook(object):
 
 	def read(self,file,codec):
 		import swatchbook.codecs as codecs
-		if self.test(file,codec):
-			eval('codecs.'+self.test(file,codec)).read(self,file)
+		codec = self.test(file,codec)
+		if codec:
+			self.codec = codec
+			eval('codecs.'+codec).read(self,file)
 			if sys.platform == 'win32':
 				encoding = "UTF-8"
 			else:
 				encoding = sys.getfilesystemencoding()
 			if encoding == 'UTF-8' and isinstance(file,unicode):
- 				filename =  os.path.splitext(os.path.basename(file))[0]
- 			else:
+				filename =  os.path.splitext(os.path.basename(file))[0]
+			else:
 				filename =  os.path.splitext(os.path.basename(file))[0].decode(encoding)
-			if 'name' not in self.info:
-				self.info['name'] = {0: filename.replace('_',' ')}
+			if self.info.title == '':
+				self.info.title = filename.replace('_',' ')
 		else:
-			raise FileFormatError,file+': unsupported file'
+			raise FileFormatError
 
 	def write(self,format,output=None):
 		import swatchbook.codecs as codecs
@@ -240,30 +273,29 @@ class SwatchBook(object):
 			raise FileFormatError,'unsupported output format'
 
 class Group(object):
-	def __init__(self):
-		self.info = {}
-		self.items = SortedDict()
+	def __init__(self,parent=None):
+		self.info = Info()
+		self.items = []
 
 class Swatch(object):
-	def __init__(self,book):
-		self.info = {}
-		self.book = book
-		# Extra color/ink/paint/... informations
-		self.extra = {}
+	def __init__(self,id,parent=None):
+		self.id = id
 
 class Spacer(object):
-	def __init__(self):
+	def __init__(self,parent=None):
 		pass
 
 class Break(object):
-	def __init__(self):
+	def __init__(self,parent=None):
 		pass
 
-class Color(Swatch):
-	def __init__(self,book):
-		super(Color, self).__init__(book)
+class Color(object):
+	def __init__(self,book=None):
+		self.info = Info()
 		self.values = SortedDict()
-		self.attr = []
+		self.usage = []
+		self.extra = {}
+		self.book = book
 
 	def toRGB(self,prof_out=False):
 		for key in self.values:

@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class riff_pal(Codec):
+class riff_pal(SBCodec):
 	"""RIFF Palette"""
 	ext = ('pal',)
 	@staticmethod
@@ -37,7 +37,7 @@ class riff_pal(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		file = open(file,'rb')
 		file.seek(12, 0)
 		chunk = struct.unpack('<4s L', file.read(8))
@@ -46,12 +46,16 @@ class riff_pal(Codec):
 			chunk = struct.unpack('<4s L', file.read(8))
 		version, nbcolors = struct.unpack('<2H',file.read(4))
 		for i in range(nbcolors):
-			item = Color(book)
-			id = 'col'+str(i+1)
+			item = Color(swatchbook)
 			R,G,B = struct.unpack('3B',file.read(3))
 			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 			file.seek(1, 1)
-			book.items[id] = item
-			book.ids[id] = (item,book)
+			id = str((R,G,B))
+			if id in swatchbook.swatches:
+				swatchbook.book.items.append(Swatch(id))
+			else:
+				item.info.identifier = id
+				swatchbook.swatches[id] = item
+				swatchbook.book.items.append(Swatch(id))
 		file.close()
 

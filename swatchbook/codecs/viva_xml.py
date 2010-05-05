@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class viva_xml(Codec):
+class viva_xml(SBCodec):
 	"""VivaDesigner"""
 	ext = ('xml',)
 	@staticmethod
@@ -33,26 +33,24 @@ class viva_xml(Codec):
 			return False
 
 	@staticmethod
-	def read(book,file):
+	def read(swatchbook,file):
 		xml = etree.parse(file).getroot()
 		if 'name' in xml.attrib:
-			book.info['name'] = {0: unicode(xml.attrib['name'])}
+			swatchbook.info.title = unicode(xml.attrib['name'])
 		if len(list(xml.getiterator('copyright'))) > 0:
-			book.info['copyright'] = {0: unicode(list(xml.getiterator('copyright'))[0].text)}
+			swatchbook.info.rights = unicode(list(xml.getiterator('copyright'))[0].text)
 		if 'mask' in xml.attrib:
 			prefix, suffix = unicode(xml.attrib['mask']).split('%1')
 		else:
 			prefix = suffix = ''
 		if 'visiblerows' in xml.attrib:
-			book.display['columns'] = eval(xml.attrib['visiblerows'])
+			swatchbook.book.display['columns'] = eval(xml.attrib['visiblerows'])
 		colors = xml.getiterator('color')
-		i = 0
 		for color in colors:
-			item = Color(book)
-			id = 'col'+str(i+1)
-			name = unicode(color.attrib['name'])
-			if name > u'':
-				item.info['name'] = {0: prefix+name+suffix}
+			item = Color(swatchbook)
+			id = unicode(color.attrib['name'])
+			if prefix > '' or suffix > '':
+				item.info.title = prefix+id+suffix
 			if color.attrib['type'] == 'rgb':
 				item.values[('RGB',False)] = [eval(color.find('red').text)/0xFF,\
 											  eval(color.find('green').text)/0xFF,\
@@ -62,8 +60,19 @@ class viva_xml(Codec):
 											   eval(color.find('magenta').text)/100,\
 											   eval(color.find('yellow').text)/100,\
 											   eval(color.find('key').text)/100]
-			book.items[id] = item
-			book.ids[id] = (item,book)
-			i += 1
+			if not id or id == '':
+				id = str(item.values[item.values.keys()[0]])
+			if id in swatchbook.swatches:
+				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+					swatchbook.book.items.append(Swatch(id))
+					continue
+				else:
+					sys.stderr.write('duplicated id: '+id+'\n')
+					if item.info.title == '':
+						item.info.title = id
+					id = id+str(item.values[item.values.keys()[0]])
+			item.info.identifier = id
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
 
 
