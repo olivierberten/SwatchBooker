@@ -147,14 +147,10 @@ class MainWindow(QMainWindow):
 		self.sbProfList.setColumnCount(2)
 		self.sbProfList.setColumnHidden(1,True)
 		self.sbProfList.setEditTriggers(QAbstractItemView.NoEditTriggers)
-		self.butProf = QToolButton(self)
-		self.butProf.setFixedSize(12,12)
-		self.butProf.setArrowType(Qt.DownArrow)
-		self.butProf.setStyleSheet("QToolButton::menu-indicator {image: none;}")
+		self.butProf = MenuButton(self)
 		self.menuProf = QMenu()
 		self.menuProf.addAction(_('Add'),self.addProfile)
 		self.profRemoveAction = self.menuProf.addAction(_('Remove'),self.remProfile)
-		self.butProf.setPopupMode(QToolButton.InstantPopup)
 		self.butProf.setMenu(self.menuProf)
 		self.profRemoveAction.setEnabled(False)
 
@@ -173,14 +169,10 @@ class MainWindow(QMainWindow):
 		self.swList = QListWidget()
 		self.swList.setSortingEnabled(True)
 		self.swnbLabel = QLabel()
-		self.swLEditBut = QToolButton(self)
-		self.swLEditBut.setMaximumSize(12,12)
-		self.swLEditBut.setArrowType(Qt.DownArrow)
-		self.swLEditBut.setStyleSheet("QToolButton::menu-indicator {image: none;}")
+		self.swLEditBut = MenuButton(self)
 		self.swLEditMenu = QMenu()
 		self.swLEditMenu.addAction(_('Add Color'),self.swAddColor)
 		self.swDeleteAction = self.swLEditMenu.addAction(_('Delete'),self.swDelete)
-		self.swLEditBut.setPopupMode(QToolButton.InstantPopup)
 		self.swLEditBut.setMenu(self.swLEditMenu)
 		self.swDeleteAction.setEnabled(False)
 		
@@ -194,17 +186,13 @@ class MainWindow(QMainWindow):
 		self.groupBoxTree = QGroupBox(_("Tree view"))
 
 		self.treeWidget = sbTreeWidget()
-		self.swEditBut = QToolButton(self)
-		self.swEditBut.setMaximumSize(12,12)
-		self.swEditBut.setArrowType(Qt.DownArrow)
-		self.swEditBut.setStyleSheet("QToolButton::menu-indicator {image: none;}")
+		self.swEditBut = MenuButton(self)
 		self.swEditMenu = QMenu()
 		self.swEditMenu.addAction(_('Add Color'),self.addColor)
 		self.swEditMenu.addAction(_('Add Spacer'),self.addSpacer)
 		self.swEditMenu.addAction(_('Add Break'),self.addBreak)
 		self.swEditMenu.addAction(_('Add Group'),self.addGroup)
 		self.deleteAction = self.swEditMenu.addAction(_('Delete'),self.delete)
-		self.swEditBut.setPopupMode(QToolButton.InstantPopup)
 		self.swEditBut.setMenu(self.swEditMenu)
 		self.deleteAction.setEnabled(False)
 		
@@ -776,8 +764,6 @@ class MainWindow(QMainWindow):
 			else:
 				treeItem = treeItemSwatch(item,parent)
 				gridItem = gridItemSwatch(item,self.gridWidget)
-				self.swatches[item.id][2].append(gridItem)
-				self.swatches[item.id][1].append(treeItem)
 				self.items[treeItem] = gridItem
 			if group:
 				self.treeWidget.expandItem(parent)
@@ -866,6 +852,14 @@ class MainWindow(QMainWindow):
 		del self.sb.profiles[profid]
 		self.profRemoveAction.setEnabled(False)
 		# TODO remove profile from color values
+
+class MenuButton(QToolButton):
+	def __init__(self,parent=None):
+		super(MenuButton, self).__init__(parent)
+		self.setFixedSize(12,12)
+		self.setArrowType(Qt.DownArrow)
+		self.setStyleSheet("MenuButton::menu-indicator {image: none;}")
+		self.setPopupMode(QToolButton.InstantPopup)
 
 class InfoWidget(QWidget):
 	def __init__(self,item,parent=None):
@@ -1182,6 +1176,7 @@ class gridItemSwatch(QListWidgetItem):
 	def __init__(self, item, parent=None):
 		super(gridItemSwatch, self).__init__(parent)
 		self.item = item
+		form.swatches[item.id][2].append(self)
 		self.setSizeHint(QSize(17,17))
 		self.update()
 
@@ -1196,6 +1191,7 @@ class treeItemSwatch(QTreeWidgetItem):
 	def __init__(self, item, parent=None):
 		super(treeItemSwatch, self).__init__(parent)
 		self.item = item
+		form.swatches[item.id][1].append(self)
 		self.setFlags(self.flags() & ~(Qt.ItemIsDropEnabled))
 		self.update()
 
@@ -1465,14 +1461,10 @@ class SwatchWidget(QGroupBox):
 		self.swExtra.verticalHeader().hide()
 		self.swExtra.setHorizontalHeaderLabels([_("Key"),_("Value")])
 		self.swExtra.setSelectionBehavior(QAbstractItemView.SelectRows)
-		self.butExtra = QToolButton(self)
-		self.butExtra.setFixedSize(12,12)
-		self.butExtra.setArrowType(Qt.DownArrow)
-		self.butExtra.setStyleSheet("QToolButton::menu-indicator {image: none;}")
+		self.butExtra = MenuButton(self)
 		self.menuExtra = QMenu()
 		self.menuExtra.addAction(_('Add'),self.addExtra)
 		self.extraRemoveAction = self.menuExtra.addAction(_('Remove'),self.remExtra)
-		self.butExtra.setPopupMode(QToolButton.InstantPopup)
 		self.butExtra.setMenu(self.menuExtra)
 		self.extraRemoveAction.setEnabled(False)
 
@@ -1542,17 +1534,13 @@ class ColorWidget(QWidget):
 	def __init__(self, id, parent):
 		super(ColorWidget, self).__init__(parent)
 
-		self.id = id
 		self.item = form.sb.swatches[id]
 
 		self.sample = QLabel()
 		self.sample.setMinimumHeight(30)
 		self.swSpot = QCheckBox(_("Spot"))
 		self.swValues = QTabWidget()
-		self.butVal = QToolButton(self.swValues)
-		self.butVal.setFixedSize(12,12)
-		self.butVal.setArrowType(Qt.DownArrow)
-		self.butVal.setStyleSheet("QToolButton::menu-indicator {image: none;}")
+		self.butVal = MenuButton(self.swValues)
 		cornLay = QVBoxLayout()
 		cornLay.setContentsMargins(20,0,0,20)
 		cornLay.addWidget(self.butVal)
@@ -1568,7 +1556,6 @@ class ColorWidget(QWidget):
 			self.menuValModlN.addAction(("%X" % (n+1))+'CLR',self.addVal)
 		self.delValAction = self.menuVal.addAction(_('Remove'),self.delVal)
 		self.delValAction.setEnabled(False)
-		self.butVal.setPopupMode(QToolButton.InstantPopup)
 		self.butVal.setMenu(self.menuVal)
 		self.swValues.setCornerWidget(cornWid)
 		self.swValues.setMovable(True)
@@ -1674,6 +1661,7 @@ class ColorWidget(QWidget):
 		spaceWidget.setLayout(spaceLayout)
 
 		self.swValues.addTab(spaceWidget,model)
+		self.set_preview()
 
 	def edit(self):
 		if self.sender() == self.swSpot:
@@ -1681,7 +1669,7 @@ class ColorWidget(QWidget):
 				self.item.usage.append('spot')
 			else:
 				self.item.usage.remove('spot')
-			swupdate(self.item.id)
+			swupdate(self.item.info.identifier)
 
 	def set_preview(self):
 		prof_out = str(settings.value("mntrProfile").toString()) or False
@@ -1690,7 +1678,7 @@ class ColorWidget(QWidget):
 			self.sample.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
 		else:
 			self.sample.setStyleSheet("")
-		swupdate(self.id)
+		swupdate(self.item.info.identifier)
 
 	def valedit(self):
 		sender = self.val[self.sender()]
