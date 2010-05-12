@@ -95,7 +95,7 @@ class icipaints(WebSvc):
 			for r1 in r:
 				r1 = r1.split('!')
 				s.append(r1)
-				swatchbook.book.display['columns'] = max(swatchbook.book.display['columns'],r1[3])
+				swatchbook.book.display['columns'] = max(swatchbook.book.display['columns'],eval(r1[3]))
 			for r1 in s:
 				group1 = Group()
 				group1.info.title = unicode(r1[1],'UTF-8')

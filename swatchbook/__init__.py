@@ -290,17 +290,17 @@ class Break(object):
 		pass
 
 class Color(object):
-	def __init__(self,book=None):
+	def __init__(self,swatchbook=None):
 		self.info = Info()
 		self.values = SortedDict()
 		self.usage = []
 		self.extra = {}
-		self.book = book
+		self.swatchbook = swatchbook
 
 	def toRGB(self,prof_out=False):
 		for key in self.values:
 			if key[1]:
-				prof_in = self.book.profiles[key[1]].uri
+				prof_in = self.swatchbook.profiles[key[1]].uri
 			else:
 				prof_in = False
 			if toRGB(key[0],self.values[key],prof_in,prof_out):

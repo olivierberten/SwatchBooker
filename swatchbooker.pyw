@@ -76,7 +76,7 @@ class MainWindow(QMainWindow):
 			self.sb = SwatchBook(file)
 		else:
 			self.sb = SwatchBook()
-
+			self.codec = 'sbz'
 
 		self.setWindowTitle('SwatchBooker')
 		self.setWindowIcon(QIcon(swatchbooker_svg))
@@ -87,23 +87,45 @@ class MainWindow(QMainWindow):
 		self.treeViewAction = QAction(_("Tree view"),self)
 		self.treeViewAction.setActionGroup(viewActionGroup)
 		self.treeViewAction.setCheckable(True)
-		self.treeViewAction.setChecked(True)
 		self.connect(self.treeViewAction,SIGNAL("triggered()"),self.dispPane)
 		self.gridViewAction = QAction(_("Grid view"),self)
 		self.gridViewAction.setActionGroup(viewActionGroup)
 		self.gridViewAction.setCheckable(True)
 		self.connect(self.gridViewAction,SIGNAL("triggered()"),self.dispPane)
+		self.directionMenu = QMenu(_("Grid direction"))
+		directionActionGroup = QActionGroup(self)
+		self.gridVertAction = QAction(_("Vertical"),self)
+		self.gridVertAction.setActionGroup(directionActionGroup)
+		self.gridVertAction.setCheckable(True)
+		self.connect(self.gridVertAction,SIGNAL("triggered()"),self.gridEdit)
+		self.gridHorizAction = QAction(_("Horizontal"),self)
+		self.gridHorizAction.setActionGroup(directionActionGroup)
+		self.gridHorizAction.setCheckable(True)
+		self.connect(self.gridHorizAction,SIGNAL("triggered()"),self.gridEdit)
 		self.availSwatchesAction = QAction(_("Available swatches"),self)
 		self.availSwatchesAction.setCheckable(True)
-		self.availSwatchesAction.setChecked(True)
 		self.connect(self.availSwatchesAction,SIGNAL("triggered()"),self.dispPane)
 		viewMenu.addAction(self.treeViewAction)
 		viewMenu.addAction(self.gridViewAction)
+		viewMenu.addMenu(self.directionMenu)
+		self.directionMenu.addAction(self.gridVertAction)
+		self.directionMenu.addAction(self.gridHorizAction)
 		viewMenu.addSeparator()
 		viewMenu.addAction(self.availSwatchesAction)
 		self.menuBar().addAction(_("Settings"), self.settings)
 		self.menuBar().addAction(_("&About"), self.about)
 		self.updateFileMenu()
+
+		if settings.contains('gridView') and settings.value('gridView').toBool():
+			self.gridViewAction.setChecked(True)
+			self.directionMenu.setEnabled(True)
+		else:
+			self.treeViewAction.setChecked(True)
+			self.directionMenu.setEnabled(False)
+		if settings.contains('swatchList') and not settings.value('swatchList').toBool():
+			self.availSwatchesAction.setChecked(False)
+		else:
+			self.availSwatchesAction.setChecked(True)
 
 		self.mainWidget = QSplitter(Qt.Horizontal)
 
@@ -177,10 +199,11 @@ class MainWindow(QMainWindow):
 		self.swEditBut.setArrowType(Qt.DownArrow)
 		self.swEditBut.setStyleSheet("QToolButton::menu-indicator {image: none;}")
 		self.swEditMenu = QMenu()
-		self.swEditMenu.addAction(_('Add Spacer'),self.swAddSpacer)
-		self.swEditMenu.addAction(_('Add Break'),self.swAddBreak)
-		self.swEditMenu.addAction(_('Add Group'),self.swAddGroup)
-		self.deleteAction = self.swEditMenu.addAction(_('Delete'),self.swDelete)
+		self.swEditMenu.addAction(_('Add Color'),self.addColor)
+		self.swEditMenu.addAction(_('Add Spacer'),self.addSpacer)
+		self.swEditMenu.addAction(_('Add Break'),self.addBreak)
+		self.swEditMenu.addAction(_('Add Group'),self.addGroup)
+		self.deleteAction = self.swEditMenu.addAction(_('Delete'),self.delete)
 		self.swEditBut.setPopupMode(QToolButton.InstantPopup)
 		self.swEditBut.setMenu(self.swEditMenu)
 		self.deleteAction.setEnabled(False)
@@ -195,18 +218,18 @@ class MainWindow(QMainWindow):
 		self.groupBoxGrid = QGroupBox(_("Grid view"))
 
 		self.gridWidget = sbGridWidget()
-		colsLabel = QLabel(_("Columns:"))
+		self.colsLabel = QLabel()
 		self.cols = QSpinBox()
 		self.cols.setRange(0, 64)
-		rowsLabel = QLabel(_("Rows:"))
+		self.rowsLabel = QLabel()
 		self.rows = QSpinBox()
 		self.rows.setRange(0, 64)
 
 		sbGrid = QVBoxLayout()
 		dims = QGridLayout()
-		dims.addWidget(colsLabel, 0, 0)
+		dims.addWidget(self.colsLabel, 0, 0)
 		dims.addWidget(self.cols, 0, 1)
-		dims.addWidget(rowsLabel, 1, 0)
+		dims.addWidget(self.rowsLabel, 1, 0)
 		dims.addWidget(self.rows, 1, 1)
 		dimsWidget = QWidget()
 		dimsWidget.setLayout(dims)
@@ -215,6 +238,15 @@ class MainWindow(QMainWindow):
 		sbGrid.addWidget(dimsWidget)
 		self.groupBoxGrid.setLayout(sbGrid)
 
+		if settings.contains('gridHoriz') and settings.value('gridHoriz').toBool():
+			self.gridHorizAction.setChecked(True)
+			self.colsLabel.setText(_("Rows:"))
+			self.rowsLabel.setText(_("Columns:"))
+		else:
+			self.gridVertAction.setChecked(True)
+			self.colsLabel.setText(_("Columns:"))
+			self.rowsLabel.setText(_("Rows:"))
+
 		self.mainWidget.addWidget(sbLeftPane)
 		self.mainWidget.addWidget(self.groupBoxTree)
 		self.mainWidget.addWidget(self.groupBoxGrid)
@@ -222,15 +254,10 @@ class MainWindow(QMainWindow):
 
 		self.setCentralWidget(self.mainWidget)
 
-		if file:
-			self.update()
-		else:
-			self.fileNew()
-
 		self.connect(self.cols,
-				SIGNAL("valueChanged(int)"), self.sb_edit)
+				SIGNAL("valueChanged(int)"), self.gridEdit)
 		self.connect(self.rows,
-				SIGNAL("valueChanged(int)"), self.sb_edit)
+				SIGNAL("valueChanged(int)"), self.gridEdit)
 		self.connect(self.swList,
 				SIGNAL("itemSelectionChanged()"), self.sw_display_list)
 		self.connect(self.treeWidget,
@@ -271,6 +298,7 @@ class MainWindow(QMainWindow):
 			self.mainWidget.addWidget(self.sbSwatch)
 			self.treeWidget.setCurrentItem(None)
 			self.gridWidget.setCurrentItem(None)
+			self.swDeleteAction.setEnabled(True)
 
 	def sw_display_tree(self):
 		if self.treeWidget.selectedItems():
@@ -302,21 +330,24 @@ class MainWindow(QMainWindow):
 			self.treeWidget.setCurrentItem(items[listItem])
 			self.swList.setCurrentItem(self.swatches[listItem.item.id][0])
 
-	def sb_edit(self):
+	def gridEdit(self):
 		if self.cols.value() > 0:
 			self.sb.book.display['columns'] = self.cols.value()
-			self.gridWidget.setFixedWidth(self.sb.book.display['columns']*17 + self.gridWidget.zWidth)
 		elif self.cols.value() == 0:
 			self.sb.book.display['columns'] = False
-			self.gridWidget.setMinimumWidth(0)
-			self.gridWidget.setMaximumWidth(0xFFFFFF)
 		if self.rows.value() > 0:
 			self.sb.book.display['rows'] = self.rows.value()
-			self.gridWidget.setFixedHeight(self.sb.book.display['rows']*17 + self.gridWidget.zHeight)
 		elif self.rows.value() == 0:
 			self.sb.book.display['rows'] = False
-			self.gridWidget.setMinimumHeight(0)
-			self.gridWidget.setMaximumHeight(0xFFFFFF)
+		if self.gridHorizAction.isChecked():
+			settings.setValue("gridHoriz",QVariant(True))
+			self.colsLabel.setText(_("Rows:"))
+			self.rowsLabel.setText(_("Columns:"))
+		if self.gridVertAction.isChecked():
+			settings.setValue("gridHoriz",QVariant(False))
+			self.colsLabel.setText(_("Columns:"))
+			self.rowsLabel.setText(_("Rows:"))
+		self.gridWidget.update()
 
 	def update(self):
 		self.clear()
@@ -343,22 +374,257 @@ class MainWindow(QMainWindow):
 		self.swatches[id] = (swatch,[],[])
 
 	def swAddColor(self):
-		pass
+		id = _('New Color')
+		if id in form.sb.swatches:
+			i = 1
+			while id in form.sb.swatches:
+				id = _('New Color')+' ('+str(i)+')'
+				i += 1
+		swatch = Color(self.sb)
+		swatch.info.identifier = id
+		form.sb.swatches[id] = swatch
+		self.addSwatch(id)
+		self.swList.setFocus()
+		self.swList.setCurrentItem(self.swatches[id][0])
+		self.updSwatchCount()
+		return id
 
-	swAddSpacer = swAddBreak = swAddGroup = swDelete = swAddColor
+	def swDelete(self):
+		item = self.swList.selectedItems()[0]
+		for treeItem in self.swatches[item.id][1]:
+			if treeItem.parent():
+				treeItem.parent().takeChild(treeItem.parent().indexOfChild(treeItem))
+			else:
+				self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(treeItem))
+		treeItem = None
+		for gridItem in self.swatches[item.id][2]:
+			self.gridWidget.takeItem(self.gridWidget.row(gridItem))
+		gridItem = None
+		if hasattr(self,'sbSwatch'):
+			self.sbSwatch.setParent(None)
+		self.swList.takeItem(self.swList.row(item))
+		del self.sb.swatches[item.id]
+		self.deleteAction.setEnabled(False)
+		self.updSwatchCount()
+
+	def addColor(self):
+		self.addSwatchToBook('Color')
+		
+	def addSwatchToBook(self,type):
+		exec('id = self.swAdd'+type+'()')
+		item = Swatch(id)
+		gridItem = gridItemSwatch(item)
+		treeItem = treeItemSwatch(item)
+		if self.treeWidget.selectedItems():
+			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.parent():
+				parent = selTItem.parent().item
+				if isinstance(selTItem,noChild):
+					index = 0
+				else:
+					index = selTItem.parent().indexOfChild(selTItem)+1
+			else:
+				parent = form.sb.book
+				index = self.treeWidget.indexOfTopLevelItem(selTItem)+1
+			parent.items.insert(index,item)
+
+			if selTItem.parent() == None:
+				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
+				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
+			else:
+				tIndex = selTItem.parent().indexOfChild(selTItem)
+				selTItem.parent().insertChild(tIndex+1,treeItem)
+
+			if not isinstance(selTItem,treeItemGroup) and not isinstance(selTItem,noChild):
+				selLItem = self.items[selTItem]
+			else:
+				nitem = selTItem
+				while nitem and (isinstance(nitem,treeItemGroup) or isinstance(nitem,noChild)):
+					nitem = self.listitemforadd(nitem)
+				if nitem and self.items[nitem]:
+					selLItem = self.items[nitem]
+				else:
+					selLItem = False
+			if selLItem:
+				lIndex = self.gridWidget.indexFromItem(selLItem).row()
+				self.gridWidget.insertItem(lIndex+1,gridItem)
+			else:
+				self.gridWidget.addItem(gridItem)
+			if isinstance(selTItem,noChild):
+				selTItem.parent().takeChild(0)
+		else:
+			self.sb.book.items.append(item)
+			self.treeWidget.addTopLevelItem(treeItem)
+			self.gridWidget.addItem(gridItem)
+		self.items[treeItem] = gridItem
+		self.treeWidget.setCurrentItem(treeItem)
+		self.gridWidget.update()
+
+	def addBreak(self):
+		self.addBreakSpacer('Break')
+
+	def addSpacer(self):
+		self.addBreakSpacer('Spacer')
+
+	def addBreakSpacer(self,type):
+		exec('item = '+type+'()')
+		exec('gridItem = gridItem'+type+'(item)')
+		exec('treeItem = treeItem'+type+'(item)')
+		if self.treeWidget.selectedItems():
+			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.parent():
+				parent = selTItem.parent().item
+				if isinstance(selTItem,noChild):
+					index = 0
+				else:
+					index = selTItem.parent().indexOfChild(selTItem)+1
+			else:
+				parent = form.sb.book
+				index = self.treeWidget.indexOfTopLevelItem(selTItem)+1
+			parent.items.insert(index,item)
+
+			if selTItem.parent() == None:
+				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
+				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
+			else:
+				tIndex = selTItem.parent().indexOfChild(selTItem)
+				selTItem.parent().insertChild(tIndex+1,treeItem)
+
+			if not isinstance(selTItem,treeItemGroup) and not isinstance(selTItem,noChild):
+				selLItem = self.items[selTItem]
+			else:
+				nitem = selTItem
+				while nitem and (isinstance(nitem,treeItemGroup) or isinstance(nitem,noChild)):
+					nitem = self.listitemforadd(nitem)
+				if nitem and self.items[nitem]:
+					selLItem = self.items[nitem]
+				else:
+					selLItem = False
+			if selLItem:
+				lIndex = self.gridWidget.indexFromItem(selLItem).row()
+				self.gridWidget.insertItem(lIndex+1,gridItem)
+			else:
+				self.gridWidget.addItem(gridItem)
+			if isinstance(selTItem,noChild):
+				selTItem.parent().takeChild(0)
+		else:
+			self.sb.book.items.append(item)
+			self.treeWidget.addTopLevelItem(treeItem)
+			self.gridWidget.addItem(gridItem)
+		self.items[treeItem] = gridItem
+		self.treeWidget.setCurrentItem(treeItem)
+		self.gridWidget.update()
+
+	def addGroup(self):
+		item = Group()
+		item.info.title = _('New group')
+		treeItem = treeItemGroup(item)
+		if self.treeWidget.selectedItems():
+			selTItem = self.treeWidget.selectedItems()[0]
+			if selTItem.parent():
+				parent = selTItem.parent().item
+				if isinstance(selTItem,noChild):
+					index = 0
+				else:
+					index = selTItem.parent().indexOfChild(selTItem)+1
+			else:
+				parent = form.sb.book
+				index = self.treeWidget.indexOfTopLevelItem(selTItem)+1
+			parent.items.insert(index,item)
+
+			if selTItem.parent() == None:
+				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
+				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
+			else:
+				tIndex = selTItem.parent().indexOfChild(selTItem)
+				selTItem.parent().insertChild(tIndex+1,treeItem)
+
+			if isinstance(selTItem,noChild):
+				selTItem.parent().takeChild(0)
+		else:
+			self.sb.book.items.append(item)
+			self.treeWidget.addTopLevelItem(treeItem)
+		self.items[treeItem] = None
+		nochild = noChild()
+		treeItem.addChild(nochild)
+		self.treeWidget.expandItem(treeItem)
+		self.treeWidget.setCurrentItem(treeItem)
+
+	def delete(self):
+		if self.treeWidget.selectedItems():
+			selTItem = self.treeWidget.selectedItems()[0]
+			if isinstance(selTItem,treeItemGroup):
+				self.del_group_from_list(selTItem)
+			else:
+				self.gridWidget.takeItem(self.gridWidget.row(self.items[selTItem]))
+			if isinstance(selTItem, treeItemBreak):
+				global breaks
+				breaks.remove(self.items[selTItem])
+			if selTItem.parent():
+				tParent = selTItem.parent()
+				tParent.takeChild(tParent.indexOfChild(selTItem))
+				tParent.item.items.remove(selTItem.item)
+				if tParent.childCount() == 0:
+					nochild = noChild()
+					tParent.addChild(nochild)
+			else:
+				self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(selTItem))
+				self.sb.book.items.remove(selTItem.item)
+		if self.treeWidget.topLevelItemCount() == 0:
+			self.deleteAction.setEnabled(False)
+
+	def del_group_from_list(self,group):
+		for i in range(group.childCount()):
+			if isinstance(group.child(i), treeItemGroup):
+				self.del_group_from_list(group.child(i))
+			else:
+				self.gridWidget.takeItem(self.gridWidget.row(self.items[group.child(i)]))
+
+	def listitemforadd(self,treeItem):
+		if isinstance(treeItem,noChild):
+			treeItem = treeItem.parent()
+			if treeItem.parent() == None:
+				index = self.treeWidget.indexOfTopLevelItem(treeItem)
+				if index > 0:
+					return self.treeWidget.topLevelItem(index-1)
+				else:
+					return False
+			else:
+				index = treeItem.parent().indexOfChild(treeItem)
+				return treeItem.parent().child(index-1)
+		elif isinstance(treeItem,treeItemGroup):
+			if treeItem.childCount() > 0:
+				return treeItem.child(treeItem.childCount()-1)
+			else:
+				if treeItem.parent() == None:
+					index = self.treeWidget.indexOfTopLevelItem(treeItem)
+					if index > 0:
+						return self.treeWidget.topLevelItem(index-1)
+					else:
+						return False
+				else:
+					index = treeItem.parent().indexOfChild(treeItem)
+					return treeItem.parent().child(index-1)
+		else:
+			return treeItem
 
 	def dispPane(self):
 		if self.availSwatchesAction.isChecked():
+			settings.setValue("swatchList",QVariant(True))
 			self.groupBoxList.show()
 		else:
+			settings.setValue("swatchList",QVariant(False))
 			self.groupBoxList.hide()
 		if self.treeViewAction.isChecked():
+			settings.setValue("gridView",QVariant(False))
 			self.groupBoxTree.show()
 			self.groupBoxGrid.hide()
+			self.directionMenu.setEnabled(False)
 		if self.gridViewAction.isChecked():
+			settings.setValue("gridView",QVariant(True))
 			self.groupBoxTree.hide()
 			self.groupBoxGrid.show()
-	
+			self.directionMenu.setEnabled(True)
 
 	def about(self):
 		QMessageBox.about(self, _("About SwatchBooker"),
@@ -451,8 +717,7 @@ class MainWindow(QMainWindow):
 			self.update()
 
 	def fileOpen(self):
-		dir = os.path.dirname(self.filename) \
-				if self.filename else "."
+		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else "."
 		filetypes = []
 		for codec in codecs.reads:
 			codec_exts = []
@@ -462,10 +727,16 @@ class MainWindow(QMainWindow):
 			filetypes.append(codec_txt)
 		allexts = ["*.%s" % unicode(format).lower() \
 				   for format in codecs.readexts.keys()]
+		if settings.contains('lastOpenCodec'):
+			filetype = settings.value('lastOpenCodec').toString()
+		else:
+			filetype = QString()
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							_("Choose file"), dir,
-							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+_(";;All files (*)")))
+							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+_(";;All files (*)"),filetype))
 		if fname:
+			settings.setValue('lastOpenCodec',QVariant(filetype))
+			settings.setValue('lastOpenDir',QVariant(os.path.dirname(fname)))
 			self.loadFile(fname)
 
 	def loadFile(self, fname):
@@ -477,7 +748,7 @@ class MainWindow(QMainWindow):
 			self.filename = fname
 			if self.sb.codec in codecs.writes:
 				self.codec = self.sb.codec
-		except FileFormatError,msg:
+		except FileFormatError:
 			QMessageBox.critical(self, _("Error"), _("Unsupported file"))
 
 	def fillViews(self,items,group = False):
@@ -495,13 +766,13 @@ class MainWindow(QMainWindow):
 					treeItem.addChild(nochild)
 				self.items[treeItem] = None
 			elif isinstance(item,Spacer):
-				treeItem = treeItemSpacer(parent)
-				gridItem = gridItemSpacer(self.gridWidget)
-				self.items[treeItem] = None
+				treeItem = treeItemSpacer(item,parent)
+				gridItem = gridItemSpacer(item,self.gridWidget)
+				self.items[treeItem] = gridItem
 			elif isinstance(item,Break):
-				treeItem = treeItemBreak(parent)
-				gridItem = gridItemBreak(self.gridWidget)
-				self.items[treeItem] = None
+				treeItem = treeItemBreak(item,parent)
+				gridItem = gridItemBreak(item,self.gridWidget)
+				self.items[treeItem] = gridItem
 			else:
 				treeItem = treeItemSwatch(item,parent)
 				gridItem = gridItemSwatch(item,self.gridWidget)
@@ -525,18 +796,27 @@ class MainWindow(QMainWindow):
 				codec_exts.append('*.'+ext)
 			codec_txt = eval('codecs.'+codec).__doc__ +' ('+" ".join(codec_exts)+')'
 			filetypes[codec_txt] = (codec,eval('codecs.'+codec).ext[0])
-		fname = self.filename or "."
-		filetype = QString()
+		dir = unicode(settings.value('lastSaveDir').toString()) if settings.contains('lastSaveDir') else "."
+		f = os.path.splitext(os.path.basename(self.filename or ''))[0]
+		if f == '':
+			f = self.sb.info.title
+		if settings.contains('lastSaveCodec'):
+			filetype = settings.value('lastSaveCodec').toString()
+		else:
+			filetype = QString()
 		fname = unicode(QFileDialog.getSaveFileName(self,
-						_("Save file"), fname,
+						_("Save file"), os.path.join(dir,f),
 						";;".join(filetypes.keys()),filetype))
 		if fname:
 			if len(fname.rsplit(".",1)) == 1 or (len(fname.rsplit(".",1)) > 1 and fname.rsplit(".",1)[1] != filetypes[unicode(filetype)][1]):
 				fname += "."+filetypes[unicode(filetype)][1]
 			self.filename = fname
+			settings.setValue('lastSaveDir',QVariant(os.path.dirname(fname)))
+			settings.setValue('lastSaveCodec',QVariant(filetype))
 			self.codec = filetypes[unicode(filetype)][0]
 			self.fileSave()
-			self.updateFileMenu(fname)
+			if self.codec in codecs.reads:
+				self.updateFileMenu(fname)
 
 	def prof_editable(self):
 		if self.sbProfList.isItemSelected(self.sbProfList.currentItem()):
@@ -947,9 +1227,10 @@ class treeItemGroup(QTreeWidgetItem):
 			return QTreeWidgetItem.childCount(self)
 
 class treeItemSpacer(QTreeWidgetItem):
-	def __init__(self, parent=None):
+	def __init__(self, item, parent=None):
 		super(treeItemSpacer, self).__init__(parent)
 
+		self.item = item
 		font = QFont()
 		font.setItalic(True)
 		self.setText(0,QString('<spacer>'))
@@ -958,9 +1239,10 @@ class treeItemSpacer(QTreeWidgetItem):
 		self.setFlags(self.flags() & ~(Qt.ItemIsDropEnabled))
 
 class gridItemSpacer(QListWidgetItem):
-	def __init__(self, parent=None):
+	def __init__(self, item, parent=None):
 		super(gridItemSpacer, self).__init__(parent)
 
+		self.item = item
 		pix = QPixmap(1,1)
 		pix.fill(Qt.transparent)
 		self.setIcon(QIcon(pix))
@@ -968,9 +1250,10 @@ class gridItemSpacer(QListWidgetItem):
 		self.setFlags(Qt.NoItemFlags)
 
 class treeItemBreak(QTreeWidgetItem):
-	def __init__(self, parent=None):
+	def __init__(self, item, parent=None):
 		super(treeItemBreak, self).__init__(parent)
 
+		self.item = item
 		font = QFont()
 		font.setItalic(True)
 		self.setText(0,QString('<break>'))
@@ -979,9 +1262,10 @@ class treeItemBreak(QTreeWidgetItem):
 		self.setFlags(self.flags() & ~(Qt.ItemIsDropEnabled))
 
 class gridItemBreak(QListWidgetItem):
-	def __init__(self, parent=None):
+	def __init__(self, item, parent=None):
 		super(gridItemBreak, self).__init__(parent)
 
+		self.item = item
 		breaks.append(self)
 		pix = QPixmap(1,1)
 		pix.fill(Qt.transparent)
@@ -1012,39 +1296,37 @@ class sbTreeWidget(QTreeWidget):
 
 	def dropEvent(self,event):
 		QTreeWidget.dropEvent(self,event)
-		mainWindow = self.parent().parent().parent()
 		if self.itemParent and self.itemParent.childCount() == 0:
-			nochild = noChild()
-			self.itemParent.addChild(nochild)
-			mainWindow.treeItems[nochild] = None
+			self.itemParent.addChild(noChild())
 		if isinstance(self.item.parent(),treeItemGroup):
 			if isinstance(self.item.parent().child(0),noChild):
 				self.item.parent().removeChild(self.item.parent().child(0))
 			if isinstance(self.item.parent().child(self.item.parent().childCount()-1),noChild):
 				self.item.parent().removeChild(self.item.parent().child(self.item.parent().childCount()-1))
-		swParent,swID = mainWindow.get_parent(mainWindow.treeItems[self.item])
-		sw = swParent.items.pop(swID)
-		if self.item.parent():
-			mainWindow.treeItems[self.item.parent()].items.insert(self.item.parent().indexOfChild(self.item),swID,sw)
-			mainWindow.sb.ids[swID] = (sw,mainWindow.treeItems[self.item.parent()])
+		if self.itemParent:
+			swParent = self.itemParent.item
 		else:
-			mainWindow.sb.items.insert(mainWindow.treeWidget.indexOfTopLevelItem(self.item),swID,sw)
-			mainWindow.sb.ids[swID] = (sw,mainWindow.sb)
-		listItems = []
-		self.listItems(self.item,listItems)
-		for listItem in listItems:
-			mainWindow.listWidget.takeItem(mainWindow.listWidget.indexFromItem(listItem).row())
+			swParent = form.sb.book
+		sw = swParent.items.pop(swParent.items.index(self.item.item))
+		if self.item.parent():
+			self.item.parent().item.items.insert(self.item.parent().indexOfChild(self.item),sw)
+		else:
+			form.sb.book.items.insert(form.treeWidget.indexOfTopLevelItem(self.item),sw)
+		gridItems = []
+		self.gridItems(self.item,gridItems)
+		for gridItem in gridItems:
+			form.gridWidget.takeItem(form.gridWidget.indexFromItem(gridItem).row())
 		self.setCurrentItem(self.item)
 		item = self.swItemAbove(self.item)
 		if item:
-			index = mainWindow.listWidget.indexFromItem(mainWindow.itemList[mainWindow.treeItems[item]]).row()+1
+			index = form.gridWidget.indexFromItem(form.items[item]).row()+1
 		else:
 			index = 0
-		listItems.reverse()
-		for listItem in listItems:
-			mainWindow.listWidget.insertItem(index,listItem)
-		mainWindow.listWidget.update()
-		mainWindow.sw_display_tree()
+		gridItems.reverse()
+		for gridItem in gridItems:
+			form.gridWidget.insertItem(index,gridItem)
+		form.gridWidget.update()
+		form.sw_display_tree()
 
 	def swItemAbove(self,item):
 		nitem = self.itemAbove(item)
@@ -1064,13 +1346,12 @@ class sbTreeWidget(QTreeWidget):
 				item = self.lastChild(item)
 			return item
 
-	def listItems(self,item,listItems):
-		mainWindow = self.parent().parent().parent()
+	def gridItems(self,item,gridItems):
 		if isinstance(item,treeItemGroup):
 			for i in range(item.childCount()):
-				self.listItems(item.child(i),listItems)
+				self.gridItems(item.child(i),gridItems)
 		else:
-			listItems.append(mainWindow.itemList[mainWindow.treeItems[item]])
+			gridItems.append(form.items[item])
 
 	def mousePressEvent(self,event):
 		QTreeWidget.mousePressEvent(self,event)
@@ -1084,21 +1365,65 @@ class sbGridWidget(QListWidget):
 		self.setViewMode(QListView.IconMode)
 		self.setMovement(QListView.Static)
 		self.setResizeMode(QListView.Adjust)
-		self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-		self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-		self.update()
 
 	def update(self):
-		self.zWidth = 2*self.frameWidth() + self.verticalScrollBar().size().width() + 1
-		self.zHeight = 2*self.frameWidth()
-		avail_width = self.size().width() - self.zWidth
-		breaks2 = {}
-		for item in breaks:
-			breaks2[self.row(item)] = item
-		for key in sorted(breaks2.iterkeys()):
-			width = (int((avail_width-self.visualItemRect(self.item(key-1)).left())/17)-1)*17
-			breaks2[key].setSizeHint(QSize(width,17))
-			self.doItemsLayout()
+		if settings.contains('gridHoriz') and settings.value('gridHoriz').toBool():
+			if form.sb.book.display['columns']:
+				self.setFixedHeight(form.sb.book.display['columns']*17 + self.zHeight)
+			else:
+				self.setMinimumHeight(0)
+				self.setMaximumHeight(0xFFFFFF)
+			if form.sb.book.display['rows']:
+				self.setFixedWidth(form.sb.book.display['rows']*17 + self.zWidth)
+			else:
+				self.setMinimumWidth(0)
+				self.setMaximumWidth(0xFFFFFF)
+			self.setFlow(QListView.TopToBottom)
+			self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+			self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+			self.zWidth = 2*self.frameWidth()
+			self.zHeight = 2*self.frameWidth() + self.horizontalScrollBar().size().height() + 1
+			avail_height = self.size().height() - self.zHeight
+			breaks2 = {}
+			for item in breaks:
+				breaks2[self.row(item)] = item
+			for key in sorted(breaks2.iterkeys()):
+				if isinstance(self.item(key-1),gridItemBreak):
+					height = avail_height
+				else:
+					height = (int((avail_height-self.visualItemRect(self.item(key-1)).top())/17)-1)*17
+				breaks2[key].setSizeHint(QSize(17,height))
+				self.doItemsLayout()
+		else:
+			if form.sb.book.display['columns']:
+				self.setFixedWidth(form.sb.book.display['columns']*17 + self.zWidth)
+			else:
+				self.setMinimumWidth(0)
+				self.setMaximumWidth(0xFFFFFF)
+			if form.sb.book.display['rows']:
+				self.setFixedHeight(form.sb.book.display['rows']*17 + self.zHeight)
+			else:
+				self.setMinimumHeight(0)
+				self.setMaximumHeight(0xFFFFFF)
+			self.setFlow(QListView.LeftToRight)
+			self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+			self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+			self.zWidth = 2*self.frameWidth() + self.verticalScrollBar().size().width() + 1
+			self.zHeight = 2*self.frameWidth()
+			avail_width = self.size().width() - self.zWidth
+			breaks2 = {}
+			for item in breaks:
+				breaks2[self.row(item)] = item
+			for key in sorted(breaks2.iterkeys()):
+				if isinstance(self.item(key-1),gridItemBreak):
+					width = avail_width
+				else:
+					if self.isLeftToRight():
+						width = (int((avail_width-self.visualItemRect(self.item(key-1)).left())/17)-1)*17
+					else:
+						width = (int(self.visualItemRect(self.item(key-1)).right()/17)-1)*17
+				breaks2[key].setSizeHint(QSize(width,17))
+				self.doItemsLayout()
 
 	def resizeEvent(self,event):
 		QListWidget.resizeEvent(self,event)
@@ -1588,14 +1913,14 @@ class SettingsDlg(QDialog):
 						try:
 							prof = ICCprofile(file).info
 							self.profiles.append((prof['desc'][prof['desc'].keys()[0]],file,prof['class'],prof['space']))
-						except BadICCProfile:
+						except BadICCprofile:
 							pass
 		if os.name == 'posix':
-			profdirs = [QDir.homePath()+"/.color/icc","/usr/share/color/icc","/usr/local/share/color/icc"]
+			profdirs = [unicode(QDir.homePath())+"/.color/icc","/usr/share/color/icc","/usr/local/share/color/icc"]
 		elif os.name == 'nt':
 			profdirs = ["C:\\Windows\\System\\Color","C:\\Winnt\\system32\\spool\\drivers\\color","C:\\Windows\\system32\\spool\\drivers\\color"]
 		elif os.name == 'mac':
-			profdirs = ["/Network/Library/ColorSync/Profiles","/System/Library/Colorsync/Profiles","/Library/ColorSync/Profiles",QDir.homePath()+"/Library/ColorSync/Profiles"]
+			profdirs = ["/Network/Library/ColorSync/Profiles","/System/Library/Colorsync/Profiles","/Library/ColorSync/Profiles",unicode(QDir.homePath())+"/Library/ColorSync/Profiles"]
 		else:
 			profdirs = []
 		for profdir in profdirs:
@@ -1720,6 +2045,7 @@ if __name__ == "__main__":
 	else:
 		form = MainWindow()
 	form.show()
+	form.update()
 	form.dispPane()
 
 	app.exec_()

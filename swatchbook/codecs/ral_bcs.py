@@ -52,7 +52,12 @@ class ral_bcs(SBCodec):
 			id = False
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
-				id =  unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
+				x = file.tell()
+				try:
+					id = unicode(struct.unpack(str(length)+'s',file.read(length))[0],'utf-8')
+				except UnicodeDecodeError:
+					file.seek(x)
+					id =  unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
 			item.values[('Lab',False)] = list(struct.unpack('<3f',file.read(12)))
 			if sig == 'clf':
 				item.usage.append('spot')

@@ -1,7 +1,33 @@
+2010-05-12  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbooker.pyw:
+   Restored v0.6 features + some usability improvements
+   Added grid orientation option + fixes for RTL
+   Bugfixes
+ * swatchbook/__init__.py,swatchbook/codecs/ral_bcs.py,swatchbook/websvc/dtpstudio.py,swatchbook/websvc/icipaints.py:
+   Bugfixes
+ * swatchbook/websvc/pantone.py,swatchbook/websvc/pantone.py:
+   New Pantone plugin based on the X-Ref data
+
 2010-05-05  Olivier Berten  <olivier.berten@gmail.com>
 
  * everything ;-)
    New internal model and new format (still buggy)
+
+2010-03-23  Olivier Berten  <olivier.berten@gmail.com>
+
+ * swatchbooker.pyw:
+   Language choice setting
+
+2010-03-06  Olivier Berten  <olivier.berten@gmail.com>
+
+ * translations/pt_BR.po:
+   Added Brazilian Portuguese translation (thanks to Farid Abdelnour)
+
+2010-03-04  Olivier Berten  <olivier.berten@gmail.com>
+
+ * locale/,translations/:
+   Switch translation to gettext
 
 2010-02-28  Olivier Berten  <olivier.berten@gmail.com>
 
@@ -34,14 +60,14 @@
 2010-01-22  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbooker_de.ts,swatchbooker_de.qm:
-   Added german translation (thanks to Christoph Schäfer)
+   Added German translation (thanks to Christoph Schäfer)
  * swatchbooker.pro:
    Make it easier to update language files (pylupdate4 swatchbooker.pro)
 
 2010-01-18  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbooker_ru.ts,swatchbooker_ru.qm:
-   Added russian translation (thanks to Alexandre Prokoudine)
+   Added Russian translation (thanks to Alexandre Prokoudine)
 
 2010-01-17  Olivier Berten  <olivier.berten@gmail.com>
 

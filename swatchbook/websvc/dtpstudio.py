@@ -58,13 +58,12 @@ class dtpstudio(WebSvc):
 			systems['ZERO_COLOR_SYSTEM_720.js'] = 'zero Color System 720'
 		return systems
 
-	def read(self,book,system):
+	def read(self,swatchbook,system):
 		page = urllib.urlopen(self.url+"ColorSystems/"+system).readlines()
-		book.info.title = page[1].split('// ...::: ')[1].split(' :::...')[0]
-		i=0
+		swatchbook.info.title = page[1].split('// ...::: ')[1].split(' :::...')[0]
 		for line in page[2:]:
 			line = eval(line.split('completeColor')[1].split(";")[0].replace('false','False').replace('true','True'))
-			item = Color()
+			item = Color(swatchbook)
 			id = unicode(line[4])
 			if line[0] == 0:
 				item.values[('Lab',False)] = [line[1],line[2],line[3]]
@@ -81,6 +80,5 @@ class dtpstudio(WebSvc):
 					item.info.title = id
 					id = id+str(item.values[item.values.keys()[0]])
 			item.info.identifier = id
-			book.swatches[id] = item
-			book.book.items.append(Swatch(id))
-			i += 1
+			swatchbook.swatches[id] = item
+			swatchbook.book.items.append(Swatch(id))
