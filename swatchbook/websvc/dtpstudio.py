@@ -24,6 +24,8 @@ from swatchbook.websvc import *
 class dtpstudio(WebSvc):
 	"""Digital Colour Atlas"""
 
+	about = u'These data come from dtp studio\'s <a href="http://www.dtpstudio.de/colordesigner/popup_e.htm">Color Designer</a> tool.<br /><br />© dtp studio · Grünteweg 31· D-26127 Oldenburg'
+
 	type = 'list'
 	nbLevels = 1
 	url = "http://www.dtpstudio.de/colordesigner/"
@@ -64,6 +66,7 @@ class dtpstudio(WebSvc):
 		for line in page[2:]:
 			line = eval(line.split('completeColor')[1].split(";")[0].replace('false','False').replace('true','True'))
 			item = Color(swatchbook)
+			item.usage.append('spot')
 			id = unicode(line[4])
 			if line[0] == 0:
 				item.values[('Lab',False)] = [line[1],line[2],line[3]]

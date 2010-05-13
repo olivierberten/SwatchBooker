@@ -25,6 +25,8 @@ from swatchbook.websvc import *
 class ral(WebSvc):
 	"""RAL"""
 
+	about = u'These data come from the <a href="http://www.ral-farben.de/uebersicht-ral-classic-farben.html?&L=1">RAL CLASSIC colour names</a> listed at RAL\'s website.<br /><br />RAL CLASSIC is registered trademarks of RAL gGmbH, 53757 Sankt Augustin.'
+
 	type = 'list'
 	nbLevels = 1
 	url = 'http://www.ral-farben.de/uebersicht-ral-classic-farben.html'
@@ -42,6 +44,7 @@ class ral(WebSvc):
 		i = 0
 		for line in data:
 			item = Color(swatchbook)
+			item.usage.append('spot')
 			if line.find(' style="background: rgb(') >= 0:
 				line = line.split(' style="background: rgb(')[1]
 				R,G,B = eval("["+line.split(') none repeat scroll 0% 0%; -moz-background-clip: border; -moz-background-origin: padding; -moz-background-inline-policy: continuous;')[0]+"]")

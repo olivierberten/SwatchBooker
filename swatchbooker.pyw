@@ -30,6 +30,7 @@ from PyQt4.QtGui import *
 
 from swatchbook import *
 import swatchbook.codecs as codecs
+import swatchbook.websvc as websvc
 
 __version__ = "0.7"
 
@@ -403,7 +404,7 @@ class MainWindow(QMainWindow):
 		self.addSwatchToBook('Color')
 		
 	def addSwatchToBook(self,type):
-		exec('id = self.swAdd'+type+'()')
+		id = eval('self.swAdd'+type+'()')
 		item = Swatch(id)
 		gridItem = gridItemSwatch(item)
 		treeItem = treeItemSwatch(item)
@@ -459,9 +460,9 @@ class MainWindow(QMainWindow):
 		self.addBreakSpacer('Spacer')
 
 	def addBreakSpacer(self,type):
-		exec('item = '+type+'()')
-		exec('gridItem = gridItem'+type+'(item)')
-		exec('treeItem = treeItem'+type+'(item)')
+		item = eval(type+'()')
+		gridItem = eval('gridItem'+type+'(item)')
+		treeItem = eval('treeItem'+type+'(item)')
 		if self.treeWidget.selectedItems():
 			selTItem = self.treeWidget.selectedItems()[0]
 			if selTItem.parent():
@@ -703,7 +704,7 @@ class MainWindow(QMainWindow):
 
 	def webOpen(self):
 		dialog = webOpenDlg(self)
-		if dialog.exec_():
+		if dialog.exec_() and dialog.svc and dialog.id:
 			self.clear()
 			self.sb = SwatchBook(websvc=dialog.svc,webid=dialog.id)
 			self.update()
@@ -1922,83 +1923,113 @@ class SettingsDlg(QDialog):
 class webOpenDlg(QDialog):
 	def __init__(self, parent=None):
 		super(webOpenDlg, self).__init__(parent)
-		import swatchbook.websvc as websvc
+
 		self.svc = False
 		self.id = False
 
-		self.tabWidget = QTabWidget()
+		self.webSvcStack = QStackedWidget()
+		self.webSvcList = QListWidget(self)
+		palette = self.webSvcList.palette()
+		palette.setColor(QPalette.Base,Qt.transparent)
+		self.webSvcList.setPalette(palette)
+		self.webSvcList.setFrameShape(QFrame.NoFrame)
+		self.about = QLabel()
+		self.about.setWordWrap(True)
+		self.about.setMargin(10)
+		self.about.setFrameShape(QFrame.StyledPanel)
+
 		self.webWidgets = {}
+
 		for svc in websvc.list:
 			current_svc = eval('websvc.'+svc+'()')
 			if current_svc.type == 'list':
-				webWidget = QTreeWidget()
-				webWidget.setHeaderHidden(True)
-				webWidget.setColumnHidden(1,True)
-				self.webWidgets[webWidget] = [svc,False]
-				self.connect(webWidget,
-						SIGNAL("itemSelectionChanged()"), self.activate)
-				self.connect(webWidget,
-						SIGNAL("itemExpanded(QTreeWidgetItem *)"), self.nextLevel)
-			if(QFile.exists('swatchbook/websvc/'+svc+'.png')):
-				self.tabWidget.addTab(webWidget,QIcon('swatchbook/websvc/'+svc+'.png'),websvc.list[svc])
-			else:
-				self.tabWidget.addTab(webWidget,websvc.list[svc])
-		self.changeTab()
+				webWidget = webWidgetList(svc,self)
+			self.webSvcStack.addWidget(webWidget)
+			self.webWidgets[svc] = (webWidget,current_svc.about)
+			listItem = QListWidgetItem(websvc.list[svc],self.webSvcList)
+			listItem.setData(Qt.UserRole,svc)
+			icon = (dirpath(__file__) or '.')+'/swatchbook/websvc/'+svc+'.png'
+			if(QFile.exists(icon)):
+				listItem.setIcon(QIcon(icon))
 		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
+		self.webSvcList.sortItems()
+		self.webSvcList.setCurrentRow(0)
+		self.changeTab()
 
-		webl = QVBoxLayout()
-		webl.addWidget(self.tabWidget)
-		webl.addWidget(buttonBox)
+		web1 = QWidget()
+		web1l = QGridLayout()
+		web1l.setContentsMargins(0,0,0,0)
+		web1l.setSpacing(0)
+		web1l.addWidget(self.webSvcList,0,0)
+		web1l.addWidget(self.webSvcStack,0,1)
+		web1.setLayout(web1l)
+
+		webl = QGridLayout()
+		webl.addWidget(web1,0,0,Qt.AlignTop)
+		webl.addWidget(self.about,0,1,Qt.AlignTop)
+		webl.addWidget(buttonBox,1,0,1,3)
 		self.setLayout(webl)
 
 		self.setWindowTitle(_("Open from web"))
-		self.connect(self.tabWidget,
-				SIGNAL("currentChanged(int)"), self.changeTab)
+		self.connect(self.webSvcList,
+				SIGNAL("itemSelectionChanged()"), self.changeTab)
 		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
 		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
 
-	def activate(self):
-		if self.sender().selectedItems():
-			treeItem = self.sender().selectedItems()[0]
-			self.svc = unicode(self.webWidgets[self.tabWidget.currentWidget()][0])
-			self.id = unicode(treeItem.text(1))
-
 	def changeTab(self):
-		self.svc = False
-		self.id = False
-		import swatchbook.websvc as websvc
-		svc,activated = self.webWidgets[self.tabWidget.currentWidget()]
-		if not activated:
-			current_svc = eval('websvc.'+svc+'()')
+		self.svc = str(self.webSvcList.selectedItems()[0].data(Qt.UserRole).toString())
+		self.webSvcStack.setCurrentWidget(self.webWidgets[self.svc][0])
+		self.about.setText(self.webWidgets[self.svc][1])
+		self.webSvcStack.currentWidget().load()
+		self.webSvcList.setCurrentItem(self.webSvcList.selectedItems()[0],QItemSelectionModel.Current)
+
+class webWidgetList(QTreeWidget):
+	def __init__(self, svc, parent=None):
+		super(webWidgetList, self).__init__(parent)
+		self.loaded = False
+		self.parent = parent
+		self.svc = eval('websvc.'+svc+'()')
+		self.setHeaderHidden(True)
+		self.setColumnHidden(1,True)
+		self.setFrameShape(QFrame.NoFrame)
+		self.connect(self,
+				SIGNAL("itemSelectionChanged()"), self.activate)
+		self.connect(self,
+				SIGNAL("itemExpanded(QTreeWidgetItem *)"), self.nextLevel)
+
+	def activate(self):
+		if self.selectedItems():
+			treeItem = self.selectedItems()[0]
+			self.parent.id = unicode(treeItem.text(1))
+
+	def load(self):
+		if not self.loaded:
 			try:
-				root = current_svc.level0()
+				root = self.svc.level0()
 			except IOError:
 				root = []
 			for item in root:
 				itemtext = QStringList()
 				itemtext << root[item] << item
-				titem = QTreeWidgetItem(self.tabWidget.currentWidget(),itemtext)
-				if current_svc.nbLevels > 1:
+				titem = QTreeWidgetItem(self,itemtext)
+				if self.svc.nbLevels > 1:
 					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
 					titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
-			self.webWidgets[self.tabWidget.currentWidget()][1] = True
+			self.loaded = True
 
 	def nextLevel(self,treeItem):
 		if treeItem.childCount() == 0:
-			import swatchbook.websvc as websvc
-			svc = self.webWidgets[self.tabWidget.currentWidget()][0]
-			current_svc = eval('websvc.'+svc+'()')
 			level = 1
 			parent = treeItem.parent()
 			while parent:
 				parent = parent.parent()
 				level += 1
-			llist = eval('current_svc.level'+str(level))(unicode(treeItem.text(1)))
+			llist = eval('self.svc.level'+str(level))(unicode(treeItem.text(1)))
 			for item in llist:
 				itemtext = QStringList()
 				itemtext << llist[item] << item
 				titem = QTreeWidgetItem(treeItem,itemtext)
-				if current_svc.nbLevels > level+1:
+				if self.svc.nbLevels > level+1:
 					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
 					titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
 					

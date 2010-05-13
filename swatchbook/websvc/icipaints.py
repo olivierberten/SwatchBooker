@@ -26,6 +26,8 @@ import time
 class icipaints(WebSvc):
 	"""ICI Dulux"""
 
+	about = u'These data come from ICI Dulux\'s MousePainter tool.<br /><br />© Copyright Imperial Chemical Industries Limited'
+
 	type = 'list'
 	nbLevels = 1
 	url = ['http://icivis.uslxprod.iciwce.com/colourtools/','http://www.icipaints.co.uk/servlet/MousePainterRedirectHandler?site=','http://mp.dulux.com.cn/colourtools/data.aspx?Site=']
@@ -70,6 +72,7 @@ class icipaints(WebSvc):
 		colorlist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetPaletteCompact&Gammas=2.2!2.2!2.2&ColourTemp=6500').read().split('::')
 		for c in colorlist:
 			item = Color(swatchbook)
+			item.usage.append('spot')
 			c = c.split('!')
 			item.info.identifier = c[0]
 			item.info.title = unicode(c[1],'UTF-8')
