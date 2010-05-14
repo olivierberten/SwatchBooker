@@ -76,13 +76,16 @@ class sbz(SBCodec):
 					try:
 						item.info.date = datetime.strptime(elem.text,"%Y-%m-%dT%H:%M:%S.%f")
 					except ValueError, e:
-						remain = str(e)[26:]
-						if remain == 'Z':
-							item.info.date = datetime.strptime(elem.text[:-len(remain)],"%Y-%m-%dT%H:%M:%S.%f")
+						if str(e) == "'f' is a bad directive in format '%Y-%m-%dT%H:%M:%S.%f'": # Python 2.5
+							item.info.date = datetime.strptime(elem.text.split('.')[0],"%Y-%m-%dT%H:%M:%S")
 						else:
-							date = datetime.strptime(elem.text[:-len(remain)],"%Y-%m-%dT%H:%M:%S.%f")
-							delta = remain.split(':')
-							item.info.date = date - timedelta(hours=int(delta[0]),minutes=int(delta[1]))
+							remain = str(e)[26:]
+							if remain == 'Z':
+								item.info.date = datetime.strptime(elem.text[:-len(remain)],"%Y-%m-%dT%H:%M:%S.%f")
+							else:
+								date = datetime.strptime(elem.text[:-len(remain)],"%Y-%m-%dT%H:%M:%S.%f")
+								delta = remain.split(':')
+								item.info.date = date - timedelta(hours=int(delta[0]),minutes=int(delta[1]))
 				elif '{'+xml+'}lang' in elem.attrib:
 					exec("item.info."+elem.tag[(len(dc)+2):]+"_l10n[elem.attrib['{'+xml+'}lang']] = elem.text")
 				else:

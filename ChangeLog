@@ -3,6 +3,8 @@
  * swatchbooker.pyw:
    Added "Delete unused swatches" option
    Added line breaks around groups
+ * swatchbook/codecs/sbz.py:
+   Compatibility with Python 2.5
 
 2010-05-13  Olivier Berten  <olivier.berten@gmail.com>
 
