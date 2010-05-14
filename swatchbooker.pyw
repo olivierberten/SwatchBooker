@@ -174,6 +174,7 @@ class MainWindow(QMainWindow):
 		self.swLEditMenu = QMenu()
 		self.swLEditMenu.addAction(_('Add Color'),self.swAddColor)
 		self.swDeleteAction = self.swLEditMenu.addAction(_('Delete'),self.swDelete)
+		self.swLEditMenu.addAction(_('Delete unused swatches'),self.swDeleteUnused)
 		self.swLEditBut.setMenu(self.swLEditMenu)
 		self.swDeleteAction.setEnabled(False)
 		
@@ -194,6 +195,7 @@ class MainWindow(QMainWindow):
 		self.swTEditMenu.addAction(_('Add Break'),self.addBreak)
 		self.swTEditMenu.addAction(_('Add Group'),self.addGroup)
 		self.deleteAction = self.swTEditMenu.addAction(_('Delete'),self.delete)
+		self.deleteAction.setShortcut(Qt.Key_Delete)
 		self.swTEditBut.setMenu(self.swTEditMenu)
 		self.deleteAction.setEnabled(False)
 		
@@ -397,8 +399,16 @@ class MainWindow(QMainWindow):
 			self.sbSwatch.setParent(None)
 		self.swList.takeItem(self.swList.row(item))
 		del self.sb.swatches[item.id]
+		del self.swatches[item.id]
 		self.deleteAction.setEnabled(False)
 		self.updSwatchCount()
+
+	def swDeleteUnused(self):
+		for swatch in self.swatches.keys():
+			if len(self.swatches[swatch][1]) == 0:
+				self.swList.takeItem(self.swList.row(self.swatches[swatch][0]))
+				del self.sb.swatches[swatch]
+				del self.swatches[swatch]
 
 	def addColor(self):
 		self.addSwatchToBook('Color')
@@ -433,7 +443,7 @@ class MainWindow(QMainWindow):
 			else:
 				nitem = selTItem
 				while nitem and (isinstance(nitem,treeItemGroup) or isinstance(nitem,noChild)):
-					nitem = self.listitemforadd(nitem)
+					nitem = self.griditemforadd(nitem)
 				if nitem and self.items[nitem]:
 					selLItem = self.items[nitem]
 				else:
@@ -488,7 +498,7 @@ class MainWindow(QMainWindow):
 			else:
 				nitem = selTItem
 				while nitem and (isinstance(nitem,treeItemGroup) or isinstance(nitem,noChild)):
-					nitem = self.listitemforadd(nitem)
+					nitem = self.griditemforadd(nitem)
 				if nitem and self.items[nitem]:
 					selLItem = self.items[nitem]
 				else:
@@ -549,6 +559,9 @@ class MainWindow(QMainWindow):
 			if isinstance(selTItem,treeItemGroup):
 				self.del_group_from_list(selTItem)
 			else:
+				if isinstance(selTItem,treeItemSwatch):
+					self.swatches[selTItem.item.id][1].remove(selTItem)
+					self.swatches[selTItem.item.id][2].remove(self.items[selTItem])
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[selTItem]))
 			if isinstance(selTItem, treeItemBreak):
 				global breaks
@@ -571,9 +584,12 @@ class MainWindow(QMainWindow):
 			if isinstance(group.child(i), treeItemGroup):
 				self.del_group_from_list(group.child(i))
 			else:
+				if isinstance(group.child(i),treeItemSwatch):
+					self.swatches[group.child(i).item.id][1].remove(group.child(i))
+					self.swatches[group.child(i).item.id][2].remove(self.items[group.child(i)])
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[group.child(i)]))
 
-	def listitemforadd(self,treeItem):
+	def griditemforadd(self,treeItem):
 		if isinstance(treeItem,noChild):
 			treeItem = treeItem.parent()
 			if treeItem.parent() == None:
@@ -825,7 +841,6 @@ class MainWindow(QMainWindow):
 			fo.write(fi.read())
 			fi.close()
 			fo.close()
-			import swatchbook.icc as icc
 			profile = icc.ICCprofile(uri)
 			#TODO: check if exists
 			id = os.path.basename(fname)
@@ -1854,7 +1869,6 @@ class SettingsDlg(QDialog):
 	def setRGBFile(self):
 		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm)"))
 		if fname:
-			import swatchbook.icc as icc
 			profile = icc.ICCprofile(fname)
 			if profile.info['class'] == "mntr" and profile.info['space'] == 'RGB ':
 				self.mntrCombo.setCurrentIndex(0)
@@ -1870,7 +1884,6 @@ class SettingsDlg(QDialog):
 	def setCMYKFile(self):
 		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm)"))
 		if fname:
-			import swatchbook.icc as icc
 			profile = icc.ICCprofile(fname)
 			if profile.info['space'] == 'CMYK':
 				self.cmykCombo.setCurrentIndex(0)
