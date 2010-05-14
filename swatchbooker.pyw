@@ -67,7 +67,7 @@ def swupdate(id):
 		sw.update()
 
 def grupdate(item):
-	form.groups[item].update()
+	form.groups[item][0].update()
 
 class MainWindow(QMainWindow):
 	def __init__(self, file=False, parent=None):
@@ -414,12 +414,13 @@ class MainWindow(QMainWindow):
 		self.addSwatchToBook('Color')
 		
 	def addSwatchToBook(self,type):
+		selected = self.treeWidget.selectedItems()
 		id = eval('self.swAdd'+type+'()')
 		item = Swatch(id)
 		gridItem = gridItemSwatch(item)
 		treeItem = treeItemSwatch(item)
-		if self.treeWidget.selectedItems():
-			selTItem = self.treeWidget.selectedItems()[0]
+		if selected:
+			selTItem = selected[0]
 			if selTItem.parent():
 				parent = selTItem.parent().item
 				if isinstance(selTItem,noChild):
@@ -438,21 +439,14 @@ class MainWindow(QMainWindow):
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
 
-			if not isinstance(selTItem,treeItemGroup) and not isinstance(selTItem,noChild):
+			if isinstance(selTItem,treeItemGroup):
+				selLItem = self.groups[selTItem.item][1][1]
+			elif isinstance(selTItem,noChild):
+				selLItem = self.groups[selTItem.parent().item][1][0]
+			else:
 				selLItem = self.items[selTItem]
-			else:
-				nitem = selTItem
-				while nitem and (isinstance(nitem,treeItemGroup) or isinstance(nitem,noChild)):
-					nitem = self.griditemforadd(nitem)
-				if nitem and self.items[nitem]:
-					selLItem = self.items[nitem]
-				else:
-					selLItem = False
-			if selLItem:
-				lIndex = self.gridWidget.indexFromItem(selLItem).row()
-				self.gridWidget.insertItem(lIndex+1,gridItem)
-			else:
-				self.gridWidget.addItem(gridItem)
+			lIndex = self.gridWidget.indexFromItem(selLItem).row()
+			self.gridWidget.insertItem(lIndex+1,gridItem)
 			if isinstance(selTItem,noChild):
 				selTItem.parent().takeChild(0)
 		else:
@@ -493,21 +487,14 @@ class MainWindow(QMainWindow):
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
 
-			if not isinstance(selTItem,treeItemGroup) and not isinstance(selTItem,noChild):
+			if isinstance(selTItem,treeItemGroup):
+				selLItem = self.groups[selTItem.item][1][1]
+			elif isinstance(selTItem,noChild):
+				selLItem = self.groups[selTItem.parent().item][1][0]
+			else:
 				selLItem = self.items[selTItem]
-			else:
-				nitem = selTItem
-				while nitem and (isinstance(nitem,treeItemGroup) or isinstance(nitem,noChild)):
-					nitem = self.griditemforadd(nitem)
-				if nitem and self.items[nitem]:
-					selLItem = self.items[nitem]
-				else:
-					selLItem = False
-			if selLItem:
-				lIndex = self.gridWidget.indexFromItem(selLItem).row()
-				self.gridWidget.insertItem(lIndex+1,gridItem)
-			else:
-				self.gridWidget.addItem(gridItem)
+			lIndex = self.gridWidget.indexFromItem(selLItem).row()
+			self.gridWidget.insertItem(lIndex+1,gridItem)
 			if isinstance(selTItem,noChild):
 				selTItem.parent().takeChild(0)
 		else:
@@ -522,6 +509,8 @@ class MainWindow(QMainWindow):
 		item = Group()
 		item.info.title = _('New group')
 		treeItem = treeItemGroup(item)
+		gridItemIn = gridItemGroup(item)
+		gridItemOut = gridItemGroup(item)
 		if self.treeWidget.selectedItems():
 			selTItem = self.treeWidget.selectedItems()[0]
 			if selTItem.parent():
@@ -542,16 +531,29 @@ class MainWindow(QMainWindow):
 				tIndex = selTItem.parent().indexOfChild(selTItem)
 				selTItem.parent().insertChild(tIndex+1,treeItem)
 
+			if isinstance(selTItem,treeItemGroup):
+				selLItem = self.groups[selTItem.item][1][1]
+			elif isinstance(selTItem,noChild):
+				selLItem = self.groups[selTItem.parent().item][1][0]
+			else:
+				selLItem = self.items[selTItem]
+			lIndex = self.gridWidget.indexFromItem(selLItem).row()
+			self.gridWidget.insertItem(lIndex+1,gridItemOut)
+			self.gridWidget.insertItem(lIndex+1,gridItemIn)
 			if isinstance(selTItem,noChild):
 				selTItem.parent().takeChild(0)
 		else:
 			self.sb.book.items.append(item)
 			self.treeWidget.addTopLevelItem(treeItem)
+		self.groups[item][1] = (gridItemIn,gridItemOut)
+		self.gridWidget.addItem(gridItemIn)
+		self.gridWidget.addItem(gridItemOut)
 		self.items[treeItem] = None
 		nochild = noChild()
 		treeItem.addChild(nochild)
 		self.treeWidget.expandItem(treeItem)
 		self.treeWidget.setCurrentItem(treeItem)
+		self.gridWidget.update()
 
 	def delete(self):
 		if self.treeWidget.selectedItems():
@@ -588,34 +590,6 @@ class MainWindow(QMainWindow):
 					self.swatches[group.child(i).item.id][1].remove(group.child(i))
 					self.swatches[group.child(i).item.id][2].remove(self.items[group.child(i)])
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[group.child(i)]))
-
-	def griditemforadd(self,treeItem):
-		if isinstance(treeItem,noChild):
-			treeItem = treeItem.parent()
-			if treeItem.parent() == None:
-				index = self.treeWidget.indexOfTopLevelItem(treeItem)
-				if index > 0:
-					return self.treeWidget.topLevelItem(index-1)
-				else:
-					return False
-			else:
-				index = treeItem.parent().indexOfChild(treeItem)
-				return treeItem.parent().child(index-1)
-		elif isinstance(treeItem,treeItemGroup):
-			if treeItem.childCount() > 0:
-				return treeItem.child(treeItem.childCount()-1)
-			else:
-				if treeItem.parent() == None:
-					index = self.treeWidget.indexOfTopLevelItem(treeItem)
-					if index > 0:
-						return self.treeWidget.topLevelItem(index-1)
-					else:
-						return False
-				else:
-					index = treeItem.parent().indexOfChild(treeItem)
-					return treeItem.parent().child(index-1)
-		else:
-			return treeItem
 
 	def dispPane(self):
 		if self.availSwatchesAction.isChecked():
@@ -767,6 +741,7 @@ class MainWindow(QMainWindow):
 			else:
 				parent = self.treeWidget
 			if isinstance(item,Group):
+				gridItemIn = gridItemGroup(item,self.gridWidget)
 				treeItem = treeItemGroup(item,parent)
 				if len(item.items) > 0:
 					self.fillViews(item.items,treeItem)
@@ -774,6 +749,8 @@ class MainWindow(QMainWindow):
 					nochild = noChild()
 					treeItem.addChild(nochild)
 				self.items[treeItem] = None
+				gridItemOut = gridItemGroup(item,self.gridWidget)
+				self.groups[item][1] = (gridItemIn,gridItemOut)
 			elif isinstance(item,Spacer):
 				treeItem = treeItemSpacer(item,parent)
 				gridItem = gridItemSpacer(item,self.gridWidget)
@@ -1227,7 +1204,7 @@ class treeItemGroup(QTreeWidgetItem):
 	def __init__(self, item, parent=None):
 		super(treeItemGroup, self).__init__(parent)
 		self.item = item
-		form.groups[item] = self
+		form.groups[item] = [self,None]
 		self.update()
 
 	def update(self):
@@ -1288,6 +1265,10 @@ class gridItemBreak(QListWidgetItem):
 		self.setIcon(QIcon(pix))
 		self.setSizeHint(QSize(0,17))
 		self.setFlags(Qt.NoItemFlags)
+
+class gridItemGroup(gridItemBreak):
+	def __init__(self, item, parent=None):
+		super(gridItemGroup, self).__init__(item, parent)
 
 class noChild(QTreeWidgetItem):
 	def __init__(self, parent=None):
@@ -1404,7 +1385,9 @@ class sbGridWidget(QListWidget):
 			for item in breaks:
 				breaks2[self.row(item)] = item
 			for key in sorted(breaks2.iterkeys()):
-				if isinstance(self.item(key-1),gridItemBreak):
+				if isinstance(self.item(key),gridItemGroup) and (isinstance(self.item(key-1),gridItemBreak) or isinstance(self.item(key-1),gridItemGroup) or key == 0):
+					height = 0
+				elif isinstance(self.item(key-1),gridItemBreak) or key == 0:
 					height = avail_height
 				else:
 					height = (int((avail_height-self.visualItemRect(self.item(key-1)).top())/17)-1)*17
@@ -1431,7 +1414,9 @@ class sbGridWidget(QListWidget):
 			for item in breaks:
 				breaks2[self.row(item)] = item
 			for key in sorted(breaks2.iterkeys()):
-				if isinstance(self.item(key-1),gridItemBreak):
+				if isinstance(self.item(key),gridItemGroup) and (isinstance(self.item(key-1),gridItemBreak) or isinstance(self.item(key-1),gridItemGroup) or key == 0):
+					width = 0
+				elif isinstance(self.item(key-1),gridItemBreak) or key == 0:
 					width = avail_width
 				else:
 					if self.isLeftToRight():
