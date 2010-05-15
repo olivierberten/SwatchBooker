@@ -62,7 +62,7 @@ class pantone(WebSvc):
 	def read(self,swatchbook,guide):
 		page = urllib.urlopen(self.url+'xref_lib'+guide+'.js').readlines()
 		swatchbook.info.title = self.guide[guide]
-		for line in page[2:]:
+		for line in page[1:]:
 			if line.strip() > '':
 				line = line.split('"')[1].split(',')
 				item = Color(swatchbook)

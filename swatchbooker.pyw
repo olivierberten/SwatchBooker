@@ -20,8 +20,6 @@
 #
 
 from __future__ import division
-import sys
-import time
 import re
 import tempfile
 import gettext
@@ -1362,6 +1360,7 @@ class sbGridWidget(QListWidget):
 		self.setViewMode(QListView.IconMode)
 		self.setMovement(QListView.Static)
 		self.setResizeMode(QListView.Adjust)
+		self.zHeight = self.zWidth = 2*self.frameWidth()
 
 	def update(self):
 		if settings.contains('gridHoriz') and settings.value('gridHoriz').toBool():
