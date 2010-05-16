@@ -1975,6 +1975,7 @@ class webOpenDlg(QDialog):
 
 	def changeTab(self):
 		self.svc = str(self.webSvcList.selectedItems()[0].data(Qt.UserRole).toString())
+		self.id = False
 		self.webSvcStack.setCurrentWidget(self.webWidgets[self.svc][0])
 		self.about.setText(self.webWidgets[self.svc][1])
 		self.webSvcStack.currentWidget().load()

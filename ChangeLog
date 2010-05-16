@@ -1,3 +1,10 @@
+2010-05-16  Olivier Berten  <olivier.berten@gmail.com>
+
+ * sbconvertor.pyw:
+   New SwatchBook batch convertor tool
+ * swatchbooker.pyw:
+   Bugfix
+
 2010-05-14  Olivier Berten  <olivier.berten@gmail.com>
 
  * swatchbooker.pyw:
