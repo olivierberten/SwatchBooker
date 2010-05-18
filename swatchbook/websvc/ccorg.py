@@ -114,7 +114,7 @@ class ccorg(WebSvc):
 		p.parse(cats)
 		for i in range(len(p.get_hyperlinks())):
 			categoryid = p.get_hyperlinks()[i].split('categoryid=')[1]
-			categories[categoryid] = p.get_descriptions()[i]
+			categories[categoryid] = xmlunescape(p.get_descriptions()[i])
 		
 		return categories
 
@@ -145,7 +145,7 @@ class ccorg(WebSvc):
 		for i in range(len(p.get_hyperlinks())):
 			id = p.get_hyperlinks()[i].rsplit('=')[1]
 			if id not in companies:
-				companies[id] = p.get_descriptions()[i]
+				companies[id] = xmlunescape(p.get_descriptions()[i])
 
 		return companies
 
@@ -162,7 +162,7 @@ class ccorg(WebSvc):
 		for i in range(len(p.get_hyperlinks())):
 			companyid = p.get_hyperlinks()[i].split('companyid=')[1].split('&lineid=')[0]
 			lineid = p.get_hyperlinks()[i].split('&lineid=')[1]
-			collections[str((companyid,lineid))] = p.get_descriptions()[i]
+			collections[str((companyid,lineid))] = xmlunescape(p.get_descriptions()[i])
 
 		return collections
 
@@ -195,7 +195,7 @@ class ccorg(WebSvc):
 				'3': 'Fandecks scanned on a X-Rite CFS-57 Spectrophotometer',
 				'2': 'Samples based on RGB values as provided by manufacturer',
 				'1': 'Samples determined from existing web display'}
-		swatchbook.info.title = deck['company']+" - "+deck['collection']
+		swatchbook.info.title = xmlunescape(deck['company']+" - "+deck['collection'])
 		swatchbook.info.description = 'Colorcharts.org certification: '+'*'*int(deck['stars'][:1])+'\n'+cert[deck['stars'][:1]]
 		swatchbook.book.display['columns'] = int(deck['rows'])
 		

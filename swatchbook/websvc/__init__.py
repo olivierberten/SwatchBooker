@@ -23,6 +23,7 @@ from __future__ import division
 import urllib
 import xml.etree.cElementTree as etree
 from xml.sax.saxutils import escape as xmlescape
+from xml.sax.saxutils import unescape as xmlunescape
 from swatchbook import *
 from string import *
 

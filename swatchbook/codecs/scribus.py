@@ -36,13 +36,13 @@ class scribus(SBCodec):
 	def read(swatchbook,file):
 		xml = etree.parse(file).getroot()
 		if 'Name' in xml.attrib:
-			swatchbook.info.title = unicode(xml.attrib['Name'])
+			swatchbook.info.title = xmlunescape(unicode(xml.attrib['Name']))
 		colors = xml.getiterator('COLOR')
 		i = 0
 		for color in colors:
 			item = Color(swatchbook)
 			rgb = cmyk = False
-			id = unicode(color.attrib['NAME'])
+			id = unicode(xmlunescape(color.attrib['NAME']))
 			if "RGB" in color.attrib:
 				rgb = color.attrib['RGB']
 				item.values[('RGB',False)] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]
@@ -67,7 +67,7 @@ class scribus(SBCodec):
 
 	@staticmethod
 	def write(swatchbook):
-		scsw = '<?xml version="1.0" encoding="UTF-8"?>\n<SCRIBUSCOLORS Name="'+swatchbook.info.title+'">\n'
+		scsw = '<?xml version="1.0" encoding="UTF-8"?>\n<SCRIBUSCOLORS Name="'+xmlescape(swatchbook.info.title)+'">\n'
 		scsw += scribus.writem(swatchbook,swatchbook.book.items)
 		scsw += '</SCRIBUSCOLORS>'
 		return scsw.encode('utf-8')

@@ -56,13 +56,13 @@ class html(SBCodec):
 <body>
 '''
 		if swatchbook.info.title > '':
-			htm += '<p id="title">'+swatchbook.info.title+'</p>\n'
+			htm += '<p id="title">'+xmlescape(swatchbook.info.title)+'</p>\n'
 		if swatchbook.info.description > '':
-			htm += '<p id="description">'+swatchbook.info.description+'</p>\n'
+			htm += '<p id="description">'+xmlescape(swatchbook.info.description)+'</p>\n'
 		if swatchbook.info.rights:
-			htm += '<p id="rights">'+swatchbook.info.rights+'</p>\n'
+			htm += '<p id="rights">'+xmlescape(swatchbook.info.rights)+'</p>\n'
 		if swatchbook.info.version > '':
-			htm += '<p id="version">'+swatchbook.info.version+'</p>\n'
+			htm += '<p id="version">'+xmlescape(swatchbook.info.version)+'</p>\n'
 		htm += '<div id="swatchbook"'
 		if swatchbook.book.display['columns']:
 			htm += ' style="width:'+str(swatchbook.book.display['columns']*30)+'px"'
@@ -81,10 +81,10 @@ class html(SBCodec):
 			if isinstance(item,Group):
 				html_tmp += '<div class="group">\n'
 				if item.info.title > '':
-					html_tmp += '<div class="group_title">'+item.info.title+'</div>\n'
+					html_tmp += '<div class="group_title">'+xmlescape(item.info.title)+'</div>\n'
 				html_tmp += html.writem(swatchbook,item.items)
 				if item.info.description > '':
-					html_tmp += '<div class="group_descr">'+item.info.description+'</div>\n'
+					html_tmp += '<div class="group_descr">'+xmlescape(item.info.description)+'</div>\n'
 				html_tmp += '</div>\n'
 			elif isinstance(item,Swatch):
 				item = swatchbook.swatches[item.id]
@@ -97,11 +97,9 @@ class html(SBCodec):
 						title_txt = item.info.title
 					else:
 						title_txt = item.info.identifier
-					html_tmp += '<div class="swatch" style="background-color:#'+hex2(R)+hex2(G)+hex2(B)+'" title="'+title_txt+'"></div>\n'
+					html_tmp += '<div class="swatch" style="background-color:#'+hex2(R)+hex2(G)+hex2(B)+'" title="'+xmlescape(title_txt)+'"></div>\n'
 			elif isinstance(item,Spacer):
 				html_tmp += '<div class="swatch"></div>\n'
 			elif isinstance(item,Break):
 				html_tmp += '<br class="clearall" />\n'
 		return html_tmp
-				
-

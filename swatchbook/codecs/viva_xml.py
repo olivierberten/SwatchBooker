@@ -36,11 +36,11 @@ class viva_xml(SBCodec):
 	def read(swatchbook,file):
 		xml = etree.parse(file).getroot()
 		if 'name' in xml.attrib:
-			swatchbook.info.title = unicode(xml.attrib['name'])
+			swatchbook.info.title = xmlunescape(unicode(xml.attrib['name']))
 		if len(list(xml.getiterator('copyright'))) > 0:
-			swatchbook.info.rights = unicode(list(xml.getiterator('copyright'))[0].text)
+			swatchbook.info.rights = xmlunescape(unicode(list(xml.getiterator('copyright'))[0].text))
 		if 'mask' in xml.attrib:
-			prefix, suffix = unicode(xml.attrib['mask']).split('%1')
+			prefix, suffix = xmlunescape(unicode(xml.attrib['mask'])).split('%1')
 		else:
 			prefix = suffix = ''
 		if 'visiblerows' in xml.attrib:
@@ -48,7 +48,7 @@ class viva_xml(SBCodec):
 		colors = xml.getiterator('color')
 		for color in colors:
 			item = Color(swatchbook)
-			id = unicode(color.attrib['name'])
+			id = xmlunescape(unicode(color.attrib['name']))
 			if prefix > '' or suffix > '':
 				item.info.title = prefix+id+suffix
 			if color.attrib['type'] == 'rgb':

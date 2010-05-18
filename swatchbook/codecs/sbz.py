@@ -87,11 +87,11 @@ class sbz(SBCodec):
 								delta = remain.split(':')
 								item.info.date = date - timedelta(hours=int(delta[0]),minutes=int(delta[1]))
 				elif '{'+xml+'}lang' in elem.attrib:
-					exec("item.info."+elem.tag[(len(dc)+2):]+"_l10n[elem.attrib['{'+xml+'}lang']] = elem.text")
+					exec("item.info."+elem.tag[(len(dc)+2):]+"_l10n[elem.attrib['{'+xml+'}lang']] = xmlunescape(elem.text)")
 				else:
-					exec("item.info."+elem.tag[(len(dc)+2):]+" = elem.text")
+					exec("item.info."+elem.tag[(len(dc)+2):]+" = xmlunescape(elem.text)")
 			elif elem.tag.find(cc):
-				exec("item.info."+elem.tag[(len(cc)+2):]+" = elem.text")
+				exec("item.info."+elem.tag[(len(cc)+2):]+" = xmlunescape(elem.text)")
 			
 
 	@staticmethod
@@ -110,7 +110,7 @@ class sbz(SBCodec):
 				elif elem.tag == 'metadata':
 					sbz.readmeta(sitem,elem)
 				elif elem.tag == 'extra':
-					sbz.sitem.extra[elem.attrib['type']] = elem.text
+					sbz.sitem.extra[xmlunescape(elem.attrib['type'])] = xmlunescape(elem.text)
 			if sitem.info.identifier > '':
 				id = sitem.info.identifier
 			else:
@@ -194,7 +194,7 @@ class sbz(SBCodec):
 				for lang in info_l10n:
 					xml += '  '*(offset+2)+'<dc:'+dc+' xml:lang="'+lang+'">'+xmlescape(info_l10n[lang])+'</dc:'+dc+'>\n'
 		if meta.license > '':
-			xml += '  '*(offset+2)+'<cc:license rdf:resource="'+meta.license+'" />\n'
+			xml += '  '*(offset+2)+'<cc:license rdf:resource="'+xmlescape(meta.license)+'" />\n'
 		if xml > u'':
 			return '  '*(offset+1)+'<metadata>\n'+xml+'  '*(offset+1)+'</metadata>\n'
 		else:

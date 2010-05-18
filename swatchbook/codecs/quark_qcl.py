@@ -35,8 +35,8 @@ class quark_qcl(SBCodec):
 	@staticmethod
 	def read(swatchbook,file):
 		xml = etree.parse(file).getroot()
-		swatchbook.info.title = unicode(list(xml.getiterator('file_descriptor'))[0].text)
-		swatchbook.info.rights = unicode(list(xml.getiterator('originator'))[0].text)
+		swatchbook.info.title = xmlunescape(unicode(list(xml.getiterator('file_descriptor'))[0].text))
+		swatchbook.info.rights = xmlunescape(unicode(list(xml.getiterator('originator'))[0].text))
 		preferredmodel = list(xml.getiterator('default_color_space'))[0].text.strip()
 		usage = list(xml.getiterator('color_usage_recommendation'))[0].text
 		name_field_info = list(xml.getiterator('name_field_info'))
@@ -45,7 +45,7 @@ class quark_qcl(SBCodec):
 			suffix = {}
 			for name in name_field_info:
 				nid = eval(name.attrib['format_id'])-1
-				prefix[nid], suffix[nid] =  unicode(name.attrib['long_form']).split('%n')
+				prefix[nid], suffix[nid] =  xmlunescape(unicode(name.attrib['long_form'])).split('%n')
 		ui_spec =  os.path.dirname(file)+'/'+list(xml.getiterator('ui_spec'))[0].text
 		if os.path.isfile(ui_spec):
 			ui = etree.parse(ui_spec).getroot()
@@ -66,7 +66,7 @@ class quark_qcl(SBCodec):
 			if i in breaks:
 				swatchbook.book.items.append(Break())
 			item = Color(swatchbook)
-			id = unicode(color.getchildren()[eval(data_format['SAMPLE_ID'])-1].text)
+			id = xmlunescape(unicode(color.getchildren()[eval(data_format['SAMPLE_ID'])-1].text))
 			if data_format.has_key('NAME_FORMAT_ID'):
 				nid = eval(color.getchildren()[eval(data_format['NAME_FORMAT_ID'])-1].text)-1
 				item.info.title = prefix[nid]+id+suffix[nid]

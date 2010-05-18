@@ -208,7 +208,7 @@ class MainWindow(QMainWindow):
 
 	def webOpen(self):
 		dialog = webOpenDlg(self)
-		if dialog.exec_() and dialog.svc and len(dialog.ids) > 0:
+		if dialog.exec_() and dialog.svc and dialog.ids:
 			thread = webOpenThread(dialog.svc,dialog.ids,self)
 			self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
 			self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
@@ -294,7 +294,7 @@ class webOpenDlg(QDialog):
 		super(webOpenDlg, self).__init__(parent)
 
 		self.svc = False
-		self.ids = set()
+		self.ids = False
 
 		self.webSvcStack = QStackedWidget()
 		self.webSvcList = QListWidget(self)
@@ -347,7 +347,7 @@ class webOpenDlg(QDialog):
 
 	def changeTab(self):
 		self.svc = str(self.webSvcList.selectedItems()[0].data(Qt.UserRole).toString())
-		self.ids = set()
+		self.ids = False
 		self.webSvcStack.setCurrentWidget(self.webWidgets[self.svc][0])
 		self.about.setText(self.webWidgets[self.svc][1])
 		self.webSvcStack.currentWidget().load()
@@ -369,9 +369,11 @@ class webWidgetList(QTreeWidget):
 				SIGNAL("itemExpanded(QTreeWidgetItem *)"), self.nextLevel)
 
 	def activate(self):
+		self.parent.ids = False
 		if self.selectedItems():
+			self.parent.ids = []
 			for item in self.selectedItems():
-				self.parent.ids.add(unicode(item.text(1)))
+				self.parent.ids.append(unicode(item.text(1)))
 
 	def load(self):
 		if not self.loaded:

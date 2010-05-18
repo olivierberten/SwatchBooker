@@ -24,6 +24,7 @@ import sys
 import struct
 import xml.etree.cElementTree as etree
 from xml.sax.saxutils import escape as xmlescape
+from xml.sax.saxutils import unescape as xmlunescape
 from zipfile import *
 from swatchbook import *
 from string import *

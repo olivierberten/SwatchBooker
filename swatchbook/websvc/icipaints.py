@@ -30,12 +30,15 @@ class icipaints(WebSvc):
 
 	type = 'list'
 	nbLevels = 1
-	url = ['http://icivis.uslxprod.iciwce.com/colourtools/','http://www.icipaints.co.uk/servlet/MousePainterRedirectHandler?site=','http://mp.dulux.com.cn/colourtools/data.aspx?Site=']
+	url = ['http://www.icipaints.com/colourtools/','http://www.icipaints.co.uk/servlet/MousePainterRedirectHandler?site=','http://mp.dulux.com.cn/colourtools/data.aspx?Site=']
 
 	brands = []
 	brands.append((u'ICI Dulux (International)',0,'Data?Site=CP4&'))
 	brands.append((u'Alba (Argentina)',0,'Data?Site=CP4ESAR&'))
+	brands.append((u'CIL (Canada - English)',0,'Data?Site=CILENCA_ALL&'))
+	brands.append((u'CIL (Canada - French)',0,'Data?Site=CILFRCA_ALL&'))
 	brands.append((u'Coral (Brazil)',0,'Data?Site=CP4BRP&'))
+	brands.append((u'Devoe (United States)',0,'Data?Site=CP4ENUSDV&'))
 	brands.append((u'Dulux (Austria)',1,'EATDLX&'))
 	brands.append((u'Dulux (Belgium - French)',1,'EBEDLX_FR&'))
 	brands.append((u'Dulux (Belgium - Dutch)',1,'EBEDLX_NL&'))
@@ -69,7 +72,7 @@ class icipaints(WebSvc):
 
 	def read(self,swatchbook,brand):
 		brand = int(brand)
-		colorlist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetPaletteCompact&Gammas=2.2!2.2!2.2&ColourTemp=6500').read().split('::')
+		colorlist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetPaletteCompact&Gammas=2.2!2.2!2.2&ColourTemp=6500').read().replace("Error 500: SRVE0199E: OutputStream already obtained\r\n","").split('::')
 		for c in colorlist:
 			item = Color(swatchbook)
 			item.usage.append('spot')
@@ -82,7 +85,7 @@ class icipaints(WebSvc):
 			item.values[('RGB',False)] = [int(rgb[0:2],16)/0xFF,int(rgb[2:4],16)/0xFF,int(rgb[4:6],16)/0xFF]
 			swatchbook.swatches[c[0]] = item
 		ranges = SortedDict()
-		rangelist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetRangeAndLaydownInfo&LiveOnly=true').read().rsplit('!',1)[0]+'!'
+		rangelist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetRangeAndLaydownInfo&LiveOnly=true').read().replace("Error 500: SRVE0199E: OutputStream already obtained\r\n","").rsplit('!',1)[0]+'!'
 		rangelist = rangelist.split('::')
 		swatchbook.info.title = self.brands[brand][0]
 		swatchbook.book.display['columns'] = 0
@@ -104,7 +107,7 @@ class icipaints(WebSvc):
 				group1.info.title = unicode(r1[1],'UTF-8')
 				if r1[2] > '':
 					group1.info.description = unicode(r1[2],'UTF-8')
-				collist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetLaydownColourIds&LaydownId='+r0[0]+'!'+r1[0]).read().split('!')
+				collist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetLaydownColourIds&LaydownId='+r0[0]+'!'+r1[0]).read().replace("Error 500: SRVE0199E: OutputStream already obtained\r\n","").split('!')
 				i = 0
 				for col in collist:
 					if col > '':
@@ -118,5 +121,7 @@ class icipaints(WebSvc):
 						else:
 							i = 0
 							group1.items.append(Break())
+				while isinstance(group1.items[-1],Break) or isinstance(group1.items[-1],Spacer):
+					del group1.items[-1]
 				group0.items.append(group1)
 			swatchbook.book.items.append(group0)

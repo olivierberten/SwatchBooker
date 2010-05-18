@@ -45,7 +45,7 @@ class ooo(SBCodec):
 			if elem.tag == draw+'color':
 				item = Color(swatchbook)
 				if draw+'name' in elem.attrib:
-					id = unicode(elem.attrib[draw+'name'])
+					id = xmlunescape(unicode(elem.attrib[draw+'name']))
 				if draw+'color' in elem.attrib:
 					rgb = elem.attrib[draw+'color']
 					item.values[('RGB',False)] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]

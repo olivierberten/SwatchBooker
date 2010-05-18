@@ -42,13 +42,14 @@ class dtpstudio(WebSvc):
 		if urllib.urlopen(self.url+"popup_d.htm").info().getdate('Last-Modified') == (2009, 10, 5, 7, 15, 57, 0, 1, 0) and urllib.urlopen(self.url+"Scripts/main.js").info().getdate('Last-Modified') == (2009, 10, 5, 13, 59, 20, 0, 1, 0):
 			systems['AVERY900SUPERCAST-PANTONE.js'] = 'Avery900SuperCast-Pantone'
 			systems['AVERY900SUPERCAST.js'] = 'Avery900SuperCast'
-			systems['BRILLUXSCALA.js'] = 'Brillux SCALA'
+			del systems['BRILLUXSCALA.js']
 			systems['BRILLUX_ACRYLCOLOR.js'] = 'Brillux AcrylColor'
 			systems['BRILLUX_FARBKOLLEKTION.js'] = 'Brillux Farbkollektion'
 			systems['BRILLUX_KUNSTHARZPUTZ.js'] = 'Brillux Kunstharzputz'
 			systems['BRILLUX_LACK.js'] = 'Brillux Lack'
 			systems['BRILLUX_MINERALPUTZ.js'] = 'Brillux Mineralputz'
 			systems['BRILLUX_MIX.js'] = 'Brillux Mix'
+			systems.insert(34,'BRILLUX_SCALA.js','Brillux SCALA')
 			systems['COLORTREND_FACADE.js'] = 'Colortrend Facade'
 			systems['COLORTREND_FACADE_PLUS.js'] = 'Colortrend Facade plus'
 			systems['ORACAL_SERIE_8500.js'] = 'Oracal Serie 8500'
@@ -67,7 +68,10 @@ class dtpstudio(WebSvc):
 			line = eval(line.split('completeColor')[1].split(";")[0].replace('false','False').replace('true','True'))
 			item = Color(swatchbook)
 			item.usage.append('spot')
-			id = unicode(line[4])
+			try:
+				id = unicode(line[4],'utf-8')
+			except UnicodeDecodeError:
+				id = unicode(line[4],'latin1')
 			if line[0] == 0:
 				item.values[('Lab',False)] = [line[1],line[2],line[3]]
 			elif line[0] == 1:
