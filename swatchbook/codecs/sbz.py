@@ -25,6 +25,7 @@ from datetime import *
 
 dc = "http://purl.org/dc/elements/1.1/"
 cc = "http://creativecommons.org/ns#"
+rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 xml = "http://www.w3.org/XML/1998/namespace"
 
 class sbz(SBCodec):
@@ -86,6 +87,12 @@ class sbz(SBCodec):
 								date = datetime.strptime(elem.text[:-len(remain)],"%Y-%m-%dT%H:%M:%S.%f")
 								delta = remain.split(':')
 								item.info.date = date - timedelta(hours=int(delta[0]),minutes=int(delta[1]))
+				elif elem.tag == '{'+dc+'}type':
+					if elem.attrib['{'+rdf+'}resource'] != 'http://purl.org/dc/dcmitype/Dataset':
+						raise FileFormatError
+				elif elem.tag == '{'+dc+'}format':
+					if elem.text != 'application/swatchbook':
+						raise FileFormatError
 				elif '{'+xml+'}lang' in elem.attrib:
 					exec("item.info."+elem.tag[(len(dc)+2):]+"_l10n[elem.attrib['{'+xml+'}lang']] = xmlunescape(elem.text)")
 				else:
@@ -136,7 +143,7 @@ class sbz(SBCodec):
 
 	@staticmethod
 	def write(swatchbook):
-		xml = '<?xml version="1.0" encoding="UTF-8"?>\n<SwatchBook version="0.7"\n    xmlns:dc="http://purl.org/dc/elements/1.1/"\n    xmlns:cc="http://creativecommons.org/ns#"\n    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n'
+		xml = '<?xml version="1.0" encoding="UTF-8"?>\n<SwatchBook version="0.7"\n    xmlns:dc="'+dc+'"\n    xmlns:cc="'+cc+'"\n    xmlns:rdf="'+rdf+'">\n'
 		xml += sbz.writemeta(swatchbook.info)
 		xml += '  <swatches>\n'
 		for id in swatchbook.swatches:

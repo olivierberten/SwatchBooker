@@ -44,8 +44,16 @@ class MainWindow(QMainWindow):
 		self.tobeadded = 0
 		self.added = 0
 		self.tobeconverted = []
-		self.list = QListWidget()
+		self.list = QTableWidget()
+		self.list.horizontalHeader().setStretchLastSection(True)
+		self.list.verticalHeader().hide()
+		self.list.horizontalHeader().hide()
+		self.list.setColumnCount(2)
+		self.list.setEditTriggers(QAbstractItemView.NoEditTriggers)
 		self.list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+		self.list.setSelectionBehavior(QAbstractItemView.SelectRows)
+		self.list.setColumnWidth(0,32)
+		self.list.setShowGrid(False)
 
 		self.addFile = QPushButton(_("Add files"))
 		self.addWeb = QPushButton(_("Add from web"))
@@ -132,54 +140,15 @@ class MainWindow(QMainWindow):
 			self.pathLabel.setText(self.path)
 			self.paramsChanged()
 		
-	def toggleRemove(self):
-		if self.list.selectedItems() > 0:
-			self.removeButton.setEnabled(True)
-		else:
-			self.removeButton.setEnabled(False)
-
-	def toggleConverted(self):
-		self.addFile.setEnabled(True)
-		self.addWeb.setEnabled(True)
-		self.removeAllButton.setEnabled(True)
-		self.list.setCurrentRow(-1)
-	
-	def toggleAdding(self):
-		self.threads -= 1
-		if self.threads == 0:
-			self.removeAllButton.setEnabled(True)
-			self.convertButton.setEnabled(True)
-			self.progress.hide()
-			self.tobeadded = 0
-			self.added = 0
-
 	def paramsChanged(self):
-		if self.list.count() > 0:
+		if self.list.rowCount() > 0:
 			self.convertButton.setEnabled(True)
-
-	def updateProgressBar(self):
-		self.added += 1
-		self.progress.setValue(self.added)
-
-	def removeAll(self):
-		self.tobeconverted = []
-		self.list.clear()
-		self.removeAllButton.setEnabled(False)
-		self.convertButton.setEnabled(False)
-
-	def remove(self):
-		itemIndexes = []
-		for item in self.list.selectedItems():
-			itemIndexes.append(self.list.row(item))
-		for i in sorted(itemIndexes,reverse=True):
-			self.list.takeItem(i)
-			del self.tobeconverted[i]
-		self.removeButton.setEnabled(False)
-		if self.list.count() == 0:
-			self.removeAllButton.setEnabled(False)
-			self.convertButton.setEnabled(False)
+			for index in range(self.list.rowCount()):
+				self.list.setCellWidget(index,0,QWidget())
+				self.tobeconverted[index][1] = False
 
 	def fileOpen(self):
+		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else QDir.homePath()
 		filetypes = []
 		for codec in codecs.reads:
 			codec_exts = []
@@ -189,10 +158,16 @@ class MainWindow(QMainWindow):
 			filetypes.append(codec_txt)
 		allexts = ["*.%s" % unicode(format).lower() \
 				   for format in codecs.readexts.keys()]
+		if settings.contains('lastOpenCodec'):
+			filetype = settings.value('lastOpenCodec').toString()
+		else:
+			filetype = QString()
 		flist = QFileDialog.getOpenFileNames(self,
-							_("Add files"), QDir.homePath(),
-							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+_(";;All files (*)"))
+							_("Add files"), dir,
+							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+_(";;All files (*)"),filetype)
 		if flist.count() > 0:
+			settings.setValue('lastOpenCodec',QVariant(filetype))
+			settings.setValue('lastOpenDir',QVariant(os.path.dirname(unicode(flist[0]))))
 			thread = fileOpenThread(flist,self)
 			self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
 			self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
@@ -222,6 +197,44 @@ class MainWindow(QMainWindow):
 			self.removeAllButton.setEnabled(False)
 			thread.start()
 
+	def toggleAdding(self):
+		self.threads -= 1
+		if self.threads == 0:
+			self.removeAllButton.setEnabled(True)
+			self.convertButton.setEnabled(True)
+			self.progress.hide()
+			self.tobeadded = 0
+			self.added = 0
+
+	def updateProgressBar(self):
+		self.added += 1
+		self.progress.setValue(self.added)
+
+	def remove(self):
+		itemIndexes = []
+		for item in self.list.selectedItems():
+			itemIndexes.append(self.list.row(item))
+		for i in sorted(itemIndexes,reverse=True):
+			self.list.removeRow(i)
+			del self.tobeconverted[i]
+		self.removeButton.setEnabled(False)
+		if self.list.rowCount() == 0:
+			self.removeAllButton.setEnabled(False)
+			self.convertButton.setEnabled(False)
+
+	def toggleRemove(self):
+		if self.list.selectedItems() > 0:
+			self.removeButton.setEnabled(True)
+		else:
+			self.removeButton.setEnabled(False)
+
+	def removeAll(self):
+		self.tobeconverted = []
+		self.list.clear()
+		self.list.setRowCount(0)
+		self.removeAllButton.setEnabled(False)
+		self.convertButton.setEnabled(False)
+
 	def convert(self):
 		codec = unicode(self.formatCombo.itemData(self.formatCombo.currentIndex()).toString())
 		path = self.path
@@ -229,17 +242,33 @@ class MainWindow(QMainWindow):
 		settings.setValue('lastSaveDir',QVariant(path))
 		thread = convertThread(path,codec,self)
 		self.connect(thread, SIGNAL("converted(int)"), self.converted)
-		self.connect(thread, SIGNAL("finished()"), self.toggleConverted)
-		self.connect(thread, SIGNAL("terminated()"), self.toggleConverted)
+		self.connect(thread, SIGNAL("finished()"), self.allConverted)
+		self.connect(thread, SIGNAL("terminated()"), self.allConverted)
 		self.addFile.setEnabled(False)
 		self.addWeb.setEnabled(False)
 		self.removeButton.setEnabled(False)
 		self.removeAllButton.setEnabled(False)
 		self.convertButton.setEnabled(False)
+		self.pathButton.setEnabled(False)
+		self.formatCombo.setEnabled(False)
+		self.repaint()
+		self.setCursor(Qt.WaitCursor)
 		thread.start()
 
 	def converted(self,index):
-		self.list.item(index).setIcon(QIcon(app.style().standardIcon(QStyle.SP_DialogOkButton)))
+		iconWidget = QLabel()
+		iconWidget.setAlignment(Qt.AlignCenter)
+		iconWidget.setPixmap(app.style().standardPixmap(QStyle.SP_DialogOkButton))
+		self.list.setCellWidget(index,0,iconWidget)
+
+	def allConverted(self):
+		self.addFile.setEnabled(True)
+		self.addWeb.setEnabled(True)
+		self.removeAllButton.setEnabled(True)
+		self.pathButton.setEnabled(True)
+		self.formatCombo.setEnabled(True)
+		self.unsetCursor()
+#		self.list.setCurrentRow(-1)
 
 class fileOpenThread(QThread):
 	def __init__(self, flist, parent = None):
@@ -251,7 +280,10 @@ class fileOpenThread(QThread):
 			try:
 				sb = SwatchBook(unicode(fname))
 				self.parent().tobeconverted.append([sb,False])
-				self.parent().list.addItem(sb.info.title)
+				row = self.parent().list.rowCount()
+				self.parent().list.insertRow(row)
+				self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
+				self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.swatches))))
 				self.emit(SIGNAL("added()"))
 			except FileFormatError:
 				pass
@@ -266,7 +298,10 @@ class webOpenThread(QThread):
 		for id in self.ids:
 			sb = SwatchBook(websvc=self.svc,webid=id)
 			self.parent().tobeconverted.append([sb,False])
-			self.parent().list.addItem(sb.info.title)
+			row = self.parent().list.rowCount()
+			self.parent().list.insertRow(row)
+			self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
+			self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.swatches))))
 			self.emit(SIGNAL("added()"))
 
 class convertThread(QThread):

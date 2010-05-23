@@ -71,12 +71,6 @@ class MainWindow(QMainWindow):
 	def __init__(self, file=False, parent=None):
 		super(MainWindow, self).__init__(parent)
 		
-		if file:
-			self.sb = SwatchBook(file)
-		else:
-			self.sb = SwatchBook()
-			self.codec = 'sbz'
-
 		self.setWindowTitle('SwatchBooker')
 		self.setWindowIcon(QIcon(swatchbooker_svg))
 		
@@ -126,6 +120,18 @@ class MainWindow(QMainWindow):
 		else:
 			self.availSwatchesAction.setChecked(True)
 
+		if file:
+			self.loadFile(file)
+		else:
+			breaks = []
+			self.profiles = {}
+			self.swatches = {}
+			self.groups = {}
+			self.items = {}
+			self.sb = SwatchBook()
+			self.filename = False
+			self.codec = 'sbz'
+
 		self.mainWidget = QSplitter(Qt.Horizontal)
 
 		groupBoxInfo = QGroupBox(_("Information"))
@@ -166,7 +172,7 @@ class MainWindow(QMainWindow):
 		self.groupBoxList = QGroupBox(_("Available swatches"))
 
 		self.swList = QListWidget()
-		self.swList.setSortingEnabled(True)
+#		self.swList.setSortingEnabled(True)
 		self.swnbLabel = QLabel()
 		self.swLEditBut = MenuButton(self)
 		self.swLEditMenu = QMenu()
@@ -263,8 +269,6 @@ class MainWindow(QMainWindow):
 	def clear(self):
 		global breaks
 		breaks = []
-		self.filename = False
-		self.codec = False
 		self.profiles = {}
 		self.swatches = {}
 		self.groups = {}
@@ -342,29 +346,11 @@ class MainWindow(QMainWindow):
 			self.rowsLabel.setText(_("Rows:"))
 		self.gridWidget.update()
 
-	def update(self):
-		self.clear()
-
-		for swatch in self.sb.swatches:
-			self.addSwatch(swatch)
-		self.sbInfo.update(self.sb)
-		self.updSwatchCount()
-		self.fillViews(self.sb.book.items)
-		self.gridWidget.update()
-		for prof in self.sb.profiles:
-			self.addProfileToList(prof,self.sb.profiles[prof])
-		if self.sb.book.display['columns']:
-			self.cols.setValue(self.sb.book.display['columns'])
-		if self.sb.book.display['rows']:
-			self.rows.setValue(self.sb.book.display['rows'])
-	
 	def updSwatchCount(self):
 		self.swnbLabel.setText(n_('%s swatch','%s swatches',len(self.sb.swatches)) % len(self.sb.swatches))
 
 	def addSwatch(self,id):
-		swatch = listItemSwatch(id)
-		self.swList.addItem(swatch)
-		self.swatches[id] = (swatch,[],[])
+		listItemSwatch(id)
 
 	def swAddColor(self):
 		id = _('New Color')
@@ -377,6 +363,8 @@ class MainWindow(QMainWindow):
 		swatch.info.identifier = id
 		form.sb.swatches[id] = swatch
 		self.addSwatch(id)
+		icon = self.drawIcon(id)
+		self.addIcon(id,icon[0],icon[1])
 		self.swList.setFocus()
 		self.swList.setCurrentItem(self.swatches[id][0])
 		self.updSwatchCount()
@@ -415,6 +403,8 @@ class MainWindow(QMainWindow):
 		selected = self.treeWidget.selectedItems()
 		id = eval('self.swAdd'+type+'()')
 		item = Swatch(id)
+		icon = self.drawIcon(id)
+		self.addIcon(id,icon[0],icon[1])
 		gridItem = gridItemSwatch(item)
 		treeItem = treeItemSwatch(item)
 		if selected:
@@ -680,25 +670,24 @@ class MainWindow(QMainWindow):
 	def strippedName(self, fullFileName):
 		return QFileInfo(fullFileName).fileName()
 
-	def openRecentFile(self):
-		action = self.sender()
-		if action:
-			self.loadFile(unicode(action.data().toString()))
-
 	def fileNew(self):
 		self.sb = SwatchBook()
-		self.clear()
+		self.filename = False
 		self.codec = 'sbz'
+		self.clear()
 
 	def webOpen(self):
 		dialog = webOpenDlg(self)
 		if dialog.exec_() and dialog.svc and dialog.id:
-			self.clear()
-			self.sb = SwatchBook(websvc=dialog.svc,webid=dialog.id)
-			self.update()
+			thread = webOpenThread(dialog.svc, dialog.id, self)
+			self.connect(thread, SIGNAL("finished()"), self.loaded)
+			self.connect(thread, SIGNAL("terminated()"), self.misloaded)
+			self.fileMenu.setEnabled(False)
+			app.setOverrideCursor(Qt.WaitCursor)
+			thread.start()
 
 	def fileOpen(self):
-		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else "."
+		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else QDir.homePath()
 		filetypes = []
 		for codec in codecs.reads:
 			codec_exts = []
@@ -720,49 +709,110 @@ class MainWindow(QMainWindow):
 			settings.setValue('lastOpenDir',QVariant(os.path.dirname(fname)))
 			self.loadFile(fname)
 
-	def loadFile(self, fname):
-		try:
-			self.clear()
-			self.sb = SwatchBook(fname)
-			self.updateFileMenu(fname)
-			self.update()
-			self.filename = fname
-			if self.sb.codec in codecs.writes:
-				self.codec = self.sb.codec
-		except FileFormatError:
-			QMessageBox.critical(self, _("Error"), _("Unsupported file"))
+	def openRecentFile(self):
+		action = self.sender()
+		if action:
+			self.loadFile(unicode(action.data().toString()))
 
-	def fillViews(self,items,group = False):
-		for item in items:
-			if group:
-				parent = group
+	def loadFile(self,fname):
+		thread = fileOpenThread(fname, self)
+		self.connect(thread, SIGNAL("finished()"), self.fill)
+		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
+		self.connect(thread, SIGNAL("fileFormatError()"), self.fileFormatError)
+		self.fileMenu.setEnabled(False)
+		app.setOverrideCursor(Qt.WaitCursor)
+		thread.start()
+
+	def fill(self):
+		self.clear()
+		self.sbInfo.update(self.sb)
+		self.updSwatchCount()
+
+		for prof in self.sb.profiles:
+			self.addProfileToList(prof,self.sb.profiles[prof])
+		if self.sb.book.display['columns']:
+			self.cols.setValue(self.sb.book.display['columns'])
+		if self.sb.book.display['rows']:
+			self.rows.setValue(self.sb.book.display['rows'])
+	
+		if self.filename:
+			self.updateFileMenu(self.filename)
+		thread = fillViewsThread(self)
+		self.connect(thread, SIGNAL("finished()"), self.buildIcons)
+		thread.start()
+
+	def misloaded(self):
+		app.restoreOverrideCursor()
+		QMessageBox.critical(self, _("Error"), _("There was an error while opening that file"))
+
+	def fileFormatError(self):
+		app.restoreOverrideCursor()
+		QMessageBox.critical(self, _("Error"), _("Unsupported file"))
+
+	def buildIcons(self):
+		for id in self.swatches:
+			thread = drawIconThread(id,self)
+			self.connect(thread, SIGNAL("icon(QString,QImage,QImage)"), self.addIcon)
+			thread.start()
+		self.connect(thread, SIGNAL("finished()"), self.fullyLoaded)
+
+	def drawIcon(self,id):
+		swatch = form.sb.swatches[id]
+		pix = QImage(16,16,QImage.Format_ARGB32_Premultiplied)
+		pix.fill(Qt.transparent)
+		paint = QPainter()
+		if isinstance(swatch,Color) and swatch.toRGB8():
+			prof_out = str(settings.value("mntrProfile").toString()) or False
+			r,g,b = swatch.toRGB8(prof_out)
+			paint.begin(pix)
+			paint.setBrush(QColor(r,g,b))
+			if 'spot' in swatch.usage:
+				paint.drawEllipse(0, 0, 15, 15)
 			else:
-				parent = self.treeWidget
-			if isinstance(item,Group):
-				gridItemIn = gridItemGroup(item,self.gridWidget)
-				treeItem = treeItemGroup(item,parent)
-				if len(item.items) > 0:
-					self.fillViews(item.items,treeItem)
-				else:
-					nochild = noChild()
-					treeItem.addChild(nochild)
-				self.items[treeItem] = None
-				gridItemOut = gridItemGroup(item,self.gridWidget)
-				self.groups[item][1] = (gridItemIn,gridItemOut)
-			elif isinstance(item,Spacer):
-				treeItem = treeItemSpacer(item,parent)
-				gridItem = gridItemSpacer(item,self.gridWidget)
-				self.items[treeItem] = gridItem
-			elif isinstance(item,Break):
-				treeItem = treeItemBreak(item,parent)
-				gridItem = gridItemBreak(item,self.gridWidget)
-				self.items[treeItem] = gridItem
+				paint.drawRect(0, 0, 15, 15)
+			paint.end()
+			normal = pix.copy()
+			paint.begin(pix)
+			paint.setPen(QColor(255,255,255))
+			if 'spot' in swatch.usage:
+				paint.drawEllipse(0, 0, 15, 15)
 			else:
-				treeItem = treeItemSwatch(item,parent)
-				gridItem = gridItemSwatch(item,self.gridWidget)
-				self.items[treeItem] = gridItem
-			if group:
-				self.treeWidget.expandItem(parent)
+				paint.drawRect(0, 0, 15, 15)
+			paint.setPen(Qt.DotLine)
+			if 'spot' in swatch.usage:
+				paint.drawEllipse(0, 0, 15, 15)
+			else:
+				paint.drawRect(0, 0, 15, 15)
+			paint.end()
+		else:
+			paint.begin(pix)
+			paint.setPen(QPen(QColor(218,218,218),3.0))
+			paint.drawLine(QLine(3, 3, 12, 12))
+			paint.drawLine(QLine(12, 3, 3, 12))
+			paint.end()
+			normal = pix.copy()
+			paint.begin(pix)
+			paint.setPen(QColor(255,255,255))
+			paint.drawRect(0, 0, 15, 15)
+			paint.setPen(Qt.DotLine)
+			paint.drawRect(0, 0, 15, 15)
+			paint.end()
+		selected = pix
+
+		return [normal,selected]
+
+
+	def addIcon(self,id,normal,selected):
+		id = unicode(id)
+		icon = QIcon(QPixmap.fromImage(normal))
+		icon.addPixmap(QPixmap.fromImage(selected),QIcon.Selected)
+		self.swatches[id][3] = icon
+		swupdate(id)
+		self.gridWidget.update()
+
+	def fullyLoaded(self):
+		self.fileMenu.setEnabled(True)
+		app.restoreOverrideCursor()
 
 	def fileSave(self):
 		if self.filename and self.codec:
@@ -846,7 +896,7 @@ class MainWindow(QMainWindow):
 		self.profiles[self.sb.profiles[profid].info['space'].strip()].remove(profid)
 		del self.sb.profiles[profid]
 		self.profRemoveAction.setEnabled(False)
-		# TODO remove profile from color values
+		#TODO: remove profile from color values
 
 class MenuButton(QToolButton):
 	def __init__(self,parent=None):
@@ -1096,55 +1146,11 @@ class l10nItem(QWidget):
 		if self.parent.l10nList.count() == 0:
 			self.parent.caller.clear()
 
-class swIcon(QIcon):
-	def __init__(self,id):
-		super(swIcon, self).__init__()
-		swatch = form.sb.swatches[id]
-		pix = QPixmap(16,16)
-		pix.fill(Qt.transparent)
-		paint = QPainter()
-		if isinstance(swatch,Color) and swatch.toRGB8():
-			prof_out = str(settings.value("mntrProfile").toString()) or False
-			r,g,b = swatch.toRGB8(prof_out)
-			paint.begin(pix)
-			paint.setBrush(QColor(r,g,b))
-			if 'spot' in swatch.usage:
-				paint.drawEllipse(0, 0, 15, 15)
-			else:
-				paint.drawRect(0, 0, 15, 15)
-			paint.end()
-			self.addPixmap(pix)
-			paint.begin(pix)
-			paint.setPen(QColor(255,255,255))
-			if 'spot' in swatch.usage:
-				paint.drawEllipse(0, 0, 15, 15)
-			else:
-				paint.drawRect(0, 0, 15, 15)
-			paint.setPen(Qt.DotLine)
-			if 'spot' in swatch.usage:
-				paint.drawEllipse(0, 0, 15, 15)
-			else:
-				paint.drawRect(0, 0, 15, 15)
-			paint.end()
-		else:
-			paint.begin(pix)
-			paint.setPen(QPen(QColor(218,218,218),3.0))
-			paint.drawLine(QLine(3, 3, 12, 12))
-			paint.drawLine(QLine(12, 3, 3, 12))
-			paint.end()
-			self.addPixmap(pix)
-			paint.begin(pix)
-			paint.setPen(QColor(255,255,255))
-			paint.drawRect(0, 0, 15, 15)
-			paint.setPen(Qt.DotLine)
-			paint.drawRect(0, 0, 15, 15)
-			paint.end()
-		self.addPixmap(pix,QIcon.Selected)
-
 class listItemSwatch(QListWidgetItem):
 	def __init__(self,id):
-		super(listItemSwatch, self).__init__()
+		super(listItemSwatch, self).__init__(form.swList)
 		self.id = id
+		form.swatches[id] = [self,[],[],False]
 		self.update()
 
 	def update(self):
@@ -1153,7 +1159,8 @@ class listItemSwatch(QListWidgetItem):
 		else:
 			text = form.sb.swatches[self.id].info.identifier
 		self.setText(text)
-		self.setIcon(swIcon(self.id))
+		if form.swatches[self.id][3]:
+			self.setIcon(form.swatches[self.id][3])
 
 	@staticmethod
 	def alphanum_key(s):
@@ -1180,7 +1187,8 @@ class gridItemSwatch(QListWidgetItem):
 		if form.sb.swatches[self.item.id].info.title > '':
 			text.append(form.sb.swatches[self.item.id].info.title)
 		self.setToolTip('<br />'.join(text))
-		self.setIcon(swIcon(self.item.id))
+		if form.swatches[self.item.id][3]:
+			self.setIcon(form.swatches[self.item.id][3])
 
 class treeItemSwatch(QTreeWidgetItem):
 	def __init__(self, item, parent=None):
@@ -1196,7 +1204,8 @@ class treeItemSwatch(QTreeWidgetItem):
 		else:
 			text = form.sb.swatches[self.item.id].info.identifier
 		self.setText(0,text)
-		self.setIcon(0,swIcon(self.item.id))
+		if form.swatches[self.item.id][3]:
+			self.setIcon(0,form.swatches[self.item.id][3])
 
 class treeItemGroup(QTreeWidgetItem):
 	def __init__(self, item, parent=None):
@@ -1234,7 +1243,7 @@ class gridItemSpacer(QListWidgetItem):
 		super(gridItemSpacer, self).__init__(parent)
 
 		self.item = item
-		pix = QPixmap(1,1)
+		pix = QImage(1,1,QImage.Format_Mono)
 		pix.fill(Qt.transparent)
 		self.setIcon(QIcon(pix))
 		self.setSizeHint(QSize(17,17))
@@ -1258,7 +1267,7 @@ class gridItemBreak(QListWidgetItem):
 
 		self.item = item
 		breaks.append(self)
-		pix = QPixmap(1,1)
+		pix = QImage(1,1,QImage.Format_Mono)
 		pix.fill(Qt.transparent)
 		self.setIcon(QIcon(pix))
 		self.setSizeHint(QSize(0,17))
@@ -1600,6 +1609,8 @@ class ColorWidget(QWidget):
 		key = (str(self.swValues.tabText(tfrom)),space)
 		val = self.item.values.pop(key)
 		self.item.values.insert(tfrom,key,val)
+		icon = form.drawIcon(self.item.info.identifier)
+		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
 
 	def add_val_tab(self,space,values):
@@ -1665,6 +1676,8 @@ class ColorWidget(QWidget):
 		spaceWidget.setLayout(spaceLayout)
 
 		self.swValues.addTab(spaceWidget,model)
+		icon = form.drawIcon(self.item.info.identifier)
+		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
 
 	def edit(self):
@@ -1673,7 +1686,8 @@ class ColorWidget(QWidget):
 				self.item.usage.append('spot')
 			else:
 				self.item.usage.remove('spot')
-			swupdate(self.item.info.identifier)
+			icon = form.drawIcon(self.item.info.identifier)
+			form.addIcon(self.item.info.identifier,icon[0],icon[1])
 
 	def set_preview(self):
 		prof_out = str(settings.value("mntrProfile").toString()) or False
@@ -1682,7 +1696,6 @@ class ColorWidget(QWidget):
 			self.sample.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
 		else:
 			self.sample.setStyleSheet("")
-		swupdate(self.item.info.identifier)
 
 	def valedit(self):
 		sender = self.val[self.sender()]
@@ -1696,6 +1709,8 @@ class ColorWidget(QWidget):
 				self.item.values[sender[0]][sender[1]] = eval(str(self.sender().text()))/360
 		else:
 			self.item.values[sender[0]][sender[1]] = eval(str(self.sender().text()))
+		icon = form.drawIcon(self.item.info.identifier)
+		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
 
 	def def_current_sp(self):
@@ -1719,12 +1734,16 @@ class ColorWidget(QWidget):
 		fields = self.swValues.currentWidget().findChildren(QLineEdit)
 		for field in fields:
 			self.val[field] = (current_sp,self.val[field][1])
+		icon = form.drawIcon(self.item.info.identifier)
+		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
 
 	def delVal(self):
 		global current_sp
 		del self.item.values[current_sp]
 		self.swValues.removeTab(self.swValues.currentIndex())
+		icon = form.drawIcon(self.item.info.identifier)
+		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
 
 	def addVal(self):
@@ -1742,6 +1761,8 @@ class ColorWidget(QWidget):
 		self.swValues.setCurrentIndex(self.swValues.count()-1)
 		self.def_current_sp()
 		self.delValAction.setEnabled(True)
+		icon = form.drawIcon(self.item.info.identifier)
+		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
 		
 	def getProfList(self,model):
@@ -1751,6 +1772,82 @@ class ColorWidget(QWidget):
 				profList.append((form.sb.profiles[prof].info['desc'][0],prof))
 		return profList
 
+class fileOpenThread(QThread):
+	def __init__(self, fname, parent=None):
+		super(fileOpenThread, self).__init__(parent)
+		self.fname = fname
+
+	def run(self):
+		try:
+			self.parent().sb = SwatchBook(self.fname)
+			self.parent().filename = self.fname
+			if self.parent().sb.codec in codecs.writes:
+				self.parent().codec = self.parent().sb.codec
+		except FileFormatError:
+			self.emit(SIGNAL("fileFormatError()"))
+
+class webOpenThread(QThread):
+	def __init__(self, svc, id, parent=None):
+		super(webOpenThread, self).__init__(parent)
+		self.svc = svc
+		self.id = id
+
+	def run(self):
+		self.parent().filename = False
+		self.parent().codec = 'sbz'
+		self.parent().sb = SwatchBook(websvc=self.svc,webid=self.id)
+
+class fillViewsThread(QThread):
+	def __init__(self, parent=None):
+		super(fillViewsThread, self).__init__(parent)
+
+	def run(self):
+		for swatch in self.parent().sb.swatches:
+			self.parent().addSwatch(swatch)
+		self.parent().swList.sortItems()
+		self.fillViews(self.parent().sb.book.items)
+
+	def fillViews(self,items,group = False):
+		for item in items:
+			if group:
+				parent = group
+			else:
+				parent = self.parent().treeWidget
+			if isinstance(item,Group):
+				gridItemIn = gridItemGroup(item,self.parent().gridWidget)
+				treeItem = treeItemGroup(item,parent)
+				if len(item.items) > 0:
+					self.fillViews(item.items,treeItem)
+				else:
+					nochild = noChild()
+					treeItem.addChild(nochild)
+				self.parent().items[treeItem] = None
+				gridItemOut = gridItemGroup(item,self.parent().gridWidget)
+				self.parent().groups[item][1] = (gridItemIn,gridItemOut)
+			elif isinstance(item,Spacer):
+				treeItem = treeItemSpacer(item,parent)
+				gridItem = gridItemSpacer(item,self.parent().gridWidget)
+				self.parent().items[treeItem] = gridItem
+			elif isinstance(item,Break):
+				treeItem = treeItemBreak(item,parent)
+				gridItem = gridItemBreak(item,self.parent().gridWidget)
+				self.parent().items[treeItem] = gridItem
+			else:
+				treeItem = treeItemSwatch(item,parent)
+				gridItem = gridItemSwatch(item,self.parent().gridWidget)
+				self.parent().items[treeItem] = gridItem
+			if group:
+				self.parent().treeWidget.expandItem(parent)
+
+class drawIconThread(QThread):
+	def __init__(self, id, parent=None):
+		super(drawIconThread, self).__init__(parent)
+		self.id = id
+
+	def run(self):
+		icon = self.parent().drawIcon(self.id)
+		self.emit(SIGNAL("icon(QString,QImage,QImage)"),self.id,icon[0],icon[1])
+
 class SettingsDlg(QDialog):
 	def __init__(self, parent=None):
 		super(SettingsDlg, self).__init__(parent)
@@ -1759,7 +1856,6 @@ class SettingsDlg(QDialog):
 		self.cmykProfile = False
 		self.profiles = []
 		self.listProfiles()
-		
 		
 		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
 		
@@ -2066,7 +2162,6 @@ if __name__ == "__main__":
 	else:
 		form = MainWindow()
 	form.show()
-	form.update()
 	form.dispPane()
 
 	app.exec_()
