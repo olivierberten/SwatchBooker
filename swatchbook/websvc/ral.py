@@ -25,9 +25,10 @@ from swatchbook.websvc import *
 class ral(WebSvc):
 	"""RAL"""
 
+	content = ['swatchbook']
+
 	about = u'These data come from the <a href="http://www.ral-farben.de/uebersicht-ral-classic-farben.html?&L=1">RAL CLASSIC colour names</a> listed at RAL\'s website.<br /><br />RAL CLASSIC is registered trademarks of RAL gGmbH, 53757 Sankt Augustin.'
 
-	type = 'list'
 	nbLevels = 1
 	url = 'http://www.ral-farben.de/uebersicht-ral-classic-farben.html'
 

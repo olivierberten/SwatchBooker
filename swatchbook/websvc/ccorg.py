@@ -78,7 +78,7 @@ class MyParser(SGMLParser):
 class ccorg(WebSvc):
 	"""ColorCharts.org"""
 	
-	type = 'list'
+	content = ['swatchbook']
 
 	about = u'Copyright 2000 - 2007 Colorcharts.org, All Rights Reserved'
 

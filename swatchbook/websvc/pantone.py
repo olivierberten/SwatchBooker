@@ -25,9 +25,10 @@ from swatchbook.websvc import *
 class pantone(WebSvc):
 	"""Pantone"""
 
+	content = ['swatchbook']
+
 	about = u'These data come from Pantone\'s <a href="http://www.pantone.com/pages/pantone/color_xref.aspx">X-Ref</a> tool.<br /><br />PANTONE® and other Pantone, Inc. trademarks are the property of Pantone, Inc. © Pantone, Inc. 2010'
 
-	type = 'list'
 	nbLevels = 1
 	url = 'http://www.pantone.com/images/xref/'
 

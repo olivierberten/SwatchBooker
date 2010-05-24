@@ -26,9 +26,10 @@ import time
 class icipaints(WebSvc):
 	"""ICI Dulux"""
 
+	content = ['swatchbook']
+
 	about = u'These data come from ICI Dulux\'s MousePainter tool.<br /><br />© Copyright Imperial Chemical Industries Limited'
 
-	type = 'list'
 	nbLevels = 1
 	url = ['http://www.icipaints.com/colourtools/','http://www.icipaints.co.uk/servlet/MousePainterRedirectHandler?site=','http://mp.dulux.com.cn/colourtools/data.aspx?Site=']
 

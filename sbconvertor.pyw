@@ -337,27 +337,35 @@ class webOpenDlg(QDialog):
 		palette.setColor(QPalette.Base,Qt.transparent)
 		self.webSvcList.setPalette(palette)
 		self.webSvcList.setFrameShape(QFrame.NoFrame)
+		aboutBox = QGroupBox(_("About"))
 		self.about = QLabel()
 		self.about.setWordWrap(True)
-		self.about.setMargin(10)
-		self.about.setFrameShape(QFrame.StyledPanel)
+		self.about.setOpenExternalLinks(True)
+		aboutBoxLayout = QVBoxLayout()
+		aboutBoxLayout.addWidget(self.about)
+		aboutBox.setLayout(aboutBoxLayout)
 
 		self.webWidgets = {}
 
 		for svc in websvc.list:
 			current_svc = eval('websvc.'+svc+'()')
-			if current_svc.type == 'list':
+			if 'swatchbook' in current_svc.content:
 				webWidget = webWidgetList(svc,self)
+			else:
+				continue
 			self.webSvcStack.addWidget(webWidget)
-			self.webWidgets[svc] = (webWidget,current_svc.about)
 			listItem = QListWidgetItem(websvc.list[svc],self.webSvcList)
 			listItem.setData(Qt.UserRole,svc)
 			icon = (dirpath(__file__) or '.')+'/swatchbook/websvc/'+svc+'.png'
 			if(QFile.exists(icon)):
 				listItem.setIcon(QIcon(icon))
+			self.webWidgets[svc] = (webWidget,current_svc.about,listItem)
 		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
 		self.webSvcList.sortItems()
-		self.webSvcList.setCurrentRow(0)
+		if settings.contains('lastWebSvc') and str(settings.value('lastWebSvc').toString()) in self.webWidgets:
+			self.webSvcList.setCurrentItem(self.webWidgets[str(settings.value('lastWebSvc').toString())][2])
+		else:
+			self.webSvcList.setCurrentRow(0)
 		self.changeTab()
 
 		web1 = QWidget()
@@ -370,7 +378,7 @@ class webOpenDlg(QDialog):
 
 		webl = QGridLayout()
 		webl.addWidget(web1,0,0,Qt.AlignTop)
-		webl.addWidget(self.about,0,1,Qt.AlignTop)
+		webl.addWidget(aboutBox,0,1,Qt.AlignTop)
 		webl.addWidget(buttonBox,1,0,1,3)
 		self.setLayout(webl)
 
@@ -387,6 +395,7 @@ class webOpenDlg(QDialog):
 		self.about.setText(self.webWidgets[self.svc][1])
 		self.webSvcStack.currentWidget().load()
 		self.webSvcList.setCurrentItem(self.webSvcList.selectedItems()[0],QItemSelectionModel.Current)
+		settings.setValue('lastWebSvc',QVariant(self.svc))
 
 class webWidgetList(QTreeWidget):
 	def __init__(self, svc, parent=None):

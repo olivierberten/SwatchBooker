@@ -24,9 +24,10 @@ from swatchbook.websvc import *
 class dtpstudio(WebSvc):
 	"""Digital Colour Atlas"""
 
+	content = ['swatchbook']
+
 	about = u'These data come from dtp studio\'s <a href="http://www.dtpstudio.de/colordesigner/popup_e.htm">Color Designer</a> tool.<br /><br />© dtp studio · Grünteweg 31· D-26127 Oldenburg'
 
-	type = 'list'
 	nbLevels = 1
 	url = "http://www.dtpstudio.de/colordesigner/"
 
