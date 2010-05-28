@@ -24,7 +24,7 @@ import tempfile
 from datetime import *
 
 dc = "http://purl.org/dc/elements/1.1/"
-cc = "http://creativecommons.org/ns#"
+dcterms = "http://purl.org/dc/terms/"
 rdf = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 xml = "http://www.w3.org/XML/1998/namespace"
 
@@ -97,8 +97,8 @@ class sbz(SBCodec):
 					exec("item.info."+elem.tag[(len(dc)+2):]+"_l10n[elem.attrib['{'+xml+'}lang']] = xmlunescape(elem.text)")
 				else:
 					exec("item.info."+elem.tag[(len(dc)+2):]+" = xmlunescape(elem.text)")
-			elif elem.tag.find(cc):
-				exec("item.info."+elem.tag[(len(cc)+2):]+" = xmlunescape(elem.text)")
+			elif elem.tag == '{'+dcterms+'}license'
+				item.info.license = xmlunescape(elem.attrib['{'+rdf+'}resource'])
 			
 
 	@staticmethod
@@ -143,7 +143,7 @@ class sbz(SBCodec):
 
 	@staticmethod
 	def write(swatchbook):
-		xml = '<?xml version="1.0" encoding="UTF-8"?>\n<SwatchBook version="0.7"\n    xmlns:dc="'+dc+'"\n    xmlns:cc="'+cc+'"\n    xmlns:rdf="'+rdf+'">\n'
+		xml = '<?xml version="1.0" encoding="UTF-8"?>\n<SwatchBook version="0.7"\n    xmlns:dc="'+dc+'"\n    xmlns:dcterms="'+dcterms+'"\n    xmlns:rdf="'+rdf+'">\n'
 		xml += sbz.writemeta(swatchbook.info)
 		xml += '  <swatches>\n'
 		for id in swatchbook.swatches:
@@ -201,7 +201,7 @@ class sbz(SBCodec):
 				for lang in info_l10n:
 					xml += '  '*(offset+2)+'<dc:'+dc+' xml:lang="'+lang+'">'+xmlescape(info_l10n[lang])+'</dc:'+dc+'>\n'
 		if meta.license > '':
-			xml += '  '*(offset+2)+'<cc:license rdf:resource="'+xmlescape(meta.license)+'" />\n'
+			xml += '  '*(offset+2)+'<dcterms:license rdf:resource="'+xmlescape(meta.license)+'" />\n'
 		if xml > u'':
 			return '  '*(offset+1)+'<metadata>\n'+xml+'  '*(offset+1)+'</metadata>\n'
 		else:
