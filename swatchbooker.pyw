@@ -1961,10 +1961,15 @@ class SettingsDlg(QDialog):
 			else:
 				QMessageBox.critical(self, _('Error'), _("This isn't a RGB monitor profile"))
 				if self.mntrProfile:
-					self.mntrCombo.setCurrentIndex(self.mntrCombo.findData(self.mntrProfile))
+					self.mntrCombo.setCurrentIndex(self.mntrCombo.findData(self.mntrProfile) or 0)
 				else:
 					self.mntrCombo.setCurrentIndex(0)
-		
+		else:
+			if self.mntrProfile:
+				self.mntrCombo.setCurrentIndex(self.mntrCombo.findData(self.mntrProfile) or 0)
+			else:
+				self.mntrCombo.setCurrentIndex(0)
+
 	def setCMYKFile(self):
 		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm)"))
 		if fname:
@@ -1975,7 +1980,15 @@ class SettingsDlg(QDialog):
 				self.cmykCombo.setCurrentIndex(self.cmykCombo.findData(fname))
 			else:
 				QMessageBox.critical(self, _('Error'), _("This isn't a CMYK profile"))
+				if self.cmykProfile:
+					self.cmykCombo.setCurrentIndex(self.cmykCombo.findData(self.cmykProfile) or 0)
+				else:
+					self.cmykCombo.setCurrentIndex(0)
+		else:
+			if self.cmykProfile:
 				self.cmykCombo.setCurrentIndex(self.cmykCombo.findData(self.cmykProfile) or 0)
+			else:
+				self.cmykCombo.setCurrentIndex(0)
 		
 	def setLang(self,index):
 		if index > 0:
@@ -1991,6 +2004,13 @@ class SettingsDlg(QDialog):
 				self.mntrProfile = self.sender().itemData(index)
 			else:
 				self.mntrProfile = False
+		elif self.sender() == self.cmykCombo:
+			if index == self.cmykCombo.count()-1:
+				self.setCMYKFile()
+			elif index > 0:
+				self.cmykProfile = self.sender().itemData(index)
+			else:
+				self.cmykProfile = False
 
 	def listProfiles(self):
 		def listprof(dir):
@@ -2006,7 +2026,7 @@ class SettingsDlg(QDialog):
 						except BadICCprofile:
 							pass
 		if os.name == 'posix':
-			profdirs = [unicode(QDir.homePath())+"/.color/icc","/usr/share/color/icc","/usr/local/share/color/icc"]
+			profdirs = [unicode(QDir.homePath())+"/.color/icc","/usr/share/color/icc","/usr/local/share/color/icc","/var/lib/color/icc",unicode(QDir.homePath())+"/.local/share/icc"]
 		elif os.name == 'nt':
 			profdirs = ["C:\\Windows\\System\\Color","C:\\Winnt\\system32\\spool\\drivers\\color","C:\\Windows\\system32\\spool\\drivers\\color"]
 		elif os.name == 'mac':
