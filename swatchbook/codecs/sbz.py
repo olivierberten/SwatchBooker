@@ -97,7 +97,7 @@ class sbz(SBCodec):
 					exec("item.info."+elem.tag[(len(dc)+2):]+"_l10n[elem.attrib['{'+xml+'}lang']] = xmlunescape(elem.text)")
 				else:
 					exec("item.info."+elem.tag[(len(dc)+2):]+" = xmlunescape(elem.text)")
-			elif elem.tag == '{'+dcterms+'}license'
+			elif elem.tag == '{'+dcterms+'}license':
 				item.info.license = xmlunescape(elem.attrib['{'+rdf+'}resource'])
 			
 
