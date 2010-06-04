@@ -7,12 +7,16 @@ msgid ""
 msgstr ""
 "Project-Id-Version: SwatchBooker\n"
 "POT-Creation-Date: 2010-03-03 15:21+0100\n"
-"PO-Revision-Date: 2010-06-04 00:24+0100\n"
+"PO-Revision-Date: 2010-06-04 17:56+0100\n"
 "Last-Translator: Olivier Berten <olivier.berten@gmail.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n>1;\n"
+
+#: swatchbooker.pyw:74
+msgid "SwatchBooker Editor"
+msgstr "SwatchBooker Éditeur"
 
 #: swatchbooker.pyw:77
 msgid "&File"
@@ -318,6 +322,10 @@ msgstr "À propos"
 #: sbconvertor.pyw:166
 msgid "Add files"
 msgstr "Ajouter des fichiers"
+
+#: sbconvertor.pyw:38
+msgid "SwatchBooker Batch Convertor"
+msgstr "SwatchBooker Convertisseur"
 
 #: sbconvertor.pyw:59
 #: sbconvertor.pyw:385

@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
 	def __init__(self, file=False, parent=None):
 		super(MainWindow, self).__init__(parent)
 		
-		self.setWindowTitle('SwatchBooker')
+		self.setWindowTitle(_('SwatchBooker Editor'))
 		self.setWindowIcon(QIcon(swatchbooker_svg))
 		
 		self.fileMenu = self.menuBar().addMenu(_("&File"))

@@ -35,7 +35,7 @@ class MainWindow(QMainWindow):
 	def __init__(self, parent=None):
 		super(MainWindow, self).__init__(parent)
 		
-		self.setWindowTitle('SwatchBook batch convertor')
+		self.setWindowTitle(_('SwatchBooker Batch Convertor'))
 		self.setWindowIcon(QIcon(swatchbooker_svg))
 
 		mainWidget = QWidget()

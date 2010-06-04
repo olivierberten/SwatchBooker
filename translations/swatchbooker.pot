@@ -17,6 +17,10 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
+#: swatchbooker.pyw:74
+msgid "SwatchBooker Editor"
+msgstr ""
+
 #: swatchbooker.pyw:77
 msgid "&File"
 msgstr ""
@@ -288,6 +292,10 @@ msgstr ""
 
 #: sbconvertor.pyw:58 sbconvertor.pyw:166
 msgid "Add files"
+msgstr ""
+
+#: sbconvertor.pyw:38
+msgid "SwatchBooker Batch Convertor"
 msgstr ""
 
 #: sbconvertor.pyw:59 sbconvertor.pyw:385
