@@ -21,7 +21,6 @@
 
 from __future__ import division
 from swatchbook.websvc import *
-import time
 
 class icipaints(WebSvc):
 	"""ICI Dulux"""
@@ -85,7 +84,6 @@ class icipaints(WebSvc):
 			rgb = hex(int(c[3]))[2:].zfill(6)
 			item.values[('RGB',False)] = [int(rgb[0:2],16)/0xFF,int(rgb[2:4],16)/0xFF,int(rgb[4:6],16)/0xFF]
 			swatchbook.swatches[c[0]] = item
-		ranges = SortedDict()
 		rangelist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetRangeAndLaydownInfo&LiveOnly=true').read().replace("Error 500: SRVE0199E: OutputStream already obtained\r\n","").rsplit('!',1)[0]+'!'
 		rangelist = rangelist.split('::')
 		swatchbook.info.title = self.brands[brand][0]

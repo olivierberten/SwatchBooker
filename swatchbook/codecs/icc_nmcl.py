@@ -51,11 +51,10 @@ class icc_nmcl(SBCodec):
 			swatchbook.info.rights_l10n = prof.info['cprt']
 		file = open(file)
 		file.seek(prof.info['tags']['ncl2'][0]+8)
-		tags,n,m = struct.unpack('>4s 2L',file.read(12))
+		tag,n,m = struct.unpack('>4s 2L',file.read(12))
 		prefix,suffix = struct.unpack('>32s 32s',file.read(64))
 		prefix = unicode(prefix.split('\x00', 1)[0],'latin_1')
 		suffix = unicode(suffix.split('\x00', 1)[0],'latin_1')
-		colors = {}
 		for i in range(n):
 			item = Color(swatchbook)
 			# This is supposed to be coded in plain ascii but X-Rite Pantone NCPs use Latin 1
@@ -71,7 +70,7 @@ class icc_nmcl(SBCodec):
 					item.values[('Lab',False)] = [L*100/0xFF00,(a-0x8000)/0x100,(b-0x8000)/0x100]
 			elif prof.info['pcs'] == 'XYZ ':
 				X,Y,Z = struct.unpack('>3H',file.read(6))
-				item.values[('XYZ',False)] = [X*100/0x8000,X*100/0x8000,X*100/0x8000]
+				item.values[('XYZ',False)] = [X*100/0x8000,Y*100/0x8000,Z*100/0x8000]
 			file.seek(m*2,1)
 			item.usage.append('spot')
 			item.info.identifier = id

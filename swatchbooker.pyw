@@ -1887,7 +1887,7 @@ class SettingsDlg(QDialog):
 		
 		profilesBox = QGroupBox(_("Color profiles"))
 		profilesLayout = QVBoxLayout()
-		profilesLayout.addWidget(QLabel(_("Monitor Profile")))
+		profilesLayout.addWidget(QLabel(_("Display Profile")))
 		profilesLayout.addWidget(self.mntrCombo)
 		profilesLayout.addWidget(QLabel(_("Default CMYK Profile")))
 		profilesLayout.addWidget(self.cmykCombo)

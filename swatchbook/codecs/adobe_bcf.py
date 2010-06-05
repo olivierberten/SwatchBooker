@@ -45,7 +45,7 @@ class adobe_bcf(SBCodec):
 		swatchbook.info.version = unicode(struct.unpack('8s',file.read(8))[0].split('\x00', 1)[0],'macroman')
 		swatchbook.info.rights = unicode(struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0],'macroman')
 		swatchbook.info.description = unicode(struct.unpack('512s',file.read(512))[0].split('\x00', 1)[0],'macroman')
-		names, swatchbook.book.display['columns'], swatchbook.book.display['rows'], nbcolors =  struct.unpack('>4H',file.read(8))
+		name_format, swatchbook.book.display['columns'], swatchbook.book.display['rows'], nbcolors =  struct.unpack('>4H',file.read(8))
 		prefix =  struct.unpack('12s',file.read(12))[0].split('\x00', 1)[0]
 		if prefix > '':
 			prefix = unicode(prefix+' ','macroman')

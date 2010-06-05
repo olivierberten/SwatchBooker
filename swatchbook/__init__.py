@@ -157,7 +157,9 @@ class Info(object):
 	      'rights': (True,True),
 	      'source': (True,False),
 	      'subject': (True,False),
-	      'title': (True,False)}
+	      'title': (True,False),
+	      # DCMI Metadata Terms
+	      'license': (False,False)}
 
 	def __init__(self):
 		self.format = 'application/swatchbook'
@@ -168,9 +170,6 @@ class Info(object):
 			if self.dc[dc][0]:
 				exec('self.'+dc+'_l10n = {}')
 
-		# Creative Commons
-		self.license = ""
-		
 		self.version = ""
 
 class Book(object):

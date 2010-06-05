@@ -21,7 +21,6 @@
 
 from __future__ import division
 import os
-import sys
 import struct
 import string
 
@@ -40,7 +39,6 @@ class ICCprofile():
 			file.seek(0)
 			size,cmm = struct.unpack('>L 4s',file.read(8))                    # Profile size
 			if os.path.getsize(uri) != size:
-				#sys.stderr.write("bad size: "+uri+"\n")
 				raise BadICCprofile, "That file doesn't have the expected size"
 			if not (all(c in string.ascii_letters+' '+string.digits for c in cmm) or cmm == '\x00\x00\x00\x00'):
 				raise BadICCprofile, "That file doesn't seem to be an ICC color profile"

@@ -41,7 +41,6 @@ class ral(WebSvc):
 		data = data.split('<tr')[1:]
 		swatchbook.info.title = u'RAL CLASSIC'
 
-		swatch = []
 		i = 0
 		for line in data:
 			item = Color(swatchbook)

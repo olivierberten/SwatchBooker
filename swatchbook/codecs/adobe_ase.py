@@ -41,7 +41,6 @@ class adobe_ase(SBCodec):
 		file.seek(4)
 		version = struct.unpack('>2H',file.read(4))
 		nbblocks = struct.unpack('>L',file.read(4))[0]
-		group = False
 		parent = swatchbook.book
 		for i in range(nbblocks):
 			id = False
