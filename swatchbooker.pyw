@@ -588,6 +588,9 @@ class MainWindow(QMainWindow):
 		self.gridWidget.update()
 
 	def del_group_from_list(self,group):
+		self.gridWidget.takeItem(self.gridWidget.row(self.groups[group.item][1][0]))
+		self.gridWidget.takeItem(self.gridWidget.row(self.groups[group.item][1][1]))
+		del self.groups[group.item]
 		for i in range(group.childCount()):
 			if isinstance(group.child(i), treeItemGroup):
 				self.del_group_from_list(group.child(i))
@@ -597,6 +600,7 @@ class MainWindow(QMainWindow):
 					self.swatches[group.child(i).item.id][2].remove(self.items[group.child(i)])
 					self.swatchCount -= 1
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[group.child(i)]))
+			group.item.items.remove(group.child(i).item)
 
 	def dispPane(self):
 		if self.availSwatchesAction.isChecked():
@@ -1422,8 +1426,10 @@ class sbTreeWidget(QTreeWidget):
 
 	def gridItems(self,item,gridItems):
 		if isinstance(item,treeItemGroup):
+			gridItems.append(form.groups[item.item][1][0])
 			for i in range(item.childCount()):
 				self.gridItems(item.child(i),gridItems)
+			gridItems.append(form.groups[item.item][1][1])
 		else:
 			gridItems.append(form.items[item])
 
