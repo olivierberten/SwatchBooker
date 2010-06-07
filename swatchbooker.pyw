@@ -174,8 +174,7 @@ class MainWindow(QMainWindow):
 		# swList
 		self.groupBoxList = QGroupBox(_("Available swatches"))
 
-		self.swList = QListWidget()
-#		self.swList.setSortingEnabled(True)
+		self.swList = swListWidget()
 		self.swnbLabel = QLabel()
 		self.swLEditBut = MenuButton(self)
 		self.swLEditMenu = QMenu()
@@ -1289,47 +1288,98 @@ class noChild(QTreeWidgetItem):
 		self.setTextColor(0,QColor(128,128,128))
 		self.setFlags(self.flags() & ~(Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled))
 
+class swListWidget(QListWidget):
+	def __init__(self, parent=None):
+		super(swListWidget, self).__init__(parent)
+		self.setSortingEnabled(True)
+		self.setDragEnabled(True)
+
+	def startDrag(self,supportedActions):
+		indexes = self.selectedIndexes()
+		data = self.model().mimeData(indexes)
+		pixmap = QPixmap()
+		rect = self.rectForIndex(indexes[0])
+		rect.adjust(0, -self.verticalOffset(), 0, -self.verticalOffset())
+		pixmap = pixmap.grabWidget(self, rect)
+		drag = QDrag(self)
+		drag.setPixmap(pixmap)
+		data.setText(self.currentItem().id)
+		drag.setMimeData(data)
+		drag.setHotSpot(QPoint(pixmap.width()/2, pixmap.height()/2))
+		drag.start(Qt.CopyAction)
+
 class sbTreeWidget(QTreeWidget):
 	def __init__(self, parent=None):
 		super(sbTreeWidget, self).__init__(parent)
 		self.setHeaderHidden(True)
-		self.setDragDropMode(QTreeWidget.InternalMove)
 		self.setDragEnabled(True)
 		self.setDropIndicatorShown(True)
+		self.setAcceptDrops(True)
 		self.item = False
 		self.itemParent = False
 
 	def dropEvent(self,event):
-		QTreeWidget.dropEvent(self,event)
-		if self.itemParent and self.itemParent.childCount() == 0:
-			self.itemParent.addChild(noChild())
-		if isinstance(self.item.parent(),treeItemGroup):
-			if isinstance(self.item.parent().child(0),noChild):
-				self.item.parent().removeChild(self.item.parent().child(0))
-			if isinstance(self.item.parent().child(self.item.parent().childCount()-1),noChild):
-				self.item.parent().removeChild(self.item.parent().child(self.item.parent().childCount()-1))
-		if self.itemParent:
-			swParent = self.itemParent.item
-		else:
-			swParent = form.sb.book
-		sw = swParent.items.pop(swParent.items.index(self.item.item))
-		if self.item.parent():
-			self.item.parent().item.items.insert(self.item.parent().indexOfChild(self.item),sw)
-		else:
-			form.sb.book.items.insert(form.treeWidget.indexOfTopLevelItem(self.item),sw)
-		gridItems = []
-		self.gridItems(self.item,gridItems)
-		for gridItem in gridItems:
-			form.gridWidget.takeItem(form.gridWidget.indexFromItem(gridItem).row())
-		self.setCurrentItem(self.item)
-		item = self.swItemAbove(self.item)
-		if item:
-			index = form.gridWidget.indexFromItem(form.items[item]).row()+1
-		else:
-			index = 0
-		gridItems.reverse()
-		for gridItem in gridItems:
-			form.gridWidget.insertItem(index,gridItem)
+		if event.source() == self:
+			event.setDropAction(Qt.MoveAction)
+			QTreeWidget.dropEvent(self,event)
+			# Add or remove <empty>
+			if self.itemParent and self.itemParent.childCount() == 0:
+				self.itemParent.addChild(noChild())
+			if isinstance(self.item.parent(),treeItemGroup):
+				if isinstance(self.item.parent().child(0),noChild):
+					self.item.parent().removeChild(self.item.parent().child(0))
+				if isinstance(self.item.parent().child(self.item.parent().childCount()-1),noChild):
+					self.item.parent().removeChild(self.item.parent().child(self.item.parent().childCount()-1))
+			# Update the Python model
+			if self.itemParent:
+				swParent = self.itemParent.item
+			else:
+				swParent = form.sb.book
+			sw = swParent.items.pop(swParent.items.index(self.item.item))
+			if self.item.parent():
+				self.item.parent().item.items.insert(self.item.parent().indexOfChild(self.item),sw)
+			else:
+				form.sb.book.items.insert(form.treeWidget.indexOfTopLevelItem(self.item),sw)
+			# Update the grid
+			gridItems = []
+			self.gridItems(self.item,gridItems)
+			for gridItem in gridItems:
+				form.gridWidget.takeItem(form.gridWidget.indexFromItem(gridItem).row())
+			self.setCurrentItem(self.item)
+			itemAbove = self.swItemAbove(self.item)
+			if itemAbove:
+				index = form.gridWidget.indexFromItem(form.items[itemAbove]).row()+1
+			else:
+				index = 0
+			gridItems.reverse()
+			for gridItem in gridItems:
+				form.gridWidget.insertItem(index,gridItem)
+		elif event.source() == form.swList:
+			event.setDropAction(Qt.CopyAction)
+			QTreeWidget.dropEvent(self,event)
+			parent,index = self.dropped
+			id = unicode(event.mimeData().text())
+			sw = Swatch(id)
+			newTreeItem = treeItemSwatch(sw)
+			if parent:
+				parent.item.items.insert(index,sw)
+				parent.takeChild(index)
+				parent.insertChild(index,newTreeItem)
+			else:
+				form.sb.book.items.insert(index,sw)
+				self.takeTopLevelItem(index)
+				self.insertTopLevelItem(index,newTreeItem)
+			itemAbove = self.swItemAbove(newTreeItem)
+			if itemAbove:
+				index = form.gridWidget.indexFromItem(form.items[itemAbove]).row()+1
+			else:
+				index = 0
+			newGridItem = gridItemSwatch(sw)
+			form.gridWidget.insertItem(index,newGridItem)
+			form.swatches[id][1].append(newTreeItem)
+			form.swatches[id][2].append(newGridItem)
+			form.items[newTreeItem] = newGridItem
+			self.setCurrentItem(newTreeItem)
 		form.gridWidget.update()
 		form.sw_display_tree()
 
@@ -1363,6 +1413,22 @@ class sbTreeWidget(QTreeWidget):
 		self.item = self.itemAt(event.pos())
 		if self.item:
 			self.itemParent = self.item.parent()
+
+	def dragMoveEvent(self, event):
+		if event.source() == self:
+			event.setDropAction(Qt.MoveAction)
+			QTreeWidget.dragMoveEvent(self,event)
+		elif event.source() == form.swList:
+			event.setDropAction(Qt.LinkAction)
+			QTreeWidget.dragMoveEvent(self,event)
+		else:
+			event.ignore()
+
+	def dropMimeData(self, parent, index, data, action):
+		self.dropped = (parent,index)
+		idx = QModelIndex()
+		if parent: idx = self.indexFromItem(parent)
+		return QAbstractItemModel.dropMimeData(self.model(), data, action , index, 0, idx)
 
 class sbGridWidget(QListWidget):
 	def __init__(self, parent=None):
@@ -1806,9 +1872,11 @@ class fillViewsThread(QThread):
 		super(fillViewsThread, self).__init__(parent)
 
 	def run(self):
+		form.swList.setSortingEnabled(False)
 		for swatch in self.parent().sb.swatches:
 			self.parent().addSwatch(swatch)
-		self.parent().swList.sortItems()
+		form.swList.sortItems()
+		form.swList.setSortingEnabled(True)
 		self.fillViews(self.parent().sb.book.items)
 
 	def fillViews(self,items,group = False):
