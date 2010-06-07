@@ -29,11 +29,13 @@ msgstr "&Файл"
 msgid "&View"
 msgstr "&Вид"
 
-#: swatchbooker.pyw:80 swatchbooker.pyw:194
+#: swatchbooker.pyw:80
+#: swatchbooker.pyw:195
 msgid "Tree view"
 msgstr "В виде дерева"
 
-#: swatchbooker.pyw:84 swatchbooker.pyw:214
+#: swatchbooker.pyw:84
+#: swatchbooker.pyw:217
 msgid "Grid view"
 msgstr "В виде сетки"
 
@@ -49,11 +51,13 @@ msgstr "Вертикальное"
 msgid "Horizontal"
 msgstr "Горизонтальное"
 
-#: swatchbooker.pyw:98 swatchbooker.pyw:175
-msgid "Available swatches"
-msgstr "Доступные образцы"
+#: swatchbooker.pyw:98
+#: swatchbooker.pyw:176
+msgid "Available materials"
+msgstr ""
 
-#: swatchbooker.pyw:108 swatchbooker.pyw:1976
+#: swatchbooker.pyw:108
+#: swatchbooker.pyw:2031
 msgid "Settings"
 msgstr "Параметры"
 
@@ -61,58 +65,88 @@ msgstr "Параметры"
 msgid "&About"
 msgstr "&О программе"
 
-#: swatchbooker.pyw:137
+#: swatchbooker.pyw:138
 msgid "Information"
 msgstr "Информация"
 
-#: swatchbooker.pyw:150 swatchbooker.pyw:1921
+#: swatchbooker.pyw:151
+#: swatchbooker.pyw:1976
 msgid "Color profiles"
 msgstr "Цветовые профили"
 
-#: swatchbooker.pyw:160 swatchbooker.pyw:1514 swatchbooker.pyw:1599
+#: swatchbooker.pyw:161
+#: swatchbooker.pyw:1568
+#: swatchbooker.pyw:1653
 msgid "Add"
 msgstr "Добавить"
 
-#: swatchbooker.pyw:161 swatchbooker.pyw:1515 swatchbooker.pyw:1605
+#: swatchbooker.pyw:162
+#: swatchbooker.pyw:1569
+#: swatchbooker.pyw:1659
 #: sbconvertor.pyw:60
 msgid "Remove"
 msgstr "Удалить"
 
-#: swatchbooker.pyw:181 swatchbooker.pyw:199 swatchbooker.pyw:226
+#: swatchbooker.pyw:182
+#: swatchbooker.pyw:201
+#: swatchbooker.pyw:229
 msgid "Add Color"
 msgstr "Добавить цвет"
 
-#: swatchbooker.pyw:182 swatchbooker.pyw:203
+#: swatchbooker.pyw:183
+#: swatchbooker.pyw:205
 msgid "Delete"
 msgstr "Удалить"
 
-#: swatchbooker.pyw:183
-msgid "Delete unused swatches"
-msgstr "Удалить неиспользуемые"
+#: swatchbooker.pyw:184
+msgid "Delete unused materials"
+msgstr ""
 
-#: swatchbooker.pyw:200 swatchbooker.pyw:227
+#: swatchbooker.pyw:202
+#: swatchbooker.pyw:230
 msgid "Add Spacer"
 msgstr "Добавить интервал"
 
-#: swatchbooker.pyw:201 swatchbooker.pyw:228
+#: swatchbooker.pyw:203
+#: swatchbooker.pyw:231
 msgid "Add Break"
 msgstr "Добавить разделитель"
 
-#: swatchbooker.pyw:202
+#: swatchbooker.pyw:204
 msgid "Add Group"
 msgstr "Добавить группу"
 
-#: swatchbooker.pyw:244 swatchbooker.pyw:249 swatchbooker.pyw:343
-#: swatchbooker.pyw:348
+#: swatchbooker.pyw:247
+#: swatchbooker.pyw:252
+#: swatchbooker.pyw:347
+#: swatchbooker.pyw:352
 msgid "Rows:"
 msgstr "Строк:"
 
-#: swatchbooker.pyw:245 swatchbooker.pyw:248 swatchbooker.pyw:344
-#: swatchbooker.pyw:347
+#: swatchbooker.pyw:248
+#: swatchbooker.pyw:251
+#: swatchbooker.pyw:348
+#: swatchbooker.pyw:351
 msgid "Columns:"
 msgstr "Столбцов:"
 
-#: swatchbooker.pyw:352
+#: swatchbooker.pyw:360
+#, python-format
+msgid "%s material"
+msgid_plural "%s materials"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: swatchbooker.pyw:360
+#, python-format
+msgid "%s used"
+msgid_plural "%s used"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: swatchbooker.pyw:361
 #, python-format
 msgid "%s swatch"
 msgid_plural "%s swatches"
@@ -120,186 +154,209 @@ msgstr[0] "%s образец"
 msgstr[1] "%s образца"
 msgstr[2] "%s образцов"
 
-#: swatchbooker.pyw:358 swatchbooker.pyw:362
+#: swatchbooker.pyw:361
+#, python-format
+msgid "%s duplicate"
+msgid_plural "%s duplicates"
+msgstr[0] ""
+msgstr[1] ""
+msgstr[2] ""
+
+#: swatchbooker.pyw:367
+#: swatchbooker.pyw:371
 msgid "New Color"
 msgstr "Новый цвет"
 
-#: swatchbooker.pyw:510
+#: swatchbooker.pyw:513
 msgid "New group"
 msgstr "Новая группа"
 
-#: swatchbooker.pyw:613
+#: swatchbooker.pyw:620
 msgid "About SwatchBooker"
 msgstr "О SwatchBooker"
 
-#: swatchbooker.pyw:673
+#: swatchbooker.pyw:680
 msgid "&New"
 msgstr "&Создать"
 
-#: swatchbooker.pyw:674
+#: swatchbooker.pyw:681
 msgid "&Open"
 msgstr "&Открыть"
 
-#: swatchbooker.pyw:675 swatchbooker.pyw:2131
+#: swatchbooker.pyw:682
+#: swatchbooker.pyw:2186
 msgid "Open from web"
 msgstr "Открыть из Сети"
 
-#: swatchbooker.pyw:676
+#: swatchbooker.pyw:683
 msgid "&Save"
 msgstr "&Сохранить"
 
-#: swatchbooker.pyw:677
+#: swatchbooker.pyw:684
 msgid "Save As..."
 msgstr "Сохранить как..."
 
-#: swatchbooker.pyw:717 swatchbooker.pyw:871 swatchbooker.pyw:1987
-#: swatchbooker.pyw:2007
+#: swatchbooker.pyw:724
+#: swatchbooker.pyw:878
+#: swatchbooker.pyw:2042
+#: swatchbooker.pyw:2062
 msgid "Choose file"
 msgstr "Указать файл"
 
-#: swatchbooker.pyw:718 sbconvertor.pyw:167
+#: swatchbooker.pyw:725
+#: sbconvertor.pyw:167
 #, python-format
 msgid "All supported files (%s)"
 msgstr "Все поддерживаемые файлы (%s)"
 
-#: swatchbooker.pyw:718 sbconvertor.pyw:167
-msgid ";;All files (*)"
-msgstr ";;Все файлы (*)"
+#: swatchbooker.pyw:725
+#: sbconvertor.pyw:167
+msgid "All files (*)"
+msgstr "Все файлы (*)"
 
-#: swatchbooker.pyw:758 swatchbooker.pyw:762 swatchbooker.pyw:995
-#: swatchbooker.pyw:1995 swatchbooker.pyw:2015
+#: swatchbooker.pyw:764
+#: swatchbooker.pyw:768
+#: swatchbooker.pyw:1002
+#: swatchbooker.pyw:2050
+#: swatchbooker.pyw:2070
 msgid "Error"
 msgstr "Ошибка"
 
-#: swatchbooker.pyw:758
+#: swatchbooker.pyw:764
 msgid "There was an error while opening that file"
 msgstr "При открытии этого файла произошла ошибка"
 
-#: swatchbooker.pyw:762
+#: swatchbooker.pyw:768
 msgid "Unsupported file"
 msgstr "Неподдерживаемый формат файла"
 
-#: swatchbooker.pyw:852
+#: swatchbooker.pyw:859
 msgid "Save file"
 msgstr "Указать файл"
 
-#: swatchbooker.pyw:872 swatchbooker.pyw:1987 swatchbooker.pyw:2007
+#: swatchbooker.pyw:879
+#: swatchbooker.pyw:2042
+#: swatchbooker.pyw:2062
 msgid "ICC profiles (*.icc *.icm)"
 msgstr "Профили ICC (*.icc *.icm)"
 
-#: swatchbooker.pyw:944
+#: swatchbooker.pyw:951
 msgid "Identifier:"
 msgstr "Идентификатор:"
 
-#: swatchbooker.pyw:947
+#: swatchbooker.pyw:954
 msgid "Title:"
 msgstr "Название:"
 
-#: swatchbooker.pyw:952
+#: swatchbooker.pyw:959
 msgid "Description:"
 msgstr "Описание:"
 
-#: swatchbooker.pyw:958
+#: swatchbooker.pyw:965
 msgid "Rights:"
 msgstr "Права:"
 
-#: swatchbooker.pyw:963
+#: swatchbooker.pyw:970
 msgid "License:"
 msgstr "Лицензия:"
 
-#: swatchbooker.pyw:995
+#: swatchbooker.pyw:1002
 msgid "There's already a swatch with that identifier."
 msgstr "Уже существует образец с этим идентификатором"
 
-#: swatchbooker.pyw:1059
+#: swatchbooker.pyw:1065
 msgid "Add localization"
 msgstr "Добавить локализацию"
 
-#: swatchbooker.pyw:1308
+#: swatchbooker.pyw:1303
 msgid "empty"
 msgstr "пусто"
 
-#: swatchbooker.pyw:1477
+#: swatchbooker.pyw:1531
 msgid "Group"
 msgstr "Группа"
 
-#: swatchbooker.pyw:1503
+#: swatchbooker.pyw:1557
 msgid "Color"
 msgstr "Цвет"
 
-#: swatchbooker.pyw:1510
+#: swatchbooker.pyw:1564
 msgid "Key"
 msgstr "Ключ"
 
-#: swatchbooker.pyw:1510
+#: swatchbooker.pyw:1564
 msgid "Value"
 msgstr "Значение"
 
-#: swatchbooker.pyw:1519
+#: swatchbooker.pyw:1573
 msgid "Extra info"
 msgstr "Дополнительная информация"
 
-#: swatchbooker.pyw:1589
+#: swatchbooker.pyw:1643
 msgid "Spot"
 msgstr "Плашечный"
 
-#: swatchbooker.pyw:1697
+#: swatchbooker.pyw:1751
 msgid "Profile"
 msgstr "Профиль"
 
-#: swatchbooker.pyw:1901
+#: swatchbooker.pyw:1956
 msgid "sRGB built-in"
 msgstr "Встроенный sRGB"
 
-#: swatchbooker.pyw:1918 swatchbooker.pyw:1919
+#: swatchbooker.pyw:1973
+#: swatchbooker.pyw:1974
 msgid "Other..."
 msgstr "Другой..."
 
-#: swatchbooker.pyw:1923
+#: swatchbooker.pyw:1978
 msgid "Display Profile"
 msgstr "Профиль монитора"
 
-#: swatchbooker.pyw:1925
+#: swatchbooker.pyw:1980
 msgid "Default CMYK Profile"
 msgstr "Профиль CMYK по умолчанию"
 
-#: swatchbooker.pyw:1932
+#: swatchbooker.pyw:1987
 msgid "Recent files"
 msgstr "Недавние файлы"
 
-#: swatchbooker.pyw:1934
+#: swatchbooker.pyw:1989
 msgid "Number of files displayed:"
 msgstr "Число отображаемых файлов:"
 
-#: swatchbooker.pyw:1939
+#: swatchbooker.pyw:1994
 msgid "(default)"
 msgstr "(по умолчанию)"
 
-#: swatchbooker.pyw:1943
+#: swatchbooker.pyw:1998
 msgid "Application language"
 msgstr "Язык интерфейса"
 
-#: swatchbooker.pyw:1995
+#: swatchbooker.pyw:2050
 msgid "This isn't a RGB monitor profile"
 msgstr "Это не профиль RGB для монитора"
 
-#: swatchbooker.pyw:2015
+#: swatchbooker.pyw:2070
 msgid "This isn't a CMYK profile"
 msgstr "Это не профиль CMYK"
 
-#: swatchbooker.pyw:2086 sbconvertor.pyw:340
+#: swatchbooker.pyw:2141
+#: sbconvertor.pyw:340
 msgid "About"
 msgstr "О программе"
-
-#: sbconvertor.pyw:58 sbconvertor.pyw:166
-msgid "Add files"
-msgstr "Добавить файлы"
 
 #: sbconvertor.pyw:38
 msgid "SwatchBooker Batch Convertor"
 msgstr "Пакетный конвертер SwatchBooker"
 
-#: sbconvertor.pyw:59 sbconvertor.pyw:385
+#: sbconvertor.pyw:58
+#: sbconvertor.pyw:166
+msgid "Add files"
+msgstr "Добавить файлы"
+
+#: sbconvertor.pyw:59
+#: sbconvertor.pyw:385
 msgid "Add from web"
 msgstr "Добавить из Сети"
 
@@ -307,7 +364,8 @@ msgstr "Добавить из Сети"
 msgid "Remove all"
 msgstr "Удалить все"
 
-#: sbconvertor.pyw:85 sbconvertor.pyw:137
+#: sbconvertor.pyw:85
+#: sbconvertor.pyw:137
 msgid "Choose output directory"
 msgstr "Выбрать каталог"
 
@@ -322,3 +380,4 @@ msgstr "Формат вывода:"
 #: sbconvertor.pyw:106
 msgid "Convert"
 msgstr "Преобразовать"
+

@@ -164,7 +164,7 @@ class MainWindow(QMainWindow):
 			filetype = QString()
 		flist = QFileDialog.getOpenFileNames(self,
 							_("Add files"), dir,
-							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+_(";;All files (*)"),filetype)
+							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+";;"+_("All files (*)"),filetype)
 		if flist.count() > 0:
 			settings.setValue('lastOpenCodec',QVariant(filetype))
 			settings.setValue('lastOpenDir',QVariant(os.path.dirname(unicode(flist[0]))))

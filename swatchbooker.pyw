@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
 		self.gridHorizAction.setActionGroup(directionActionGroup)
 		self.gridHorizAction.setCheckable(True)
 		self.connect(self.gridHorizAction,SIGNAL("triggered()"),self.gridEdit)
-		self.availSwatchesAction = QAction(_("Available swatches"),self)
+		self.availSwatchesAction = QAction(_("Available materials"),self)
 		self.availSwatchesAction.setCheckable(True)
 		self.connect(self.availSwatchesAction,SIGNAL("triggered()"),self.dispPane)
 		viewMenu.addAction(self.treeViewAction)
@@ -124,6 +124,7 @@ class MainWindow(QMainWindow):
 			self.loadFile(file)
 		else:
 			breaks = []
+			self.swatchCount = 0
 			self.profiles = {}
 			self.swatches = {}
 			self.groups = {}
@@ -172,21 +173,21 @@ class MainWindow(QMainWindow):
 		sbLeftPane.addWidget(groupBoxProfiles)
 		
 		# swList
-		self.groupBoxList = QGroupBox(_("Available swatches"))
+		self.groupBoxList = QGroupBox(_("Available materials"))
 
 		self.swList = swListWidget()
-		self.swnbLabel = QLabel()
+		self.matNbLabel = QLabel()
 		self.swLEditBut = MenuButton(self)
 		self.swLEditMenu = QMenu()
 		self.swLEditMenu.addAction(_('Add Color'),self.swAddColor)
 		self.swDeleteAction = self.swLEditMenu.addAction(_('Delete'),self.swDelete)
-		self.swLEditMenu.addAction(_('Delete unused swatches'),self.swDeleteUnused)
+		self.swLEditMenu.addAction(_('Delete unused materials'),self.swDeleteUnused)
 		self.swLEditBut.setMenu(self.swLEditMenu)
 		self.swDeleteAction.setEnabled(False)
 		
 		sbList = QGridLayout()
 		sbList.addWidget(self.swList,0,0)
-		sbList.addWidget(self.swnbLabel,1,0)
+		sbList.addWidget(self.matNbLabel,1,0)
 		sbList.addWidget(self.swLEditBut,0,1,Qt.AlignTop)
 		self.groupBoxList.setLayout(sbList)
 		
@@ -194,6 +195,7 @@ class MainWindow(QMainWindow):
 		self.groupBoxTree = QGroupBox(_("Tree view"))
 
 		self.treeWidget = sbTreeWidget()
+		self.swNbLabel = QLabel()
 		self.swTEditBut = MenuButton(self)
 		self.swTEditMenu = QMenu()
 		self.swTEditMenu.addAction(_('Add Color'),self.addColor)
@@ -205,9 +207,10 @@ class MainWindow(QMainWindow):
 		self.swTEditBut.setMenu(self.swTEditMenu)
 		self.deleteAction.setEnabled(False)
 		
-		sbTree = QHBoxLayout()
-		sbTree.addWidget(self.treeWidget)
-		sbTree.addWidget(self.swTEditBut,0,Qt.AlignTop)
+		sbTree = QGridLayout()
+		sbTree.addWidget(self.treeWidget,0,0)
+		sbTree.addWidget(self.swNbLabel,1,0)
+		sbTree.addWidget(self.swTEditBut,0,1,Qt.AlignTop)
 		self.groupBoxTree.setLayout(sbTree)
 
 		# sbGrid
@@ -272,6 +275,7 @@ class MainWindow(QMainWindow):
 		global breaks
 		breaks = []
 		self.profiles = {}
+		self.swatchCount = 0
 		self.swatches = {}
 		self.groups = {}
 		self.items = {}
@@ -349,7 +353,12 @@ class MainWindow(QMainWindow):
 		self.gridWidget.update()
 
 	def updSwatchCount(self):
-		self.swnbLabel.setText(n_('%s swatch','%s swatches',len(self.sb.swatches)) % len(self.sb.swatches))
+		usedSwatches = 0
+		for id in self.swatches.keys():
+			if len(self.swatches[id][1]) > 0:
+				usedSwatches += 1
+		self.matNbLabel.setText(n_('%s material','%s materials',len(self.sb.swatches)) % len(self.sb.swatches) + n_(' (%s used)',' (%s used)',usedSwatches) % usedSwatches)
+		self.swNbLabel.setText(n_('%s swatch','%s swatches',self.swatchCount) % self.swatchCount + n_(' (%s duplicate)',' (%s duplicates)',(self.swatchCount-usedSwatches)) % (self.swatchCount-usedSwatches))
 
 	def addSwatch(self,id):
 		listItemSwatch(id)
@@ -379,6 +388,7 @@ class MainWindow(QMainWindow):
 				treeItem.parent().takeChild(treeItem.parent().indexOfChild(treeItem))
 			else:
 				self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(treeItem))
+			self.swatchCount -= 1
 		treeItem = None
 		for gridItem in self.swatches[item.id][2]:
 			self.gridWidget.takeItem(self.gridWidget.row(gridItem))
@@ -397,6 +407,7 @@ class MainWindow(QMainWindow):
 				self.swList.takeItem(self.swList.row(self.swatches[swatch][0]))
 				del self.sb.swatches[swatch]
 				del self.swatches[swatch]
+		self.updSwatchCount()
 
 	def addColor(self):
 		self.addSwatchToBook('Color')
@@ -446,6 +457,8 @@ class MainWindow(QMainWindow):
 		self.items[treeItem] = gridItem
 		self.treeWidget.setCurrentItem(treeItem)
 		self.gridWidget.update()
+		self.swatchCount += 1
+		self.updSwatchCount()
 
 	def addBreak(self):
 		self.addBreakSpacer('Break')
@@ -555,6 +568,7 @@ class MainWindow(QMainWindow):
 					self.swatches[selTItem.item.id][1].remove(selTItem)
 					self.swatches[selTItem.item.id][2].remove(self.items[selTItem])
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[selTItem]))
+				self.swatchCount -= 1
 			if isinstance(selTItem, treeItemBreak):
 				global breaks
 				breaks.remove(self.items[selTItem])
@@ -570,6 +584,8 @@ class MainWindow(QMainWindow):
 				self.sb.book.items.remove(selTItem.item)
 		if self.treeWidget.topLevelItemCount() == 0:
 			self.deleteAction.setEnabled(False)
+		self.updSwatchCount()
+		self.gridWidget.update()
 
 	def del_group_from_list(self,group):
 		for i in range(group.childCount()):
@@ -579,6 +595,7 @@ class MainWindow(QMainWindow):
 				if isinstance(group.child(i),treeItemSwatch):
 					self.swatches[group.child(i).item.id][1].remove(group.child(i))
 					self.swatches[group.child(i).item.id][2].remove(self.items[group.child(i)])
+					self.swatchCount -= 1
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[group.child(i)]))
 
 	def dispPane(self):
@@ -705,7 +722,7 @@ class MainWindow(QMainWindow):
 			filetype = QString()
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							_("Choose file"), dir,
-							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+_(";;All files (*)"),filetype))
+							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+";;"+_("All files (*)"),filetype))
 		if fname:
 			settings.setValue('lastOpenCodec',QVariant(filetype))
 			settings.setValue('lastOpenDir',QVariant(os.path.dirname(fname)))
@@ -717,6 +734,7 @@ class MainWindow(QMainWindow):
 			self.loadFile(unicode(action.data().toString()))
 
 	def loadFile(self,fname):
+		self.clear()
 		thread = fileOpenThread(fname, self)
 		self.connect(thread, SIGNAL("finished()"), self.fill)
 		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
@@ -726,9 +744,7 @@ class MainWindow(QMainWindow):
 		thread.start()
 
 	def fill(self):
-		self.clear()
 		self.sbInfo.update(self.sb)
-		self.updSwatchCount()
 
 		for prof in self.sb.profiles:
 			self.addProfileToList(prof,self.sb.profiles[prof])
@@ -736,7 +752,7 @@ class MainWindow(QMainWindow):
 			self.cols.setValue(self.sb.book.display['columns'])
 		if self.sb.book.display['rows']:
 			self.rows.setValue(self.sb.book.display['rows'])
-	
+
 		if self.filename:
 			self.updateFileMenu(self.filename)
 		thread = fillViewsThread(self)
@@ -752,6 +768,7 @@ class MainWindow(QMainWindow):
 		QMessageBox.critical(self, _("Error"), _("Unsupported file"))
 
 	def buildIcons(self):
+		self.updSwatchCount()
 		for id in self.swatches:
 			thread = drawIconThread(id,self)
 			self.connect(thread, SIGNAL("icon(QString,QImage,QImage)"), self.addIcon)
@@ -1076,7 +1093,7 @@ class l10nWidget(QWidget):
 
 	def addItem(self):
 		self.l10nList.addWidget(l10nItem(long=self.long,parent=self))
-		
+
 	def paintEvent(self, e):
 		p = QPainter(self)
 		option = QStyleOption()
@@ -1380,6 +1397,8 @@ class sbTreeWidget(QTreeWidget):
 			form.swatches[id][2].append(newGridItem)
 			form.items[newTreeItem] = newGridItem
 			self.setCurrentItem(newTreeItem)
+			form.swatchCount += 1
+			form.updSwatchCount()
 		form.gridWidget.update()
 		form.sw_display_tree()
 
@@ -1872,11 +1891,12 @@ class fillViewsThread(QThread):
 		super(fillViewsThread, self).__init__(parent)
 
 	def run(self):
-		form.swList.setSortingEnabled(False)
+		self.parent().swList.setSortingEnabled(False)
 		for swatch in self.parent().sb.swatches:
 			self.parent().addSwatch(swatch)
-		form.swList.sortItems()
-		form.swList.setSortingEnabled(True)
+			self.parent().swatchCount += 1
+		self.parent().swList.sortItems()
+		self.parent().swList.setSortingEnabled(True)
 		self.fillViews(self.parent().sb.book.items)
 
 	def fillViews(self,items,group = False):
