@@ -120,18 +120,18 @@ class MainWindow(QMainWindow):
 		else:
 			self.availSwatchesAction.setChecked(False)
 
+		breaks = []
+		self.swatches = {}
+		self.swatchCount = 0
+		self.profiles = {}
+		self.groups = {}
+		self.items = {}
+		self.sb = SwatchBook()
+		self.filename = False
+		self.codec = 'sbz'
+
 		if file:
 			self.loadFile(file)
-		else:
-			breaks = []
-			self.swatchCount = 0
-			self.profiles = {}
-			self.swatches = {}
-			self.groups = {}
-			self.items = {}
-			self.sb = SwatchBook()
-			self.filename = False
-			self.codec = 'sbz'
 
 		self.mainWidget = QSplitter(Qt.Horizontal)
 
@@ -258,6 +258,8 @@ class MainWindow(QMainWindow):
 
 		self.setCentralWidget(self.mainWidget)
 
+		self.updSwatchCount()
+
 		self.connect(self.cols,
 				SIGNAL("valueChanged(int)"), self.gridEdit)
 		self.connect(self.rows,
@@ -288,6 +290,7 @@ class MainWindow(QMainWindow):
 		self.cols.setValue(0)
 		self.gridWidget.clear()
 		self.treeWidget.clear()
+		self.updSwatchCount()
 		self.deleteAction.setEnabled(False)
 		if hasattr(self,'sbSwatch'):
 			self.sbSwatch.setParent(None)
@@ -357,8 +360,8 @@ class MainWindow(QMainWindow):
 		for id in self.swatches.keys():
 			if len(self.swatches[id][1]) > 0:
 				usedSwatches += 1
-		self.matNbLabel.setText(n_('%s material','%s materials',len(self.sb.swatches)) % len(self.sb.swatches) + n_(' (%s used)',' (%s used)',usedSwatches) % usedSwatches)
-		self.swNbLabel.setText(n_('%s swatch','%s swatches',self.swatchCount) % self.swatchCount + n_(' (%s duplicate)',' (%s duplicates)',(self.swatchCount-usedSwatches)) % (self.swatchCount-usedSwatches))
+		self.matNbLabel.setText(n_('%s material','%s materials',len(self.sb.swatches)) % len(self.sb.swatches) + " (" + n_('%s used','%s used',usedSwatches) % usedSwatches + ")")
+		self.swNbLabel.setText(n_('%s swatch','%s swatches',self.swatchCount) % self.swatchCount + " (" + n_('%s duplicate','%s duplicates',(self.swatchCount-usedSwatches)) % (self.swatchCount-usedSwatches) + ")")
 
 	def addSwatch(self,id):
 		listItemSwatch(id)
@@ -702,8 +705,9 @@ class MainWindow(QMainWindow):
 	def webOpen(self):
 		dialog = webOpenDlg(self)
 		if dialog.exec_() and dialog.svc and dialog.id:
+			self.clear()
 			thread = webOpenThread(dialog.svc, dialog.id, self)
-			self.connect(thread, SIGNAL("finished()"), self.loaded)
+			self.connect(thread, SIGNAL("finished()"), self.fill)
 			self.connect(thread, SIGNAL("terminated()"), self.misloaded)
 			self.fileMenu.setEnabled(False)
 			app.setOverrideCursor(Qt.WaitCursor)
@@ -730,15 +734,16 @@ class MainWindow(QMainWindow):
 		if fname:
 			settings.setValue('lastOpenCodec',QVariant(filetype))
 			settings.setValue('lastOpenDir',QVariant(os.path.dirname(fname)))
+			self.clear()
 			self.loadFile(fname)
 
 	def openRecentFile(self):
 		action = self.sender()
 		if action:
+			self.clear()
 			self.loadFile(unicode(action.data().toString()))
 
 	def loadFile(self,fname):
-		self.clear()
 		thread = fileOpenThread(fname, self)
 		self.connect(thread, SIGNAL("finished()"), self.fill)
 		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
@@ -1900,7 +1905,6 @@ class fillViewsThread(QThread):
 		self.parent().swList.setSortingEnabled(False)
 		for swatch in self.parent().sb.swatches:
 			self.parent().addSwatch(swatch)
-			self.parent().swatchCount += 1
 		self.parent().swList.sortItems()
 		self.parent().swList.setSortingEnabled(True)
 		self.fillViews(self.parent().sb.book.items)
@@ -1934,6 +1938,7 @@ class fillViewsThread(QThread):
 				treeItem = treeItemSwatch(item,parent)
 				gridItem = gridItemSwatch(item,self.parent().gridWidget)
 				self.parent().items[treeItem] = gridItem
+				self.parent().swatchCount += 1
 			if group:
 				self.parent().treeWidget.expandItem(parent)
 
