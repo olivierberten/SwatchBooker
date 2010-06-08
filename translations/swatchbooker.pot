@@ -226,7 +226,7 @@ msgid "License:"
 msgstr ""
 
 #: swatchbooker.pyw:1002
-msgid "There's already a swatch with that identifier."
+msgid "There's already a material with that identifier."
 msgstr ""
 
 #: swatchbooker.pyw:1065
