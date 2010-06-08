@@ -95,10 +95,10 @@ class sbz(SBCodec):
 						raise FileFormatError
 				elif '{'+xml+'}lang' in elem.attrib:
 					exec("item.info."+elem.tag[(len(dc)+2):]+"_l10n[elem.attrib['{'+xml+'}lang']] = xmlunescape(elem.text)")
+				elif elem.tag == '{'+dcterms+'}license':
+					item.info.license = xmlunescape(elem.attrib['{'+rdf+'}resource'])
 				else:
 					exec("item.info."+elem.tag[(len(dc)+2):]+" = xmlunescape(elem.text)")
-			elif elem.tag == '{'+dcterms+'}license':
-				item.info.license = xmlunescape(elem.attrib['{'+rdf+'}resource'])
 			
 
 	@staticmethod

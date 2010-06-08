@@ -955,6 +955,8 @@ class InfoWidget(QWidget):
 		self.date = QDateTimeEdit()
 #		self.license = LicenseWidget()
 		self.license = QLineEdit()
+		self.license.setObjectName('license')
+		self.connect(self.license, SIGNAL("editingFinished()"), self.edit)
 
 		layout = QGridLayout()
 		layout.setContentsMargins(0,0,0,0)
