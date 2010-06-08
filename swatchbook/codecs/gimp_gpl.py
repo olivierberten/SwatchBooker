@@ -59,8 +59,8 @@ class gimp_gpl(SBCodec):
 						id = unicode(entry[3].strip(),'utf-8')
 					if not id or id == '':
 						id = str(item.toRGB8())
-					if id in swatchbook.swatches:
-						if item.values[('RGB',False)] == swatchbook.swatches[id].values[('RGB',False)]:
+					if id in swatchbook.materials:
+						if item.values[('RGB',False)] == swatchbook.materials[id].values[('RGB',False)]:
 							swatchbook.book.items.append(Swatch(id))
 							continue
 						else:
@@ -68,7 +68,7 @@ class gimp_gpl(SBCodec):
 							item.info.title = id
 							id = id+str(item.toRGB8())
 					item.info.identifier = id
-					swatchbook.swatches[id] = item
+					swatchbook.materials[id] = item
 					swatchbook.book.items.append(Swatch(id))
 				else:	
 					sys.stderr.write('incorrect line: '+line.encode('utf-8'))
@@ -91,7 +91,7 @@ class gimp_gpl(SBCodec):
 		gpl_tmp = u''
 		for item in items:
 			if isinstance(item,Swatch):
-				item = swatchbook.swatches[item.id]
+				item = swatchbook.materials[item.material]
 				if isinstance(item,Color):
 					R,G,B = item.toRGB8()
 					gpl_tmp += '\n'+str(R).rjust(3)+' '+str(G).rjust(3)+' '+str(B).rjust(3)

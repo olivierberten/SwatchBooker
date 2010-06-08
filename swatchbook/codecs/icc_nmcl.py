@@ -58,9 +58,7 @@ class icc_nmcl(SBCodec):
 		for i in range(n):
 			item = Color(swatchbook)
 			# This is supposed to be coded in plain ascii but X-Rite Pantone NCPs use Latin 1
-			id = unicode(struct.unpack('>32s',file.read(32))[0].split('\x00', 1)[0],'latin_1')
-			if prefix > '' or suffix > '':
-				item.info.title = prefix+id+suffix
+			id = prefix+unicode(struct.unpack('>32s',file.read(32))[0].split('\x00', 1)[0],'latin_1')+suffix
 			if prof.info['pcs'] == 'Lab ':
 				L,a,b = struct.unpack('>3H',file.read(6))
 				# I'm not really sure this is the right criterion
@@ -74,7 +72,7 @@ class icc_nmcl(SBCodec):
 			file.seek(m*2,1)
 			item.usage.append('spot')
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 		file.close()
 

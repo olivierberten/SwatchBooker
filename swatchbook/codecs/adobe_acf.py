@@ -91,20 +91,18 @@ class adobe_acf(SBCodec):
 				if col_type == 'Spot' or spot:
 					item.usage.append('spot')
 				pos = pos+1
-			id = unicode(file[pos].strip(),'macroman')
-			if prefix > '' or suffix > '':
-				item.info.title = prefix+id+suffix
+			id = prefix+unicode(file[pos].strip(),'macroman')+suffix
 			pos = pos+1
-			if id in swatchbook.swatches:
-				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+			if id in swatchbook.materials:
+				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
 					sys.stderr.write('duplicated id: '+str(id)+'\n')
-					if item.info.title == '':
-						item.info.title = id
-					id = str(id)+'col'+str(pos)
+					item.info.title = id
+					id = id+str(item.values[item.values.keys()[0]])
+			elif len(id) == 0:
+				id = str(item.values[item.values.keys()[0]])
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
-

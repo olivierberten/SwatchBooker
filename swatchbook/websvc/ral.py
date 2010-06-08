@@ -45,17 +45,17 @@ class ral(WebSvc):
 		for line in data:
 			item = Color(swatchbook)
 			item.usage.append('spot')
-			if line.find(' style="background: rgb(') >= 0:
-				line = line.split(' style="background: rgb(')[1]
-				R,G,B = eval("["+line.split(') none repeat scroll 0% 0%; -moz-background-clip: border; -moz-background-origin: padding; -moz-background-inline-policy: continuous;')[0]+"]")
+			if line.find(' style="BACKGROUND: rgb(') >= 0:
+				line = line.split(' style="BACKGROUND: rgb(')[1]
+				R,G,B = eval("["+line.split(');',1)[0]+"]")
 				item.values[('sRGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
-				line = line.split(';"')[1]
-			line = line.replace('                         <br />                         ','')
-			line = line.split('>                     <td><p>                         ',1)[1].split('                     </p></td>                 </tr>             ')[0]
-			code,de,en,fr,es,it,nl = line.split('                     </p></td>                     <td><p>                         ')
+				line = line.split('"')[1]
+			line = line.replace(' <br />','')
+			line = line.split('><td><p>',1)[1].split('</p></td></tr>')[0]
+			code,de,en,fr,es,it,nl = map(strip,line.split('</p></td><td><p>'))
 			item.info.identifier = unicode(code)
 			item.info.title = unicode(de,'UTF-8')
 			item.info.title_l10n = {'de': unicode(de,'UTF-8'),'en': unicode(en,'UTF-8'),'fr': unicode(fr,'UTF-8'),'es': unicode(es,'UTF-8'),'it': unicode(it,'UTF-8'),'nl': unicode(nl,'UTF-8')}
-			swatchbook.swatches[code] = item
+			swatchbook.materials[code] = item
 			swatchbook.book.items.append(Swatch(code))
 			i += 1			

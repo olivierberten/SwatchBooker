@@ -52,8 +52,8 @@ class autocad_acb(SBCodec):
 					item.values[('RGB',False)] = [eval(colorEntry.find('RGB8').find('red').text)/0xFF,eval(colorEntry.find('RGB8').find('green').text)/0xFF,eval(colorEntry.find('RGB8').find('blue').text)/0xFF]
 				item.usage.append('spot')
 				id = unicode(colorEntry.find('colorName').text)
-				if id in swatchbook.swatches:
-					if len(item.values) > 0 and item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+				if id in swatchbook.materials:
+					if len(item.values) > 0 and item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 						swatchbook.book.items.append(Swatch(id))
 						i += 1
 						continue
@@ -62,7 +62,7 @@ class autocad_acb(SBCodec):
 						item.info.title = id
 						id = str(item.toRGB8())
 				item.info.identifier = id
-				swatchbook.swatches[id] = item
+				swatchbook.materials[id] = item
 				swatchbook.book.items.append(Swatch(id))
 				i += 1
 			if len(list(colorPage.getiterator('colorEntry'))) < swatchbook.book.display['columns'] and i<nbcolors:

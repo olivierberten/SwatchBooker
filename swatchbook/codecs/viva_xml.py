@@ -48,9 +48,7 @@ class viva_xml(SBCodec):
 		colors = xml.getiterator('color')
 		for color in colors:
 			item = Color(swatchbook)
-			id = xmlunescape(unicode(color.attrib['name']))
-			if prefix > '' or suffix > '':
-				item.info.title = prefix+id+suffix
+			id_tmp = xmlunescape(unicode(color.attrib['name']))
 			if color.attrib['type'] == 'rgb':
 				item.values[('RGB',False)] = [eval(color.find('red').text)/0xFF,\
 											  eval(color.find('green').text)/0xFF,\
@@ -60,19 +58,20 @@ class viva_xml(SBCodec):
 											   eval(color.find('magenta').text)/100,\
 											   eval(color.find('yellow').text)/100,\
 											   eval(color.find('key').text)/100]
-			if not id or id == '':
+			if not id_tmp or id_tmp == '':
 				id = str(item.values[item.values.keys()[0]])
-			if id in swatchbook.swatches:
-				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+			else:
+				id = prefix+id_tmp+suffix
+			if id in swatchbook.materials:
+				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
-					if item.info.title == '':
-						item.info.title = id
+					item.info.title = id
 					id = id+str(item.values[item.values.keys()[0]])
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 
 

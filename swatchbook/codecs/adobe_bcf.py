@@ -107,23 +107,24 @@ class adobe_bcf(SBCodec):
 			if preferredmodel != '0CLR':
 				item.values.insert(0,(preferredmodel,False),item.values.pop((preferredmodel,False)))
 			id = unicode(struct.unpack('32s',file.read(32))[0].split('\x00', 1)[0],'macroman').strip()
-			if prefix > '' or suffix > '':
-				item.info.title = prefix+id+suffix
 			if id == '':
 				if sum(item.values[item.values.keys()[0]]) == 0:
 					swatchbook.book.items.append(Spacer())
 					continue
 				else:
 					id = str(item.toRGB8())
-			if id in swatchbook.swatches:
-				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+			else:
+				id = prefix+id+suffix
+			if id in swatchbook.materials:
+				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
+					item.info.title = id
 					id = id+str(item.values[item.values.keys()[0]])
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 		file.close()
 

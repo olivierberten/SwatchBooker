@@ -57,9 +57,9 @@ class sbz(SBCodec):
 			for elem in xml:
 				if elem.tag == 'metadata':
 					sbz.readmeta(swatchbook,elem)
-				elif elem.tag == 'swatches':
-					for swatch in elem:
-						sbz.readswatch(swatch,swatchbook)
+				elif elem.tag == 'materials':
+					for material in elem:
+						sbz.readmaterial(material,swatchbook)
 				elif elem.tag == 'book':
 					for attrib in elem.attrib:
 						if attrib in('columns','rows'):
@@ -102,12 +102,12 @@ class sbz(SBCodec):
 			
 
 	@staticmethod
-	def readswatch(swatch,swatchbook):
-		if swatch.tag == 'color':
+	def readmaterial(material,swatchbook):
+		if material.tag == 'color':
 			sitem = Color(swatchbook)
-			if 'spot' in swatch.attrib and swatch.attrib['spot'] == '1':
+			if 'spot' in material.attrib and material.attrib['spot'] == '1':
 				sitem.usage.append('spot')
-			for elem in swatch:
+			for elem in material:
 				if elem.tag == 'values':
 					values = map(eval,elem.text.split())
 					if 'space' in elem.attrib:
@@ -122,7 +122,7 @@ class sbz(SBCodec):
 				id = sitem.info.identifier
 			else:
 				raise FileFormatError
-		swatchbook.swatches[id] = sitem
+		swatchbook.materials[id] = sitem
 
 	@staticmethod
 	def readitem(item,parent):
@@ -134,7 +134,7 @@ class sbz(SBCodec):
 				else:
 					sbz.readitem(elem,bitem)
 		elif item.tag == 'swatch':
-			bitem = Swatch(item.attrib['id'])
+			bitem = Swatch(item.attrib['material'])
 		elif item.tag == 'spacer':
 			bitem = Spacer()
 		elif item.tag == 'break':
@@ -145,27 +145,27 @@ class sbz(SBCodec):
 	def write(swatchbook):
 		xml = '<?xml version="1.0" encoding="UTF-8"?>\n<SwatchBook version="0.7"\n    xmlns:dc="'+dc+'"\n    xmlns:dcterms="'+dcterms+'"\n    xmlns:rdf="'+rdf+'">\n'
 		xml += sbz.writemeta(swatchbook.info)
-		xml += '  <swatches>\n'
-		for id in swatchbook.swatches:
-			if isinstance(swatchbook.swatches[id], Color):
-				swatch = swatchbook.swatches[id]
+		xml += '  <materials>\n'
+		for id in swatchbook.materials:
+			if isinstance(swatchbook.materials[id], Color):
+				material = swatchbook.materials[id]
 				xml += '    <color'
-				if 'spot' in swatch.usage:
+				if 'spot' in material.usage:
 					xml += ' spot="1"'
 				xml += '>\n'
-				xml += sbz.writemeta(swatch.info,2)
-				for value in swatch.values:
+				xml += sbz.writemeta(material.info,2)
+				for value in material.values:
 					xml += '      <values model="'+value[0]+'"'
 					if value[1]:
 						xml += ' space="'+value[1]+'"'
-					xml += '>'+' '.join(str(round(x,16)) for x in swatch.values[value])+'</values>\n'
-				for extra in swatch.extra:
+					xml += '>'+' '.join(str(round(x,16)) for x in material.values[value])+'</values>\n'
+				for extra in material.extra:
 					xml += '      <extra type="'+xmlescape(extra)+'">'
-					if swatch.extra[extra]:
-						xml += xmlescape(unicode(swatch.extra[extra]))
+					if material.extra[extra]:
+						xml += xmlescape(unicode(material.extra[extra]))
 					xml += '</extra>\n'
 				xml += '    </color>\n'
-		xml += '  </swatches>\n'
+		xml += '  </materials>\n'
 		if len(swatchbook.book.items) > 0:
 			xml += '  <book'
 			for display in swatchbook.book.display:
@@ -217,7 +217,7 @@ class sbz(SBCodec):
 				xml += sbz.writem(item.items,offset+1)
 				xml += '  '*(offset+2)+'</group>\n'
 			elif isinstance(item,Swatch):
-				xml += '  '*(offset+2)+'<swatch id="'+item.id+'" />\n'
+				xml += '  '*(offset+2)+'<swatch material="'+item.material+'" />\n'
 			elif isinstance(item,Spacer):
 				xml += '  '*(offset+2)+'<spacer />\n'
 			elif isinstance(item,Break):

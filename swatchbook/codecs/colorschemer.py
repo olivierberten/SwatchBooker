@@ -52,8 +52,8 @@ class colorschemer(SBCodec):
 			file.seek(11, 1)
 			if not id or id == '':
 				id = str((R,G,B))
-			if id in swatchbook.swatches:
-				if item.values[('RGB',False)] == swatchbook.swatches[id].values[('RGB',False)]:
+			if id in swatchbook.materials:
+				if item.values[('RGB',False)] == swatchbook.materials[id].values[('RGB',False)]:
 					swatchbook.book.items.append(Swatch(id))
 					i += 1
 					continue
@@ -62,7 +62,7 @@ class colorschemer(SBCodec):
 					item.info.title = id
 					id = str((R,G,B))
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 		file.close()
 

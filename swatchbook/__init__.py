@@ -188,7 +188,7 @@ class SwatchBook(object):
 	def __init__(self, file=False,codec=False,websvc=False,webid=False):
 		self.info = Info()
 		self.profiles = {}
-		self.swatches = {}
+		self.materials = {}
 		self.book = Book()
 		self.codec = False
 
@@ -277,8 +277,8 @@ class Group(object):
 		self.items = []
 
 class Swatch(object):
-	def __init__(self,id,parent=None):
-		self.id = id
+	def __init__(self,material,parent=None):
+		self.material = material
 
 class Spacer(object):
 	def __init__(self,parent=None):

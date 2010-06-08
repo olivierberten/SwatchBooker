@@ -53,8 +53,8 @@ class scribus(SBCodec):
 				item.usage.append('spot')
 			if not id or id == '':
 				id = (cmyk or rgb)
-			if id in swatchbook.swatches:
-				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+			if id in swatchbook.materials:
+				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
@@ -62,7 +62,7 @@ class scribus(SBCodec):
 					item.info.title = id
 					id = id+(cmyk or rgb)
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 
 	@staticmethod
@@ -77,7 +77,7 @@ class scribus(SBCodec):
 		scsw_tmp = u''
 		for item in items:
 			if isinstance(item,Swatch):
-				item = swatchbook.swatches[item.id]
+				item = swatchbook.materials[item.material]
 				if isinstance(item,Color):
 					values = unicc(item.values)
 					scsw_tmp += ' <COLOR '

@@ -79,8 +79,8 @@ class dtpstudio(WebSvc):
 				item.values[('Lhc',False)] = [line[2],line[1],line[3]]
 			elif line[0] == 2:
 				item.values[('sRGB',False)] = [line[1],line[2],line[3]]
-			if id in swatchbook.swatches:
-				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+			if id in swatchbook.materials:
+				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
@@ -88,5 +88,5 @@ class dtpstudio(WebSvc):
 					item.info.title = id
 					id = id+str(item.values[item.values.keys()[0]])
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

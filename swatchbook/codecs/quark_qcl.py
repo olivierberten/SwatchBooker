@@ -69,7 +69,7 @@ class quark_qcl(SBCodec):
 			id = xmlunescape(unicode(color.getchildren()[eval(data_format['SAMPLE_ID'])-1].text))
 			if data_format.has_key('NAME_FORMAT_ID'):
 				nid = eval(color.getchildren()[eval(data_format['NAME_FORMAT_ID'])-1].text)-1
-				item.info.title = prefix[nid]+id+suffix[nid]
+				id = prefix[nid]+id+suffix[nid]
 			if data_format.has_key('LAB_L'):
 				item.values[('Lab',False)] = [eval(color.getchildren()[eval(data_format['LAB_L'])-1].text),\
 											  eval(color.getchildren()[eval(data_format['LAB_A'])-1].text),\
@@ -95,17 +95,16 @@ class quark_qcl(SBCodec):
 				item.usage.append('spot')
 			if not id or id == '':
 				id = str(item.values[item.values.keys()[0]])
-			if id in swatchbook.swatches:
-				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+			if id in swatchbook.materials:
+				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
-					if item.info.title == '':
-						item.info.title = id
+					item.info.title = id
 					id = id+str(item.values[item.values.keys()[0]])
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 			i += 1
 

@@ -58,10 +58,10 @@ models['GRAY'] = (('K',1),)
 models['YIQ'] = (('Y',0),('I',0),('Q',0))
 
 def swupdate(id):
-	form.swatches[id][0].update()
-	for sw in form.swatches[id][1]:
+	form.materials[id][0].update()
+	for sw in form.materials[id][1]:
 		sw.update()
-	for sw in form.swatches[id][2]:
+	for sw in form.materials[id][2]:
 		sw.update()
 
 def grupdate(item):
@@ -95,16 +95,16 @@ class MainWindow(QMainWindow):
 		self.gridHorizAction.setActionGroup(directionActionGroup)
 		self.gridHorizAction.setCheckable(True)
 		self.connect(self.gridHorizAction,SIGNAL("triggered()"),self.gridEdit)
-		self.availSwatchesAction = QAction(_("Available materials"),self)
-		self.availSwatchesAction.setCheckable(True)
-		self.connect(self.availSwatchesAction,SIGNAL("triggered()"),self.dispPane)
+		self.availMaterialsAction = QAction(_("Available materials"),self)
+		self.availMaterialsAction.setCheckable(True)
+		self.connect(self.availMaterialsAction,SIGNAL("triggered()"),self.dispPane)
 		viewMenu.addAction(self.treeViewAction)
 		viewMenu.addAction(self.gridViewAction)
 		viewMenu.addMenu(self.directionMenu)
 		self.directionMenu.addAction(self.gridVertAction)
 		self.directionMenu.addAction(self.gridHorizAction)
 		viewMenu.addSeparator()
-		viewMenu.addAction(self.availSwatchesAction)
+		viewMenu.addAction(self.availMaterialsAction)
 		self.menuBar().addAction(_("Settings"), self.settings)
 		self.menuBar().addAction(_("&About"), self.about)
 		self.updateFileMenu()
@@ -115,13 +115,13 @@ class MainWindow(QMainWindow):
 		else:
 			self.treeViewAction.setChecked(True)
 			self.directionMenu.setEnabled(False)
-		if settings.contains('swatchList') and settings.value('swatchList').toBool():
-			self.availSwatchesAction.setChecked(True)
+		if settings.contains('materialList') and settings.value('materialList').toBool():
+			self.availMaterialsAction.setChecked(True)
 		else:
-			self.availSwatchesAction.setChecked(False)
+			self.availMaterialsAction.setChecked(False)
 
 		breaks = []
-		self.swatches = {}
+		self.materials = {}
 		self.swatchCount = 0
 		self.profiles = {}
 		self.groups = {}
@@ -172,23 +172,23 @@ class MainWindow(QMainWindow):
 		sbLeftPane.addWidget(groupBoxInfo)
 		sbLeftPane.addWidget(groupBoxProfiles)
 		
-		# swList
+		# matList
 		self.groupBoxList = QGroupBox(_("Available materials"))
 
-		self.swList = swListWidget()
+		self.matList = matListWidget()
 		self.matNbLabel = QLabel()
-		self.swLEditBut = MenuButton(self)
-		self.swLEditMenu = QMenu()
-		self.swLEditMenu.addAction(_('Add Color'),self.swAddColor)
-		self.swDeleteAction = self.swLEditMenu.addAction(_('Delete'),self.swDelete)
-		self.swLEditMenu.addAction(_('Delete unused materials'),self.swDeleteUnused)
-		self.swLEditBut.setMenu(self.swLEditMenu)
-		self.swDeleteAction.setEnabled(False)
+		self.matListEditBut = MenuButton(self)
+		self.matListEditMenu = QMenu()
+		self.matListEditMenu.addAction(_('Add Color'),self.addColor)
+		self.deleteMaterialAction = self.matListEditMenu.addAction(_('Delete'),self.deleteMaterial)
+		self.matListEditMenu.addAction(_('Delete unused materials'),self.deleteUnusedMaterials)
+		self.matListEditBut.setMenu(self.matListEditMenu)
+		self.deleteMaterialAction.setEnabled(False)
 		
 		sbList = QGridLayout()
-		sbList.addWidget(self.swList,0,0)
+		sbList.addWidget(self.matList,0,0)
 		sbList.addWidget(self.matNbLabel,1,0)
-		sbList.addWidget(self.swLEditBut,0,1,Qt.AlignTop)
+		sbList.addWidget(self.matListEditBut,0,1,Qt.AlignTop)
 		self.groupBoxList.setLayout(sbList)
 		
 		# sbTree
@@ -198,7 +198,7 @@ class MainWindow(QMainWindow):
 		self.swNbLabel = QLabel()
 		self.swTEditBut = MenuButton(self)
 		self.swTEditMenu = QMenu()
-		self.swTEditMenu.addAction(_('Add Color'),self.addColor)
+		self.swTEditMenu.addAction(_('Add Color'),self.addColorSwatch)
 		self.swTEditMenu.addAction(_('Add Spacer'),self.addSpacer)
 		self.swTEditMenu.addAction(_('Add Break'),self.addBreak)
 		self.swTEditMenu.addAction(_('Add Group'),self.addGroup)
@@ -226,7 +226,7 @@ class MainWindow(QMainWindow):
 
 		self.swGEditBut = MenuButton(self)
 		self.swGEditMenu = QMenu()
-		self.swGEditMenu.addAction(_('Add Color'),self.addColor)
+		self.swGEditMenu.addAction(_('Add Color'),self.addColorSwatch)
 		self.swGEditMenu.addAction(_('Add Spacer'),self.addSpacer)
 		self.swGEditMenu.addAction(_('Add Break'),self.addBreak)
 		self.swGEditMenu.addAction(self.deleteAction)
@@ -264,7 +264,7 @@ class MainWindow(QMainWindow):
 				SIGNAL("valueChanged(int)"), self.gridEdit)
 		self.connect(self.rows,
 				SIGNAL("valueChanged(int)"), self.gridEdit)
-		self.connect(self.swList,
+		self.connect(self.matList,
 				SIGNAL("itemSelectionChanged()"), self.sw_display_list)
 		self.connect(self.treeWidget,
 				SIGNAL("itemSelectionChanged()"), self.sw_display_tree)
@@ -276,65 +276,64 @@ class MainWindow(QMainWindow):
 	def clear(self):
 		global breaks
 		breaks = []
-		self.profiles = {}
+		self.materials = {}
 		self.swatchCount = 0
-		self.swatches = {}
+		self.profiles = {}
 		self.groups = {}
 		self.items = {}
 
 		self.sbInfo.clear()
 		self.sbProfList.clear()
 		self.sbProfList.setRowCount(0)
-		self.swList.clear()
+		self.matList.clear()
 		self.rows.setValue(0)
 		self.cols.setValue(0)
 		self.gridWidget.clear()
 		self.treeWidget.clear()
 		self.updSwatchCount()
 		self.deleteAction.setEnabled(False)
-		if hasattr(self,'sbSwatch'):
-			self.sbSwatch.setParent(None)
+		if hasattr(self,'editWidget'):
+			self.editWidget.setParent(None)
 
 	def sw_display_list(self):
-		if self.swList.selectedItems() and self.swList.hasFocus():
-			listItem = self.swList.selectedItems()[0]
-			if hasattr(self,'sbSwatch'):
-				self.sbSwatch.setParent(None)
-			self.sbSwatch = SwatchWidget(listItem.id,self)
-			self.mainWidget.addWidget(self.sbSwatch)
+		if self.matList.selectedItems() and self.matList.hasFocus():
+			listItem = self.matList.selectedItems()[0]
+			if hasattr(self,'editWidget'):
+				self.editWidget.setParent(None)
+			self.editWidget = MaterialWidget(listItem.id,self)
+			self.mainWidget.addWidget(self.editWidget)
 			self.treeWidget.setCurrentItem(None)
 			self.gridWidget.setCurrentItem(None)
-			self.swDeleteAction.setEnabled(True)
+			self.deleteMaterialAction.setEnabled(True)
 
 	def sw_display_tree(self):
 		if self.treeWidget.selectedItems():
 			treeItem = self.treeWidget.selectedItems()[0]
 			if treeItem and isinstance(treeItem,treeItemSwatch):
 				self.gridWidget.setCurrentItem(self.items[treeItem])
-				self.swList.setCurrentItem(self.swatches[treeItem.item.id][0])
+				self.matList.setCurrentItem(self.materials[treeItem.item.material][0])
 			else:
 				self.gridWidget.setCurrentItem(None)
-				self.swList.setCurrentItem(None)
-			if hasattr(self,'sbSwatch'):
-				self.sbSwatch.setParent(None)
+				self.matList.setCurrentItem(None)
+			if hasattr(self,'editWidget'):
+				self.editWidget.setParent(None)
 			if isinstance(treeItem,treeItemSwatch):
-				self.sbSwatch = SwatchWidget(treeItem.item.id,self)
+				self.editWidget = MaterialWidget(treeItem.item.material,self)
 			if isinstance(treeItem,treeItemGroup):
-				self.sbSwatch = GroupWidget(treeItem.item,self)
+				self.editWidget = GroupWidget(treeItem.item,self)
 			if treeItem.__class__.__name__ not in ('treeItemSpacer','treeItemBreak','noChild'):
-				self.mainWidget.addWidget(self.sbSwatch)
+				self.mainWidget.addWidget(self.editWidget)
 			if isinstance(treeItem, noChild):
 				self.deleteAction.setEnabled(False)
 			else:
 				self.deleteAction.setEnabled(True)
 
 	def sw_display_grid(self):
-		global current_sw
 		if self.gridWidget.selectedItems():
-			listItem = self.gridWidget.selectedItems()[0]
+			gridItem = self.gridWidget.selectedItems()[0]
 			items = dict([v,k] for k,v in self.items.iteritems())
-			self.treeWidget.setCurrentItem(items[listItem])
-			self.swList.setCurrentItem(self.swatches[listItem.item.id][0])
+			self.treeWidget.setCurrentItem(items[gridItem])
+			self.matList.setCurrentItem(self.materials[gridItem.item.material][0])
 
 	def gridEdit(self):
 		if self.cols.value() > 0:
@@ -356,68 +355,68 @@ class MainWindow(QMainWindow):
 		self.gridWidget.update()
 
 	def updSwatchCount(self):
-		usedSwatches = 0
-		for id in self.swatches.keys():
-			if len(self.swatches[id][1]) > 0:
-				usedSwatches += 1
-		self.matNbLabel.setText(n_('%s material','%s materials',len(self.sb.swatches)) % len(self.sb.swatches) + " (" + n_('%s used','%s used',usedSwatches) % usedSwatches + ")")
-		self.swNbLabel.setText(n_('%s swatch','%s swatches',self.swatchCount) % self.swatchCount + " (" + n_('%s duplicate','%s duplicates',(self.swatchCount-usedSwatches)) % (self.swatchCount-usedSwatches) + ")")
+		usedMaterials = 0
+		for id in self.materials.keys():
+			if len(self.materials[id][1]) > 0:
+				usedMaterials += 1
+		self.matNbLabel.setText(n_('%s material','%s materials',len(self.materials)) % len(self.materials) + " (" + n_('%s used','%s used',usedMaterials) % usedMaterials + ")")
+		self.swNbLabel.setText(n_('%s swatch','%s swatches',self.swatchCount) % self.swatchCount + " (" + n_('%s duplicate','%s duplicates',(self.swatchCount-usedMaterials)) % (self.swatchCount-usedMaterials) + ")")
 
-	def addSwatch(self,id):
-		listItemSwatch(id)
+	def addMaterial(self,id):
+		listItemMaterial(id)
 
-	def swAddColor(self):
+	def addColor(self):
 		id = _('New Color')
-		if id in form.sb.swatches:
+		if id in form.sb.materials:
 			i = 1
-			while id in form.sb.swatches:
+			while id in form.sb.materials:
 				id = _('New Color')+' ('+str(i)+')'
 				i += 1
-		swatch = Color(self.sb)
-		swatch.info.identifier = id
-		form.sb.swatches[id] = swatch
-		self.addSwatch(id)
+		material = Color(self.sb)
+		material.info.identifier = id
+		form.sb.materials[id] = material
+		self.addMaterial(id)
 		icon = self.drawIcon(id)
 		self.addIcon(id,icon[0],icon[1])
-		self.swList.setFocus()
-		self.swList.setCurrentItem(self.swatches[id][0])
+		self.matList.setFocus()
+		self.matList.setCurrentItem(self.materials[id][0])
 		self.updSwatchCount()
 		return id
 
-	def swDelete(self):
-		item = self.swList.selectedItems()[0]
-		for treeItem in self.swatches[item.id][1]:
+	def deleteMaterial(self):
+		item = self.matList.selectedItems()[0]
+		for treeItem in self.materials[item.id][1]:
 			if treeItem.parent():
 				treeItem.parent().takeChild(treeItem.parent().indexOfChild(treeItem))
 			else:
 				self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(treeItem))
 			self.swatchCount -= 1
 		treeItem = None
-		for gridItem in self.swatches[item.id][2]:
+		for gridItem in self.materials[item.id][2]:
 			self.gridWidget.takeItem(self.gridWidget.row(gridItem))
 		gridItem = None
-		if hasattr(self,'sbSwatch'):
-			self.sbSwatch.setParent(None)
-		self.swList.takeItem(self.swList.row(item))
-		del self.sb.swatches[item.id]
-		del self.swatches[item.id]
+		if hasattr(self,'editWidget'):
+			self.editWidget.setParent(None)
+		self.matList.takeItem(self.matList.row(item))
+		del self.sb.materials[item.id]
+		del self.materials[item.id]
 		self.deleteAction.setEnabled(False)
 		self.updSwatchCount()
 
-	def swDeleteUnused(self):
-		for swatch in self.swatches.keys():
-			if len(self.swatches[swatch][1]) == 0:
-				self.swList.takeItem(self.swList.row(self.swatches[swatch][0]))
-				del self.sb.swatches[swatch]
-				del self.swatches[swatch]
+	def deleteUnusedMaterials(self):
+		for material in self.sb.materials.keys():
+			if len(self.materials[material][1]) == 0:
+				self.matList.takeItem(self.matList.row(self.materials[material][0]))
+				del self.sb.materials[material]
+				del self.materials[material]
 		self.updSwatchCount()
 
-	def addColor(self):
-		self.addSwatchToBook('Color')
+	def addColorSwatch(self):
+		self.addSwatch('Color')
 		
-	def addSwatchToBook(self,type):
+	def addSwatch(self,type):
 		selected = self.treeWidget.selectedItems()
-		id = eval('self.swAdd'+type+'()')
+		id = eval('self.add'+type+'()')
 		item = Swatch(id)
 		icon = self.drawIcon(id)
 		self.addIcon(id,icon[0],icon[1])
@@ -568,8 +567,8 @@ class MainWindow(QMainWindow):
 				self.del_group_from_list(selTItem)
 			else:
 				if isinstance(selTItem,treeItemSwatch):
-					self.swatches[selTItem.item.id][1].remove(selTItem)
-					self.swatches[selTItem.item.id][2].remove(self.items[selTItem])
+					self.materials[selTItem.item.material][1].remove(selTItem)
+					self.materials[selTItem.item.material][2].remove(self.items[selTItem])
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[selTItem]))
 				self.swatchCount -= 1
 			if isinstance(selTItem, treeItemBreak):
@@ -599,18 +598,18 @@ class MainWindow(QMainWindow):
 				self.del_group_from_list(group.child(i))
 			else:
 				if isinstance(group.child(i),treeItemSwatch):
-					self.swatches[group.child(i).item.id][1].remove(group.child(i))
-					self.swatches[group.child(i).item.id][2].remove(self.items[group.child(i)])
+					self.materials[group.child(i).item.material][1].remove(group.child(i))
+					self.materials[group.child(i).item.material][2].remove(self.items[group.child(i)])
 					self.swatchCount -= 1
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[group.child(i)]))
 			group.item.items.remove(group.child(i).item)
 
 	def dispPane(self):
-		if self.availSwatchesAction.isChecked():
-			settings.setValue("swatchList",QVariant(True))
+		if self.availMaterialsAction.isChecked():
+			settings.setValue("materialList",QVariant(True))
 			self.groupBoxList.show()
 		else:
-			settings.setValue("swatchList",QVariant(False))
+			settings.setValue("materialList",QVariant(False))
 			self.groupBoxList.hide()
 		if self.treeViewAction.isChecked():
 			settings.setValue("gridView",QVariant(False))
@@ -744,7 +743,7 @@ class MainWindow(QMainWindow):
 			self.loadFile(unicode(action.data().toString()))
 
 	def loadFile(self,fname):
-		thread = fileOpenThread(fname, self)
+		thread = fileOpenThread(os.path.realpath(fname), self)
 		self.connect(thread, SIGNAL("finished()"), self.fill)
 		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
 		self.connect(thread, SIGNAL("fileFormatError()"), self.fileFormatError)
@@ -778,23 +777,27 @@ class MainWindow(QMainWindow):
 
 	def buildIcons(self):
 		self.updSwatchCount()
-		for id in self.swatches:
-			thread = drawIconThread(id,self)
-			self.connect(thread, SIGNAL("icon(QString,QImage,QImage)"), self.addIcon)
-			thread.start()
-		self.connect(thread, SIGNAL("finished()"), self.fullyLoaded)
+		self.treeWidget.expandAll()
+		if len(self.materials) > 0:
+			for id in self.materials:
+				thread = drawIconThread(id,self)
+				self.connect(thread, SIGNAL("icon(QString,QImage,QImage)"), self.addIcon)
+				thread.start()
+			self.connect(thread, SIGNAL("finished()"), self.fullyLoaded)
+		else:
+			self.fullyLoaded()
 
 	def drawIcon(self,id):
-		swatch = form.sb.swatches[id]
+		material = form.sb.materials[id]
 		pix = QImage(16,16,QImage.Format_ARGB32_Premultiplied)
 		pix.fill(Qt.transparent)
 		paint = QPainter()
-		if isinstance(swatch,Color) and swatch.toRGB8():
+		if isinstance(material,Color) and material.toRGB8():
 			prof_out = str(settings.value("mntrProfile").toString()) or False
-			r,g,b = swatch.toRGB8(prof_out)
+			r,g,b = material.toRGB8(prof_out)
 			paint.begin(pix)
 			paint.setBrush(QColor(r,g,b))
-			if 'spot' in swatch.usage:
+			if 'spot' in material.usage:
 				paint.drawEllipse(0, 0, 15, 15)
 			else:
 				paint.drawRect(0, 0, 15, 15)
@@ -802,12 +805,12 @@ class MainWindow(QMainWindow):
 			normal = pix.copy()
 			paint.begin(pix)
 			paint.setPen(QColor(255,255,255))
-			if 'spot' in swatch.usage:
+			if 'spot' in material.usage:
 				paint.drawEllipse(0, 0, 15, 15)
 			else:
 				paint.drawRect(0, 0, 15, 15)
 			paint.setPen(Qt.DotLine)
-			if 'spot' in swatch.usage:
+			if 'spot' in material.usage:
 				paint.drawEllipse(0, 0, 15, 15)
 			else:
 				paint.drawRect(0, 0, 15, 15)
@@ -834,7 +837,7 @@ class MainWindow(QMainWindow):
 		id = unicode(id)
 		icon = QIcon(QPixmap.fromImage(normal))
 		icon.addPixmap(QPixmap.fromImage(selected),QIcon.Selected)
-		self.swatches[id][3] = icon
+		self.materials[id][3] = icon
 		swupdate(id)
 		self.gridWidget.update()
 
@@ -1007,18 +1010,18 @@ class InfoWidget(QWidget):
 		if self.sender().objectName() == 'identifier':
 			newid = unicode(self.sender().text())
 			if self.item.info.identifier !=	newid:
-				if newid in form.sb.swatches:
-					QMessageBox.critical(self, _('Error'), _("There's already a swatch with that identifier."))
+				if newid in form.sb.materials:
+					QMessageBox.critical(self, _('Error'), _("There's already a material with that identifier."))
 					self.sender().setText(self.item.info.identifier)
 				else:
-					form.sb.swatches[newid] = form.sb.swatches[self.item.info.identifier]
-					del form.sb.swatches[self.item.info.identifier]
-					form.swatches[newid] = form.swatches[self.item.info.identifier]
-					del form.swatches[self.item.info.identifier]
+					form.sb.materials[newid] = form.sb.materials[self.item.info.identifier]
+					del form.sb.materials[self.item.info.identifier]
+					form.materials[newid] = form.materials[self.item.info.identifier]
+					del form.materials[self.item.info.identifier]
 					self.item.info.identifier = newid
-					form.swatches[newid][0].id = newid
-					for sw in form.swatches[newid][1]:
-						sw.item.id = newid
+					form.materials[newid][0].id = newid
+					for sw in form.materials[newid][1]:
+						sw.item.material = newid
 		else:
 			if isinstance(self.sender(),QTextEdit):
 				text = self.sender().toPlainText()
@@ -1029,7 +1032,7 @@ class InfoWidget(QWidget):
 			grupdate(self.item)
 		elif not isinstance(self.item,SwatchBook):
 			swupdate(self.item.info.identifier)
-			form.swList.scrollTo(form.swList.currentIndex())
+			form.matList.scrollTo(form.matList.currentIndex())
 
 	def l10n(self):
 		if not self.sender().isChecked():
@@ -1172,21 +1175,21 @@ class l10nItem(QWidget):
 		if self.parent.l10nList.count() == 0:
 			self.parent.caller.clear()
 
-class listItemSwatch(QListWidgetItem):
+class listItemMaterial(QListWidgetItem):
 	def __init__(self,id):
-		super(listItemSwatch, self).__init__(form.swList)
+		super(listItemMaterial, self).__init__(form.matList)
 		self.id = id
-		form.swatches[id] = [self,[],[],False]
+		form.materials[id] = [self,[],[],False]
 		self.update()
 
 	def update(self):
-		if form.sb.swatches[self.id].info.title > '':
-			text = form.sb.swatches[self.id].info.title
+		if form.sb.materials[self.id].info.title > '':
+			text = form.sb.materials[self.id].info.title
 		else:
-			text = form.sb.swatches[self.id].info.identifier
+			text = form.sb.materials[self.id].info.identifier
 		self.setText(text)
-		if form.swatches[self.id][3]:
-			self.setIcon(form.swatches[self.id][3])
+		if form.materials[self.id][3]:
+			self.setIcon(form.materials[self.id][3])
 
 	@staticmethod
 	def alphanum_key(s):
@@ -1204,34 +1207,34 @@ class gridItemSwatch(QListWidgetItem):
 	def __init__(self, item, parent=None):
 		super(gridItemSwatch, self).__init__(parent)
 		self.item = item
-		form.swatches[item.id][2].append(self)
+		form.materials[item.material][2].append(self)
 		self.setSizeHint(QSize(17,17))
 		self.update()
 
 	def update(self):
-		text = [form.sb.swatches[self.item.id].info.identifier,]
-		if form.sb.swatches[self.item.id].info.title > '':
-			text.append(form.sb.swatches[self.item.id].info.title)
+		text = [form.sb.materials[self.item.material].info.identifier,]
+		if form.sb.materials[self.item.material].info.title > '':
+			text.append(form.sb.materials[self.item.material].info.title)
 		self.setToolTip('<br />'.join(text))
-		if form.swatches[self.item.id][3]:
-			self.setIcon(form.swatches[self.item.id][3])
+		if form.materials[self.item.material][3]:
+			self.setIcon(form.materials[self.item.material][3])
 
 class treeItemSwatch(QTreeWidgetItem):
 	def __init__(self, item, parent=None):
 		super(treeItemSwatch, self).__init__(parent)
 		self.item = item
-		form.swatches[item.id][1].append(self)
+		form.materials[item.material][1].append(self)
 		self.setFlags(self.flags() & ~(Qt.ItemIsDropEnabled))
 		self.update()
 
 	def update(self):
-		if form.sb.swatches[self.item.id].info.title > '':
-			text = form.sb.swatches[self.item.id].info.title
+		if form.sb.materials[self.item.material].info.title > '':
+			text = form.sb.materials[self.item.material].info.title
 		else:
-			text = form.sb.swatches[self.item.id].info.identifier
+			text = form.sb.materials[self.item.material].info.identifier
 		self.setText(0,text)
-		if form.swatches[self.item.id][3]:
-			self.setIcon(0,form.swatches[self.item.id][3])
+		if form.materials[self.item.material][3]:
+			self.setIcon(0,form.materials[self.item.material][3])
 
 class treeItemGroup(QTreeWidgetItem):
 	def __init__(self, item, parent=None):
@@ -1247,7 +1250,7 @@ class treeItemGroup(QTreeWidgetItem):
 			self.setText(0,QString())
 
 	def childCount(self):
-		if isinstance(self.child(0),noChild):
+		if QTreeWidgetItem.childCount(self) == 1 and isinstance(self.child(0),noChild):
 			return 0
 		else:
 			return QTreeWidgetItem.childCount(self)
@@ -1314,9 +1317,9 @@ class noChild(QTreeWidgetItem):
 		self.setTextColor(0,QColor(128,128,128))
 		self.setFlags(self.flags() & ~(Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled))
 
-class swListWidget(QListWidget):
+class matListWidget(QListWidget):
 	def __init__(self, parent=None):
-		super(swListWidget, self).__init__(parent)
+		super(matListWidget, self).__init__(parent)
 		self.setSortingEnabled(True)
 		self.setDragEnabled(True)
 
@@ -1356,7 +1359,7 @@ class sbTreeWidget(QTreeWidget):
 					self.item.parent().removeChild(self.item.parent().child(0))
 				if isinstance(self.item.parent().child(self.item.parent().childCount()-1),noChild):
 					self.item.parent().removeChild(self.item.parent().child(self.item.parent().childCount()-1))
-			# Update the Python model
+			# Update the Python object
 			if self.itemParent:
 				swParent = self.itemParent.item
 			else:
@@ -1380,21 +1383,24 @@ class sbTreeWidget(QTreeWidget):
 			gridItems.reverse()
 			for gridItem in gridItems:
 				form.gridWidget.insertItem(index,gridItem)
-		elif event.source() == form.swList:
-			event.setDropAction(Qt.CopyAction)
+		elif event.source() == form.matList:
 			QTreeWidget.dropEvent(self,event)
+			# Update the Python object + replace the generic QTreeWidgetItem with treeItemSwatch
 			parent,index = self.dropped
 			id = unicode(event.mimeData().text())
 			sw = Swatch(id)
 			newTreeItem = treeItemSwatch(sw)
 			if parent:
 				parent.item.items.insert(index,sw)
+				form.treeWidget.expandItem(parent) # this is needed because taking an item from a collapsed group makes the child indicator disappear  
 				parent.takeChild(index)
 				parent.insertChild(index,newTreeItem)
 			else:
 				form.sb.book.items.insert(index,sw)
 				self.takeTopLevelItem(index)
 				self.insertTopLevelItem(index,newTreeItem)
+			form.materials[id][1].append(newTreeItem)
+			# Update the grid
 			itemAbove = self.swItemAbove(newTreeItem)
 			if itemAbove:
 				index = form.gridWidget.indexFromItem(form.items[itemAbove]).row()+1
@@ -1402,8 +1408,7 @@ class sbTreeWidget(QTreeWidget):
 				index = 0
 			newGridItem = gridItemSwatch(sw)
 			form.gridWidget.insertItem(index,newGridItem)
-			form.swatches[id][1].append(newTreeItem)
-			form.swatches[id][2].append(newGridItem)
+			form.materials[id][2].append(newGridItem)
 			form.items[newTreeItem] = newGridItem
 			self.setCurrentItem(newTreeItem)
 			form.swatchCount += 1
@@ -1448,7 +1453,7 @@ class sbTreeWidget(QTreeWidget):
 		if event.source() == self:
 			event.setDropAction(Qt.MoveAction)
 			QTreeWidget.dragMoveEvent(self,event)
-		elif event.source() == form.swList:
+		elif event.source() == form.matList:
 			event.setDropAction(Qt.LinkAction)
 			QTreeWidget.dragMoveEvent(self,event)
 		else:
@@ -1540,24 +1545,24 @@ class GroupWidget(QGroupBox):
 		super(GroupWidget, self).__init__(parent)
 		
 		self.setTitle(_("Group"))
-		self.swInfo = InfoWidget(item,self)
+		self.infoWidget = InfoWidget(item,self)
 		infoScrollArea = QScrollArea()
-		infoScrollArea.setWidget(self.swInfo)
+		infoScrollArea.setWidget(self.infoWidget)
 		infoScrollArea.setWidgetResizable(True)
 		infoScrollArea.setFrameShape(QFrame.NoFrame)
-		sbInfoLayout = QVBoxLayout()
-		sbInfoLayout.addWidget(infoScrollArea)
-		self.setLayout(sbInfoLayout)
+		infoLayout = QVBoxLayout()
+		infoLayout.addWidget(infoScrollArea)
+		self.setLayout(infoLayout)
 
-class SwatchWidget(QGroupBox):
+class MaterialWidget(QGroupBox):
 	def __init__(self, id, parent):
-		super(SwatchWidget, self).__init__(parent)
+		super(MaterialWidget, self).__init__(parent)
 
-		self.item = form.sb.swatches[id]
+		self.item = form.sb.materials[id]
 
-		self.swInfo = InfoWidget(self.item,self)
+		self.infoWidget = InfoWidget(self.item,self)
 		infoScrollArea = QScrollArea()
-		infoScrollArea.setWidget(self.swInfo)
+		infoScrollArea.setWidget(self.infoWidget)
 		infoScrollArea.setWidgetResizable(True)
 		palette = infoScrollArea.viewport().palette()
 		palette.setColor(QPalette.Window,Qt.transparent)
@@ -1647,13 +1652,13 @@ class ColorWidget(QWidget):
 	def __init__(self, id, parent):
 		super(ColorWidget, self).__init__(parent)
 
-		self.item = form.sb.swatches[id]
+		self.item = form.sb.materials[id]
 
 		self.sample = QLabel()
 		self.sample.setMinimumHeight(30)
-		self.swSpot = QCheckBox(_("Spot"))
-		self.swValues = QTabWidget()
-		self.butVal = MenuButton(self.swValues)
+		self.usageSpot = QCheckBox(_("Spot"))
+		self.valuesWidget = QTabWidget()
+		self.butVal = MenuButton(self.valuesWidget)
 		cornLay = QVBoxLayout()
 		cornLay.setContentsMargins(20,0,0,20)
 		cornLay.addWidget(self.butVal)
@@ -1670,18 +1675,18 @@ class ColorWidget(QWidget):
 		self.delValAction = self.menuVal.addAction(_('Remove'),self.delVal)
 		self.delValAction.setEnabled(False)
 		self.butVal.setMenu(self.menuVal)
-		self.swValues.setCornerWidget(cornWid)
-		self.swValues.setMovable(True)
+		self.valuesWidget.setCornerWidget(cornWid)
+		self.valuesWidget.setMovable(True)
 
 		layout = QVBoxLayout()
 		layout.setContentsMargins(0,0,0,0)
 		layout.addWidget(self.sample)
-		layout.addWidget(self.swSpot)
-		layout.addWidget(self.swValues)
+		layout.addWidget(self.usageSpot)
+		layout.addWidget(self.valuesWidget)
 		self.setLayout(layout)
 
 		if 'spot' in self.item.usage:
-			self.swSpot.setChecked(True)
+			self.usageSpot.setChecked(True)
 		self.val = {}
 		if len(self.item.values) > 0:
 			self.delValAction.setEnabled(True)
@@ -1693,20 +1698,20 @@ class ColorWidget(QWidget):
 		self.def_current_sp()
 
 		# Actions
-		self.connect(self.swSpot,
+		self.connect(self.usageSpot,
 				SIGNAL("stateChanged(int)"), self.edit)
-		self.connect(self.swValues,
+		self.connect(self.valuesWidget,
 				SIGNAL("currentChanged(int)"), self.def_current_sp)
-		self.connect(self.swValues.tabBar(),
+		self.connect(self.valuesWidget.tabBar(),
 				SIGNAL("tabMoved(int,int)"), self.tab_moved)
 
 	def tab_moved(self,tfrom,tto):
-		combo = self.swValues.widget(tfrom).findChild(QComboBox)
+		combo = self.valuesWidget.widget(tfrom).findChild(QComboBox)
 		if combo and combo.currentIndex() > 0:
 			space = unicode(combo.itemData(combo.currentIndex()).toString())
 		else:
 			space = False
-		key = (str(self.swValues.tabText(tfrom)),space)
+		key = (str(self.valuesWidget.tabText(tfrom)),space)
 		val = self.item.values.pop(key)
 		self.item.values.insert(tfrom,key,val)
 		icon = form.drawIcon(self.item.info.identifier)
@@ -1775,14 +1780,14 @@ class ColorWidget(QWidget):
 			spaceLayout.addWidget(profCombo)
 		spaceWidget.setLayout(spaceLayout)
 
-		self.swValues.addTab(spaceWidget,model)
+		self.valuesWidget.addTab(spaceWidget,model)
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
 
 	def edit(self):
-		if self.sender() == self.swSpot:
-			if self.swSpot.isChecked():
+		if self.sender() == self.usageSpot:
+			if self.usageSpot.isChecked():
 				self.item.usage.append('spot')
 			else:
 				self.item.usage.remove('spot')
@@ -1815,9 +1820,9 @@ class ColorWidget(QWidget):
 
 	def def_current_sp(self):
 		global current_sp
-		if self.swValues.count() > 0:
-			model = str(self.swValues.tabText(self.swValues.currentIndex()))
-			combo = self.swValues.currentWidget().findChild(QComboBox)
+		if self.valuesWidget.count() > 0:
+			model = str(self.valuesWidget.tabText(self.valuesWidget.currentIndex()))
+			combo = self.valuesWidget.currentWidget().findChild(QComboBox)
 			if combo and combo.currentIndex() > 0:
 				current_sp = (model,unicode(combo.itemData(combo.currentIndex()).toString()))
 			else:
@@ -1831,7 +1836,7 @@ class ColorWidget(QWidget):
 		del self.item.values[current_sp]
 		self.def_current_sp()
 		self.item.values[current_sp] = value
-		fields = self.swValues.currentWidget().findChildren(QLineEdit)
+		fields = self.valuesWidget.currentWidget().findChildren(QLineEdit)
 		for field in fields:
 			self.val[field] = (current_sp,self.val[field][1])
 		icon = form.drawIcon(self.item.info.identifier)
@@ -1841,7 +1846,7 @@ class ColorWidget(QWidget):
 	def delVal(self):
 		global current_sp
 		del self.item.values[current_sp]
-		self.swValues.removeTab(self.swValues.currentIndex())
+		self.valuesWidget.removeTab(self.valuesWidget.currentIndex())
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
@@ -1858,7 +1863,7 @@ class ColorWidget(QWidget):
 			for ink in range(int(model[0],16)):
 				self.item.values[(model,False)].append(0)
 		self.add_val_tab((model,False),self.item.values[(model,False)])
-		self.swValues.setCurrentIndex(self.swValues.count()-1)
+		self.valuesWidget.setCurrentIndex(self.valuesWidget.count()-1)
 		self.def_current_sp()
 		self.delValAction.setEnabled(True)
 		icon = form.drawIcon(self.item.info.identifier)
@@ -1902,11 +1907,11 @@ class fillViewsThread(QThread):
 		super(fillViewsThread, self).__init__(parent)
 
 	def run(self):
-		self.parent().swList.setSortingEnabled(False)
-		for swatch in self.parent().sb.swatches:
-			self.parent().addSwatch(swatch)
-		self.parent().swList.sortItems()
-		self.parent().swList.setSortingEnabled(True)
+		form.matList.setSortingEnabled(False)
+		for id in form.sb.materials:
+			form.addMaterial(id)
+		form.matList.sortItems()
+		form.matList.setSortingEnabled(True)
 		self.fillViews(self.parent().sb.book.items)
 
 	def fillViews(self,items,group = False):
@@ -1914,33 +1919,31 @@ class fillViewsThread(QThread):
 			if group:
 				parent = group
 			else:
-				parent = self.parent().treeWidget
+				parent = form.treeWidget
 			if isinstance(item,Group):
-				gridItemIn = gridItemGroup(item,self.parent().gridWidget)
+				gridItemIn = gridItemGroup(item,form.gridWidget)
 				treeItem = treeItemGroup(item,parent)
 				if len(item.items) > 0:
 					self.fillViews(item.items,treeItem)
 				else:
 					nochild = noChild()
 					treeItem.addChild(nochild)
-				self.parent().items[treeItem] = None
-				gridItemOut = gridItemGroup(item,self.parent().gridWidget)
-				self.parent().groups[item][1] = (gridItemIn,gridItemOut)
+				form.items[treeItem] = None
+				gridItemOut = gridItemGroup(item,form.gridWidget)
+				form.groups[item][1] = (gridItemIn,gridItemOut)
 			elif isinstance(item,Spacer):
 				treeItem = treeItemSpacer(item,parent)
-				gridItem = gridItemSpacer(item,self.parent().gridWidget)
-				self.parent().items[treeItem] = gridItem
+				gridItem = gridItemSpacer(item,form.gridWidget)
+				form.items[treeItem] = gridItem
 			elif isinstance(item,Break):
 				treeItem = treeItemBreak(item,parent)
-				gridItem = gridItemBreak(item,self.parent().gridWidget)
-				self.parent().items[treeItem] = gridItem
+				gridItem = gridItemBreak(item,form.gridWidget)
+				form.items[treeItem] = gridItem
 			else:
 				treeItem = treeItemSwatch(item,parent)
 				gridItem = gridItemSwatch(item,self.parent().gridWidget)
-				self.parent().items[treeItem] = gridItem
-				self.parent().swatchCount += 1
-			if group:
-				self.parent().treeWidget.expandItem(parent)
+				form.items[treeItem] = gridItem
+				form.swatchCount += 1
 
 class drawIconThread(QThread):
 	def __init__(self, id, parent=None):

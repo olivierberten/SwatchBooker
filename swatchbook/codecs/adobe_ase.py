@@ -76,8 +76,8 @@ class adobe_ase(SBCodec):
 					item.usage.append('spot')
 				if not id or id == '':
 					id = str(item.values[item.values.keys()[0]])
-				if id in swatchbook.swatches:
-					if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+				if id in swatchbook.materials:
+					if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 						parent.items.append(Swatch(id))
 						continue
 					else:
@@ -85,7 +85,7 @@ class adobe_ase(SBCodec):
 						item.info.title = id
 						id = id+str(item.values[item.values.keys()[0]])
 				item.info.identifier = id
-				swatchbook.swatches[id] = item
+				swatchbook.materials[id] = item
 				parent.items.append(Swatch(id))
 		file.close()
 
@@ -115,7 +115,7 @@ class adobe_ase(SBCodec):
 				ase_tmp += content_tmp
 				ase_tmp += '\xc0\x02'+'\x00\x00\x00\x00'
 			elif isinstance(item,Swatch):
-				item = swatchbook.swatches[item.id]
+				item = swatchbook.materials[item.material]
 				if item.info.title > '':
 					name_txt = item.info.title
 				else:

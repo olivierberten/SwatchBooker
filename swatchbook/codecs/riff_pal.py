@@ -51,11 +51,11 @@ class riff_pal(SBCodec):
 			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 			file.seek(1, 1)
 			id = str((R,G,B))
-			if id in swatchbook.swatches:
+			if id in swatchbook.materials:
 				swatchbook.book.items.append(Swatch(id))
 			else:
 				item.info.identifier = id
-				swatchbook.swatches[id] = item
+				swatchbook.materials[id] = item
 				swatchbook.book.items.append(Swatch(id))
 		file.close()
 

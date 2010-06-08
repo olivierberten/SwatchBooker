@@ -56,11 +56,11 @@ class adobe_clr(SBCodec):
 			H,S,L = struct.unpack('<3H',file.read(6))
 			item.values[('HLS',False)] = [H/240,L/240,S/240]
 			file.seek(2, 1)
-			if id in swatchbook.swatches:
+			if id in swatchbook.materials:
 				swatchbook.book.items.append(Swatch(id))
 			else:
 				item.info.identifier = id
-				swatchbook.swatches[id] = item
+				swatchbook.materials[id] = item
 				swatchbook.book.items.append(Swatch(id))
 		file.close()
 

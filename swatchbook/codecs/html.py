@@ -87,7 +87,7 @@ class html(SBCodec):
 					html_tmp += '<div class="group_descr">'+xmlescape(item.info.description)+'</div>\n'
 				html_tmp += '</div>\n'
 			elif isinstance(item,Swatch):
-				item = swatchbook.swatches[item.id]
+				item = swatchbook.materials[item.material]
 				if isinstance(item,Color):
 					if len(item.values) > 0:
 						R,G,B = item.toRGB8()

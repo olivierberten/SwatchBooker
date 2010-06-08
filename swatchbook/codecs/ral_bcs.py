@@ -63,8 +63,8 @@ class ral_bcs(SBCodec):
 				item.usage.append('spot')
 			if not id or id == '':
 				id = str(item.values[('Lab',False)])
-			if id in swatchbook.swatches:
-				if item.values[('Lab',False)] == swatchbook.swatches[id].values[('Lab',False)]:
+			if id in swatchbook.materials:
+				if item.values[('Lab',False)] == swatchbook.materials[id].values[('Lab',False)]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
@@ -72,7 +72,7 @@ class ral_bcs(SBCodec):
 					item.info.title = id
 					id = id+str(item.values[('Lab',False)])
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 			if file.tell() == filesize: break
 		file.close()

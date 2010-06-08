@@ -53,11 +53,11 @@ class adobe_act(SBCodec):
 			R,G,B = struct.unpack('3B',file.read(3))
 			id = str((R,G,B))
 			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
-			if id in swatchbook.swatches:
+			if id in swatchbook.materials:
 				swatchbook.book.items.append(Swatch(id))
 			else:
 				item.info.identifier = id
-				swatchbook.swatches[id] = item
+				swatchbook.materials[id] = item
 				swatchbook.book.items.append(Swatch(id))
 		file.close()
 

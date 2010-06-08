@@ -83,8 +83,8 @@ class adobe_acb(SBCodec):
 			if item.info.title == '' and sum(item.values[item.values.keys()[0]]) == 0:
 				swatchbook.book.items.append(Spacer())
 				continue
-			if id in swatchbook.swatches:
-				if item.values[item.values.keys()[0]] == swatchbook.swatches[id].values[swatchbook.swatches[id].values.keys()[0]]:
+			if id in swatchbook.materials:
+				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
@@ -93,12 +93,12 @@ class adobe_acb(SBCodec):
 			elif len(id) == 0:
 				id = str(item.values[item.values.keys()[0]])
 			item.info.identifier = id
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
 		if file.read(4):
 			if struct.unpack('>4s',file.read(4))[0] == 'spot':
-				for id in swatchbook.swatches:
-					if isinstance(swatchbook.swatches[id],Color):
-						swatchbook.swatches[id].usage.append('spot')
+				for id in swatchbook.materials:
+					if isinstance(swatchbook.materials[id],Color):
+						swatchbook.materials[id].usage.append('spot')
 		file.close()
 

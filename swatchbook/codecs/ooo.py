@@ -51,8 +51,8 @@ class ooo(SBCodec):
 					item.values[('RGB',False)] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]
 				if not id or id == '':
 					id = str(item.toRGB8())
-				if id in swatchbook.swatches:
-					if item.values[('RGB',False)] == swatchbook.swatches[id].values[('RGB',False)]:
+				if id in swatchbook.materials:
+					if item.values[('RGB',False)] == swatchbook.materials[id].values[('RGB',False)]:
 						swatchbook.book.items.append(Swatch(id))
 						continue
 					else:
@@ -60,7 +60,7 @@ class ooo(SBCodec):
 						item.info.title = id
 						id = id+str(item.toRGB8())
 				item.info.identifier = id
-				swatchbook.swatches[id] = item
+				swatchbook.materials[id] = item
 				swatchbook.book.items.append(Swatch(id))
 
 	@staticmethod
@@ -75,7 +75,7 @@ class ooo(SBCodec):
 		soc = u''
 		for item in items:
 			if isinstance(item,Swatch):
-				item = swatchbook.swatches[item.id]
+				item = swatchbook.materials[item.material]
 				if isinstance(item,Color):
 					R,G,B = item.toRGB8()
 					rgb = '#'+hex2(R)+hex2(G)+hex2(B)

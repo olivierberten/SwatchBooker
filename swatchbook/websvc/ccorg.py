@@ -204,10 +204,10 @@ class ccorg(WebSvc):
 			item.usage.append('spot')
 			rgb = deck['colours'][i]
 			item.values[('sRGB',False)] = [int(rgb[0:2],16)/0xFF,int(rgb[2:4],16)/0xFF,int(rgb[4:],16)/0xFF]
-			if deck['names'][i] not in swatchbook.swatches:
+			if deck['names'][i] not in swatchbook.materials:
 				id = deck['names'][i]
 			else:
-				if item.values[('sRGB',False)] == swatchbook.swatches[deck['names'][i]].values[('sRGB',False)]:
+				if item.values[('sRGB',False)] == swatchbook.materials[deck['names'][i]].values[('sRGB',False)]:
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
@@ -217,5 +217,5 @@ class ccorg(WebSvc):
 			item.info.identifier = id
 			item.extra['CBN'] = deck['cbn'][i]
 			item.extra['outofgamut'] =  str(abs(int(deck['outofgamut'][i])))
-			swatchbook.swatches[id] = item
+			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

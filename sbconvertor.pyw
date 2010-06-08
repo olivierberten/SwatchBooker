@@ -200,8 +200,9 @@ class MainWindow(QMainWindow):
 	def toggleAdding(self):
 		self.threads -= 1
 		if self.threads == 0:
-			self.removeAllButton.setEnabled(True)
-			self.convertButton.setEnabled(True)
+			if  len(self.tobeconverted) > 0:
+				self.removeAllButton.setEnabled(True)
+				self.convertButton.setEnabled(True)
 			self.progress.hide()
 			self.tobeadded = 0
 			self.added = 0
@@ -283,7 +284,7 @@ class fileOpenThread(QThread):
 				row = self.parent().list.rowCount()
 				self.parent().list.insertRow(row)
 				self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
-				self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.swatches))))
+				self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
 				self.emit(SIGNAL("added()"))
 			except FileFormatError:
 				pass
@@ -301,7 +302,7 @@ class webOpenThread(QThread):
 			row = self.parent().list.rowCount()
 			self.parent().list.insertRow(row)
 			self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
-			self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.swatches))))
+			self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
 			self.emit(SIGNAL("added()"))
 
 class convertThread(QThread):
