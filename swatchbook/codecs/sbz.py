@@ -105,8 +105,8 @@ class sbz(SBCodec):
 	def readmaterial(material,swatchbook):
 		if material.tag == 'color':
 			sitem = Color(swatchbook)
-			if 'spot' in material.attrib and material.attrib['spot'] == '1':
-				sitem.usage.append('spot')
+			if 'usage' in material.attrib:
+				sitem.usage = material.attrib['usage'].split(',')
 			for elem in material:
 				if elem.tag == 'values':
 					values = map(eval,elem.text.split())
@@ -150,8 +150,8 @@ class sbz(SBCodec):
 			if isinstance(swatchbook.materials[id], Color):
 				material = swatchbook.materials[id]
 				xml += '    <color'
-				if 'spot' in material.usage:
-					xml += ' spot="1"'
+				if len(material.usage) > 0:
+					xml += ' usage="'+(','.join(material.usage))+'"'
 				xml += '>\n'
 				xml += sbz.writemeta(material.info,2)
 				for value in material.values:

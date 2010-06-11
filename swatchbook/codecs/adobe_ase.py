@@ -127,11 +127,11 @@ class adobe_ase(SBCodec):
 					nbblocks += 1
 					block_size += 6
 					if 'spot' in item.usage:
-						spot = '\x00\x01'
+						usage = '\x00\x01'
 					elif 'global' in item.usage:
-						spot = '\x00\x00'
+						usage = '\x00\x00'
 					else:
-						spot = '\x00\x02'
+						usage = '\x00\x02'
 					values = unicc(item.values)
 					if 'Lab' in values:
 						L,a,b = values['Lab']
@@ -156,7 +156,7 @@ class adobe_ase(SBCodec):
 						values = 'RGB '+struct.pack('>3f',R,G,B)
 					else:
 						values = ''
-					ase_tmp += '\x00\x01'+struct.pack('>L',block_size)+name+values+spot
+					ase_tmp += '\x00\x01'+struct.pack('>L',block_size)+name+values+usage
 
 		return nbblocks,ase_tmp
 
