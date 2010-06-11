@@ -58,12 +58,14 @@ class ICCprofile():
 					tag = struct.unpack('>4s 2L',file.read(12))
 					self.info['tags'][tag[0]] = (tag[1],tag[2])
 
-				cprt = self.info['tags']['cprt']
-				self.info['cprt'] = self.readfield(file,cprt[1],cprt[0])
-
-				desc = self.info['tags']['desc']
-				self.info['desc'] = self.readfield(file,desc[1],desc[0])
-			
+				try:
+					cprt = self.info['tags']['cprt']
+					self.info['cprt'] = self.readfield(file,cprt[1],cprt[0])
+	
+					desc = self.info['tags']['desc']
+					self.info['desc'] = self.readfield(file,desc[1],desc[0])
+				except KeyError:
+					raise BadICCprofile, "That file misses one mandatory tag"
 			file.close()
 
 	def readfield(self,file,size,start):

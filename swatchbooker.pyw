@@ -134,6 +134,7 @@ class MainWindow(QMainWindow):
 			self.loadFile(file)
 
 		self.mainWidget = QSplitter(Qt.Horizontal)
+		self.mainWidget.setContentsMargins(self.mainWidget.handleWidth(),0,self.mainWidget.handleWidth(),0)
 
 		groupBoxInfo = QGroupBox(_("Information"))
 		self.sbInfo = InfoWidget(self.sb,self)
@@ -234,6 +235,7 @@ class MainWindow(QMainWindow):
 
 		sbGrid = QGridLayout()
 		sbGrid.addWidget(self.gridWidget, 0, 0, 1, 2)
+		sbGrid.setRowStretch(0,999)
 		sbGrid.setRowStretch(1,1)
 		sbGrid.addWidget(self.colsLabel, 2, 0)
 		sbGrid.addWidget(self.cols, 2, 1)
