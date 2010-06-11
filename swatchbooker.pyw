@@ -35,6 +35,7 @@ __version__ = "0.7"
 NUM_RE = re.compile('([0-9]+)')
 
 availables_lang = {'de': u'Deutsch',
+				   'en': u'English',
                    'fr': u'Français',
                    'pt_BR': u'Português do Brasil',
                    'ru': u'Русский'}
@@ -2303,4 +2304,6 @@ if __name__ == "__main__":
 	form.show()
 	form.dispPane()
 
+	if app.style().metaObject().className() == "QGtkStyle" and PYQT_VERSION_STR.startswith("4.6"):
+		app.setStyle(QStyleFactory.create("Cleanlooks"))
 	app.exec_()
