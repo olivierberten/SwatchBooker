@@ -1728,6 +1728,7 @@ class ColorWidget(QWidget):
 		model = space[0]
 		valWidget = QWidget()
 		grid = QGridLayout()
+		grid.setContentsMargins(0,0,0,0)
 		count = 0
 		if model in models:
 			for elem in models[model]:
@@ -1826,12 +1827,23 @@ class ColorWidget(QWidget):
 	def def_current_sp(self):
 		global current_sp
 		if self.valuesWidget.count() > 0:
+			widget = self.valuesWidget.currentWidget()
 			model = str(self.valuesWidget.tabText(self.valuesWidget.currentIndex()))
-			combo = self.valuesWidget.currentWidget().findChild(QComboBox)
+			combo = widget.findChild(QComboBox)
 			if combo and combo.currentIndex() > 0:
 				current_sp = (model,unicode(combo.itemData(combo.currentIndex()).toString()))
 			else:
 				current_sp = (model,False)
+			if model in models:
+				widget.findChild(QScrollArea).setFixedHeight(widget.findChild(QScrollArea).sizeHint().height())
+			else:
+				tmp_widget = QWidget()
+				tmp_layout = QVBoxLayout()
+				tmp_layout.addWidget(QLineEdit())
+				tmp_layout.addWidget(QLineEdit())
+				tmp_layout.addWidget(QLineEdit())
+				tmp_widget.setLayout(tmp_layout)
+				widget.findChild(QScrollArea).setFixedHeight(tmp_widget.sizeHint().height())
 		else:
 			current_sp = False
 
