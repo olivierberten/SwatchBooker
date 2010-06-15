@@ -51,6 +51,7 @@ class ral(WebSvc):
 				item.values[('sRGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
 				line = line.split('"')[1]
 			line = line.replace(' <br />','')
+			line = line.replace('&nbsp;',' ')
 			line = line.split('><td><p>',1)[1].split('</p></td></tr>')[0]
 			code,de,en,fr,es,it,nl = map(strip,line.split('</p></td><td><p>'))
 			item.info.identifier = unicode(code)

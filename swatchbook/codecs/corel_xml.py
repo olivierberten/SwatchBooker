@@ -184,5 +184,5 @@ class corel_xml(SBCodec):
 					swatchbook.book.items.append(Swatch(id))
 			if len(colors.getchildren()) > 1 and len(page.getchildren()) < swatchbook.book.display['columns']:
 				swatchbook.book.items.append(Break())
-		if isinstance(swatchbook.book.items[-1],Break):
+		if len(swatchbook.book.items) > 0 and isinstance(swatchbook.book.items[-1],Break):
 			del swatchbook.book.items[-1]

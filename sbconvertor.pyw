@@ -67,11 +67,12 @@ class MainWindow(QMainWindow):
 
 		inputLayout = QGridLayout()
 		inputLayout.addWidget(self.list,0,0,6,1)
+		inputLayout.setColumnStretch(0,1)
 		inputLayout.addWidget(self.addFile,0,1)
 		inputLayout.addWidget(self.addWeb,1,1)
 		inputLayout.addWidget(self.removeButton,2,1)
 		inputLayout.addWidget(self.removeAllButton,3,1)
-		inputLayout.rowStretch(4)
+		inputLayout.setRowStretch(4,1)
 		inputLayout.addWidget(self.progress,5,1)
 
 		if settings.contains('lastSaveDir'):
