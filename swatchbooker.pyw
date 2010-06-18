@@ -1763,6 +1763,9 @@ class ColorWidget(QWidget):
 		valScrollArea = QScrollArea()
 		valScrollArea.setWidget(valWidget)
 		valScrollArea.setWidgetResizable(True)
+		palette = valScrollArea.viewport().palette()
+		palette.setColor(QPalette.Window,Qt.transparent)
+		valScrollArea.viewport().setPalette(palette)
 		valScrollArea.setFrameShape(QFrame.NoFrame)
 		
 		spaceWidget = QWidget()
