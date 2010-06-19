@@ -38,7 +38,8 @@ availables_lang = {'de': u'Deutsch',
 				   'en': u'English',
                    'fr': u'Français',
                    'pt_BR': u'Português do Brasil',
-                   'ru': u'Русский'}
+                   'ru': u'Русский',
+				   'uk': u'Українська'}
 
 current_sp = False
 breaks = []
