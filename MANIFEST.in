@@ -5,4 +5,5 @@ include src/sbconvertor.pyw
 include src/sbconvert.py
 include translations/*
 include data/*
+include debian/*
 include msgfmt.py
