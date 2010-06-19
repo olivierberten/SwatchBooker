@@ -43,7 +43,7 @@ availables_lang = {'de': u'Deutsch',
 current_sp = False
 breaks = []
 
-swatchbooker_svg = (dirpath(__file__) or ".")+"/icons/swatchbooker.svg" 
+swatchbooker_svg = "/usr/share/icons/swatchbooker.svg" 
 
 # 0: float, 1: percentage, 2: degrees
 models = SortedDict()
@@ -2293,7 +2293,7 @@ if __name__ == "__main__":
 	locale = settings.value("Language").toString() or QLocale.system().name()
 	# translation of the app
 	try:
-		lang = gettext.translation('swatchbooker', 'locale', languages=[str(locale)])
+		lang = gettext.translation('swatchbooker', None, languages=[str(locale)])
 		lang.install()
 		def _(msgid):
 			return lang.gettext(msgid).decode('utf-8')

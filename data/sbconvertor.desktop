@@ -1,0 +1,14 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Name=SwatchBooker Batch Convertor
+Comment=Swatch book convertor
+Exec=/usr/bin/sbconvertor
+Categories=Qt;Graphics;
+Icon=swatchbooker
+Name[fr]=Convertisseur SwatchBooker
+Name[pt_BR]=Conversor em lote do SwatchBooker
+Name[de]=SwatchBooker-Stapelkonvertierung
+Name[ru]=Пакетный конвертер SwatchBooker
+

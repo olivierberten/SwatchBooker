@@ -1,0 +1,8 @@
+include src/swatchbook/Fogra27L.icm
+include src/swatchbook/websvc/*.png
+include src/swatchbooker.pyw
+include src/sbconvertor.pyw
+include src/sbconvert.py
+include translations/*
+include data/*
+include msgfmt.py

@@ -29,7 +29,7 @@ import swatchbook.websvc as websvc
 
 __version__ = "0.7"
 
-swatchbooker_svg = (dirpath(__file__) or ".")+"/icons/swatchbooker.svg" 
+swatchbooker_svg = "/usr/share/icons/swatchbooker.svg" 
 
 class MainWindow(QMainWindow):
 	def __init__(self, parent=None):
@@ -463,7 +463,7 @@ if __name__ == "__main__":
 	locale = settings.value("Language").toString() or QLocale.system().name()
 	# translation of the app
 	try:
-		lang = gettext.translation('swatchbooker', 'locale', languages=[str(locale)])
+		lang = gettext.translation('swatchbooker', None, languages=[str(locale)])
 		lang.install()
 		def _(msgid):
 			return lang.gettext(msgid).decode('utf-8')

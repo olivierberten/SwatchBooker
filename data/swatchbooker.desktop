@@ -1,0 +1,15 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Name=SwatchBooker Editor
+Comment=Swatch book editor
+Exec=/usr/bin/swatchbooker %f
+MimeType=application/swatchbook;
+Categories=Qt;Graphics;
+Icon=swatchbooker
+Name[fr]=Éditeur SwatchBooker
+Name[pt_BR]=Editor do SwatchBooker
+Name[de]=SwatchBooker
+Name[ru]=Редактор SwatchBooker
+

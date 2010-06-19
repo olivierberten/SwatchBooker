@@ -1,0 +1,6 @@
+#!/bin/sh 
+
+PROGRAM=/usr/lib/swatchbooker/sbconvertor.pyw
+PYTHON=`which python`
+
+$PYTHON $PROGRAM ;
