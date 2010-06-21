@@ -2192,7 +2192,7 @@ class webOpenDlg(QDialog):
 			self.webSvcStack.addWidget(webWidget)
 			listItem = QListWidgetItem(websvc.list[svc],self.webSvcList)
 			listItem.setData(Qt.UserRole,svc)
-			icon = (dirpath(__file__) or '.')+'/swatchbook/websvc/'+svc+'.png'
+			icon = os.path.join(dirpath(websvc.__file__) or '.',svc+'.png')
 			if(QFile.exists(icon)):
 				listItem.setIcon(QIcon(icon))
 			self.webWidgets[svc] = (webWidget,current_svc.about,listItem)
