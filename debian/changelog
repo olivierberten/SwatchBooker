@@ -1,3 +1,13 @@
+swatchbooker (0.7.1-0ppa1) lucid; urgency=low
+
+  * LP:#596815
+  * LP:#597543
+  * Some more path fixes
+  * Common code moved to sbcommon.py
+  * Workaround for http://bugs.python.org/issue9062
+
+ -- Olivier Berten (selapa.net) <olivier.berten@gmail.com>  Wed, 23 Jun 2010 18:29:15 +0200
+
 swatchbooker (0.7-0ppa2) lucid; urgency=low
 
   * Initial deb release.

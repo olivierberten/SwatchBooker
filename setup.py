@@ -58,10 +58,10 @@ cmdclass = {
     'install_data': install_data,
 }
 
-
 setup(name='SwatchBooker',
-      version='0.7',
+      version='0.7.1',
 	  description='Swatch edition and conversion utilities',
+	  long_description='SwatchBooker is a swatch book editor and convertor. It includes SwatchBooker Batch Convertor.\n\nThis package provides the `swatchbook` python package.\n\nMore informations at http://www.selapa.net/swatchbooker/',
 	  author='Olivier Berten',
 	  author_email='olivier.berten@gmail.com',
 	  url='http://www.selapa.net/swatchbooker/',
@@ -72,9 +72,9 @@ setup(name='SwatchBooker',
       package_dir={'':'src'},
       package_data={'swatchbook': ['Fogra27L.icm'],
                     'swatchbook.websvc': ['*.png']},
-      scripts=['data/swatchbooker', 'data/sbconvertor','data/sbconvert'],
       data_files=[('share/applications', ['data/swatchbooker.desktop','data/sbconvertor.desktop']),
                   ('share/icons', ['data/swatchbooker.svg']),
-                  ('lib/swatchbooker', ['src/swatchbooker.pyw', 'src/sbconvertor.pyw','src/sbconvert.py'])],
+                  ('lib/swatchbooker', ['src/swatchbooker.pyw', 'src/sbconvertor.pyw','src/sbconvert.py','src/sbcommon.py']),
+                  ('bin',['data/swatchbooker', 'data/sbconvertor','data/sbconvert'])],
       cmdclass=cmdclass
       )
