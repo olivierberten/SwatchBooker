@@ -35,6 +35,8 @@ def translate_sb(app,settings,main_globals):
 	try:
 		if os.path.isdir(os.path.join((dirpath(__file__) or "."),"locale")):
 			lang = gettext.translation('swatchbooker', 'locale', languages=[str(locale)])
+		elif os.name == 'nt' and os.path.isdir(os.path.join(sys.prefix,"share","locale")):
+			lang = gettext.translation('swatchbooker', os.path.join(sys.prefix,"share","locale"), languages=[str(locale)])
 		else:
 			lang = gettext.translation('swatchbooker', None, languages=[str(locale)])
 		lang.install()

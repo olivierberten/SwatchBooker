@@ -73,8 +73,9 @@ setup(name='SwatchBooker',
       package_data={'swatchbook': ['Fogra27L.icm'],
                     'swatchbook.websvc': ['*.png']},
       data_files=[('share/applications', ['data/swatchbooker.desktop','data/sbconvertor.desktop']),
-                  ('share/icons', ['data/swatchbooker.svg']),
-                  ('lib/swatchbooker', ['src/swatchbooker.pyw', 'src/sbconvertor.pyw','src/sbconvert.py','src/sbcommon.py']),
-                  ('bin',['data/swatchbooker', 'data/sbconvertor','data/sbconvert'])],
+                  ('share/icons', ['data/swatchbooker.svg','data/swatchbooker.ico']),
+				  ('lib/swatchbooker', ['src/swatchbooker.pyw', 'src/sbconvertor.pyw','src/sbconvert.py','src/sbcommon.py']),
+				  ('bin',['data/swatchbooker', 'data/sbconvertor','data/sbconvert'])],
+      scripts=['swatchbooker_w32_postinst.py'],
       cmdclass=cmdclass
       )
