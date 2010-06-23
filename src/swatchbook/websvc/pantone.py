@@ -69,7 +69,7 @@ class pantone(WebSvc):
 				item = Color(swatchbook)
 				item.usage.append('spot')
 				id = unicode(line[1])
-				item.info.title = 'PANTONE® '+id
+				item.info.title = u'PANTONE® '+id
 				item.values[('Lab',False)] = [eval(line[2]),eval(line[3]),eval(line[4])]
 				item.values[('sRGB',False)] = [eval(line[6])/0xFF,eval(line[7])/0xFF,eval(line[8])/0xFF]
 				if line[13] == '1':
