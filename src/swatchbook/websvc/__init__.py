@@ -30,6 +30,9 @@ from string import *
 class WebSvc(object):
 	about = False
 
+# workaround for http://bugs.python.org/issue9062
+test = urllib.urlopen('http://www.selapa.net')
+
 for websvc in os.listdir((dirpath(__file__) or ".")):
 	if os.path.splitext(websvc)[1] == '.py' and websvc not in ('__init__.py','template.py'):
 		exec 'from '+os.path.splitext(websvc)[0]+' import *'
