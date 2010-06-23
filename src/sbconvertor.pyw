@@ -19,24 +19,14 @@
 #       MA 02110-1301, USA.
 #
 
-import gettext
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-
-from swatchbook import *
-import swatchbook.codecs as codecs
-import swatchbook.websvc as websvc
-
-__version__ = "0.7"
-
-swatchbooker_svg = "/usr/share/icons/swatchbooker.svg" 
+from sbcommon import *
 
 class MainWindow(QMainWindow):
 	def __init__(self, parent=None):
 		super(MainWindow, self).__init__(parent)
 		
 		self.setWindowTitle(_('SwatchBooker Batch Convertor'))
-		self.setWindowIcon(QIcon(swatchbooker_svg))
+		self.setWindowIcon(QIcon(":/swatchbooker.svg"))
 
 		mainWidget = QWidget()
 
@@ -183,7 +173,7 @@ class MainWindow(QMainWindow):
 			thread.start()
 
 	def webOpen(self):
-		dialog = webOpenDlg(self)
+		dialog = webOpenDlg(self,settings,True)
 		if dialog.exec_() and dialog.svc and dialog.ids:
 			thread = webOpenThread(dialog.svc,dialog.ids,self)
 			self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
@@ -326,133 +316,6 @@ class convertThread(QThread):
 				sb[1] = True
 				self.emit(SIGNAL("converted(int)"), self.parent().tobeconverted.index(sb))
 
-class webOpenDlg(QDialog):
-	def __init__(self, parent=None):
-		super(webOpenDlg, self).__init__(parent)
-
-		self.svc = False
-		self.ids = False
-
-		self.webSvcStack = QStackedWidget()
-		self.webSvcList = QListWidget(self)
-		palette = self.webSvcList.palette()
-		palette.setColor(QPalette.Base,Qt.transparent)
-		self.webSvcList.setPalette(palette)
-		self.webSvcList.setFrameShape(QFrame.NoFrame)
-		aboutBox = QGroupBox(_("About"))
-		self.about = QLabel()
-		self.about.setWordWrap(True)
-		self.about.setOpenExternalLinks(True)
-		aboutBoxLayout = QVBoxLayout()
-		aboutBoxLayout.addWidget(self.about)
-		aboutBox.setLayout(aboutBoxLayout)
-
-		self.webWidgets = {}
-
-		for svc in websvc.list:
-			current_svc = eval('websvc.'+svc+'()')
-			if 'swatchbook' in current_svc.content:
-				webWidget = webWidgetList(svc,self)
-			else:
-				continue
-			self.webSvcStack.addWidget(webWidget)
-			listItem = QListWidgetItem(websvc.list[svc],self.webSvcList)
-			listItem.setData(Qt.UserRole,svc)
-			icon = os.path.join(dirpath(websvc.__file__) or '.',svc+'.png')
-			if(QFile.exists(icon)):
-				listItem.setIcon(QIcon(icon))
-			self.webWidgets[svc] = (webWidget,current_svc.about,listItem)
-		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
-		self.webSvcList.sortItems()
-		if settings.contains('lastWebSvc') and str(settings.value('lastWebSvc').toString()) in self.webWidgets:
-			self.webSvcList.setCurrentItem(self.webWidgets[str(settings.value('lastWebSvc').toString())][2])
-		else:
-			self.webSvcList.setCurrentRow(0)
-		self.changeTab()
-
-		web1 = QWidget()
-		web1l = QGridLayout()
-		web1l.setContentsMargins(0,0,0,0)
-		web1l.setSpacing(0)
-		web1l.addWidget(self.webSvcList,0,0)
-		web1l.addWidget(self.webSvcStack,0,1)
-		web1.setLayout(web1l)
-
-		webl = QGridLayout()
-		webl.addWidget(web1,0,0,Qt.AlignTop)
-		webl.addWidget(aboutBox,0,1,Qt.AlignTop)
-		webl.addWidget(buttonBox,1,0,1,3)
-		self.setLayout(webl)
-
-		self.setWindowTitle(_("Add from web"))
-		self.connect(self.webSvcList,
-				SIGNAL("itemSelectionChanged()"), self.changeTab)
-		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
-		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
-
-	def changeTab(self):
-		self.svc = str(self.webSvcList.selectedItems()[0].data(Qt.UserRole).toString())
-		self.ids = False
-		self.webSvcStack.setCurrentWidget(self.webWidgets[self.svc][0])
-		self.about.setText(self.webWidgets[self.svc][1])
-		self.webSvcStack.currentWidget().load()
-		self.webSvcList.setCurrentItem(self.webSvcList.selectedItems()[0],QItemSelectionModel.Current)
-		settings.setValue('lastWebSvc',QVariant(self.svc))
-
-class webWidgetList(QTreeWidget):
-	def __init__(self, svc, parent=None):
-		super(webWidgetList, self).__init__(parent)
-		self.loaded = False
-		self.parent = parent
-		self.svc = eval('websvc.'+svc+'()')
-		self.setHeaderHidden(True)
-		self.setColumnHidden(1,True)
-		self.setFrameShape(QFrame.NoFrame)
-		self.setSelectionMode(QAbstractItemView.ExtendedSelection)
-		self.connect(self,
-				SIGNAL("itemSelectionChanged()"), self.activate)
-		self.connect(self,
-				SIGNAL("itemExpanded(QTreeWidgetItem *)"), self.nextLevel)
-
-	def activate(self):
-		self.parent.ids = False
-		if self.selectedItems():
-			self.parent.ids = []
-			for item in self.selectedItems():
-				self.parent.ids.append(unicode(item.text(1)))
-
-	def load(self):
-		if not self.loaded:
-			try:
-				root = self.svc.level0()
-			except IOError:
-				root = []
-			for item in root:
-				itemtext = QStringList()
-				itemtext << root[item] << item
-				titem = QTreeWidgetItem(self,itemtext)
-				if self.svc.nbLevels > 1:
-					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
-					titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
-			self.loaded = True
-
-	def nextLevel(self,treeItem):
-		if treeItem.childCount() == 0:
-			level = 1
-			parent = treeItem.parent()
-			while parent:
-				parent = parent.parent()
-				level += 1
-			llist = eval('self.svc.level'+str(level))(unicode(treeItem.text(1)))
-			for item in llist:
-				itemtext = QStringList()
-				itemtext << llist[item] << item
-				titem = QTreeWidgetItem(treeItem,itemtext)
-				if self.svc.nbLevels > level+1:
-					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
-					titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
-					
-
 if __name__ == "__main__":
 	app = QApplication(sys.argv)
 	app.setOrganizationName("Selapa")
@@ -460,27 +323,7 @@ if __name__ == "__main__":
 	app.setApplicationName("SwatchBooker")
 	settings = QSettings()
 
-	locale = settings.value("Language").toString() or QLocale.system().name()
-	# translation of the app
-	try:
-		lang = gettext.translation('swatchbooker', None, languages=[str(locale)])
-		lang.install()
-		def _(msgid):
-			return lang.gettext(msgid).decode('utf-8')
-
-		def n_(msgid0,msgid1,n):
-			return lang.ngettext(msgid0,msgid1,n).decode('utf-8')
-	except IOError:
-		def _(msgid):
-			return gettext.gettext(msgid).decode('utf-8')
-
-		def n_(msgid0,msgid1,n):
-			return gettext.ngettext(msgid0,msgid1,n).decode('utf-8')
-
-	# translation of the built-in dialogs
-	qtTranslator = QTranslator()
-	if qtTranslator.load("qt_" + locale, QLibraryInfo.location(QLibraryInfo.TranslationsPath)):
-		app.installTranslator(qtTranslator)
+	translate_sb(app,settings,globals())
 
 	form = MainWindow()
 	form.show()
