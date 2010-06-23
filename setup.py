@@ -59,7 +59,7 @@ cmdclass = {
 }
 
 setup(name='SwatchBooker',
-      version='0.7.1',
+      version='0.7.2',
 	  description='Swatch edition and conversion utilities',
 	  long_description='SwatchBooker is a swatch book editor and convertor. It includes SwatchBooker Batch Convertor.\n\nThis package provides the `swatchbook` python package.\n\nMore informations at http://www.selapa.net/swatchbooker/',
 	  author='Olivier Berten',

@@ -1,3 +1,11 @@
+swatchbooker (0.7.2-0ppa1) lucid; urgency=low
+
+  * Windows installer
+  * Polish translation (thanks to Michał Prędotka)
+  * Spanish translation (thanks to Guillermo Espertino)
+
+ -- Olivier Berten (selapa.net) <olivier.berten@gmail.com>  Thu, 24 Jun 2010 00:11:48 +0200
+
 swatchbooker (0.7.1-0ppa1) lucid; urgency=low
 
   * LP:#596815
