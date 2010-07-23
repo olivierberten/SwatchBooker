@@ -117,7 +117,7 @@ class sbz(SBCodec):
 				elif elem.tag == 'metadata':
 					sbz.readmeta(sitem,elem)
 				elif elem.tag == 'extra':
-					sbz.sitem.extra[xmlunescape(elem.attrib['type'])] = xmlunescape(elem.text)
+					sitem.extra[xmlunescape(elem.attrib['type'])] = xmlunescape(elem.text)
 			if sitem.info.identifier > '':
 				id = sitem.info.identifier
 			else:
