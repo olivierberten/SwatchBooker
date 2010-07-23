@@ -22,6 +22,7 @@
 from __future__ import division
 import re
 import tempfile
+import urllib
 
 from sbcommon import *
 
@@ -697,15 +698,21 @@ class MainWindow(QMainWindow):
 		self.clear()
 
 	def webOpen(self):
-		dialog = webOpenDlg(self,settings)
-		if dialog.exec_() and dialog.svc and dialog.ids:
-			self.clear()
-			thread = webOpenThread(dialog.svc, dialog.ids[0], self)
-			self.connect(thread, SIGNAL("finished()"), self.fill)
-			self.connect(thread, SIGNAL("terminated()"), self.misloaded)
-			self.fileMenu.setEnabled(False)
-			app.setOverrideCursor(Qt.WaitCursor)
-			thread.start()
+		try:
+			# workaround for http://bugs.python.org/issue9062
+			test = urllib.urlopen('http://www.selapa.net')
+	
+			dialog = webOpenDlg(self,settings)
+			if dialog.exec_() and dialog.svc and dialog.ids:
+				self.clear()
+				thread = webOpenThread(dialog.svc, dialog.ids[0], self)
+				self.connect(thread, SIGNAL("finished()"), self.fill)
+				self.connect(thread, SIGNAL("terminated()"), self.misloaded)
+				self.fileMenu.setEnabled(False)
+				app.setOverrideCursor(Qt.WaitCursor)
+				thread.start()
+		except IOError:
+			QMessageBox.critical(self, _('Error'), _("No internet connexion has been found"))
 
 	def fileOpen(self):
 		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else QDir.homePath()
