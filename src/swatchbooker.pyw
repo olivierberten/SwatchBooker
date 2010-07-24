@@ -332,14 +332,16 @@ class MainWindow(QMainWindow):
 			self.matList.setCurrentItem(self.materials[gridItem.item.material][0])
 
 	def gridEdit(self):
-		if self.cols.value() > 0:
-			self.sb.book.display['columns'] = self.cols.value()
-		elif self.cols.value() == 0:
-			self.sb.book.display['columns'] = False
-		if self.rows.value() > 0:
-			self.sb.book.display['rows'] = self.rows.value()
-		elif self.rows.value() == 0:
-			self.sb.book.display['rows'] = False
+		if self.sender() == self.cols:
+			if self.cols.value() > 0:
+				self.sb.book.display['columns'] = self.cols.value()
+			elif self.cols.value() == 0:
+				self.sb.book.display['columns'] = False
+		if self.sender() == self.rows:
+			if self.rows.value() > 0:
+				self.sb.book.display['rows'] = self.rows.value()
+			elif self.rows.value() == 0:
+				self.sb.book.display['rows'] = False
 		if self.gridHorizAction.isChecked():
 			settings.setValue("gridHoriz",QVariant(True))
 			self.colsLabel.setText(_("Rows:"))
