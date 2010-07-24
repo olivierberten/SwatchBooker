@@ -47,6 +47,7 @@ class quark_qcl(SBCodec):
 				nid = eval(name.attrib['format_id'])-1
 				prefix[nid], suffix[nid] =  xmlunescape(unicode(name.attrib['long_form'])).split('%n')
 		ui_spec =  os.path.dirname(file)+'/'+list(xml.getiterator('ui_spec'))[0].text
+		breaks = []
 		if os.path.isfile(ui_spec):
 			ui = etree.parse(ui_spec).getroot()
 			swatchbook.book.display['columns'] = eval(list(ui.getiterator('rows_per_page'))[0].text)
