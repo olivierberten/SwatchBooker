@@ -297,16 +297,19 @@ class Color(object):
 		self.swatchbook = swatchbook
 
 	def toRGB(self,prof_out=False):
-		for key in self.values:
-			if key[1]:
-				prof_in = self.swatchbook.profiles[key[1]].uri
-			else:
-				prof_in = False
-			if toRGB(key[0],self.values[key],prof_in,prof_out):
-				return toRGB(key[0],self.values[key],prof_in,prof_out)
-				break
+		if not prof_out and ('sRGB',False) in self.values:
+			return self.values[('sRGB',False)]
 		else:
-			return False
+			for key in self.values:
+				if key[1]:
+					prof_in = self.swatchbook.profiles[key[1]].uri
+				else:
+					prof_in = False
+				if toRGB(key[0],self.values[key],prof_in,prof_out):
+					return toRGB(key[0],self.values[key],prof_in,prof_out)
+					break
+			else:
+				return False
 			
 	def toRGB8(self,prof_out=False):
 		if self.toRGB(prof_out):

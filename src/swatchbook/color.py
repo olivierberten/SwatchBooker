@@ -67,7 +67,6 @@ def toRGB(model,values,prof_in=False,prof_out=False):
 		return False
 	return (R,G,B)
 
-
 def Lab2RGB(L,a,b,prof_out=False):
 
 	Lab = cmsCIELab(L,a,b)
@@ -170,29 +169,31 @@ def RGB2RGB(RR,GG,BB,prof_in=False,prof_out=False):
 		return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
 def sRGB2RGB(RR,GG,BB,prof_out=False):
-	RRGGBB = COLORW()
-	RGB = COLORW()
-	
-	RRGGBB[0] = int(RR*0xFFFF)
-	RRGGBB[1] = int(GG*0xFFFF)
-	RRGGBB[2] = int(BB*0xFFFF)
-
 	if prof_out:
+		RRGGBB = COLORW()
+		RGB = COLORW()
+	
+		RRGGBB[0] = int(RR*0xFFFF)
+		RRGGBB[1] = int(GG*0xFFFF)
+		RRGGBB[2] = int(BB*0xFFFF)
+
 		hRGB = cmsOpenProfileFromFile(prof_out,'r')
+
+		hRRGGBB = cmsCreate_sRGBProfile()
+
+		xform = cmsCreateTransform(hRRGGBB, TYPE_RGB_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+
+		cmsDoTransform(xform, RRGGBB, RGB, 1)
+
+		cmsDeleteTransform(xform)
+		cmsCloseProfile(hRGB)
+		cmsCloseProfile(hRRGGBB)
+
+		return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+
 	else:
-		hRGB = cmsCreate_sRGBProfile()
 
-	hRRGGBB = cmsCreate_sRGBProfile()
-
-	xform = cmsCreateTransform(hRRGGBB, TYPE_RGB_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
-
-	cmsDoTransform(xform, RRGGBB, RGB, 1)
-
-	cmsDeleteTransform(xform)
-	cmsCloseProfile(hRGB)
-	cmsCloseProfile(hRRGGBB)
-
-	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+		return (RR,GG,BB)
 
 #
 # color model conversion formulas: http://www.easyrgb.com/math.php
