@@ -29,11 +29,11 @@ from sbcommon import *
 NUM_RE = re.compile('([0-9]+)')
 
 availables_lang = {'de': u'Deutsch',
-				   'en': u'English',
+                   'en': u'English',
                    'fr': u'Français',
                    'pt_BR': u'Português do Brasil',
                    'ru': u'Русский',
-				   'uk': u'Українська'}
+                   'uk': u'Українська'}
 
 current_sp = False
 breaks = []
@@ -64,10 +64,10 @@ def grupdate(item):
 class MainWindow(QMainWindow):
 	def __init__(self, file=False, parent=None):
 		super(MainWindow, self).__init__(parent)
-		
+
 		self.setWindowTitle(_('SwatchBooker Editor'))
 		self.setWindowIcon(QIcon(":/swatchbooker.svg"))
-		
+
 		self.fileMenu = self.menuBar().addMenu(_("&File"))
 		viewMenu = self.menuBar().addMenu(_("&View"))
 		viewActionGroup = QActionGroup(self)
@@ -166,7 +166,7 @@ class MainWindow(QMainWindow):
 		sbLeftPane = QSplitter(Qt.Vertical)
 		sbLeftPane.addWidget(groupBoxInfo)
 		sbLeftPane.addWidget(groupBoxProfiles)
-		
+
 		# matList
 		self.groupBoxList = QGroupBox(_("Available materials"))
 
@@ -179,13 +179,13 @@ class MainWindow(QMainWindow):
 		self.matListEditMenu.addAction(_('Delete unused materials'),self.deleteUnusedMaterials)
 		self.matListEditBut.setMenu(self.matListEditMenu)
 		self.deleteMaterialAction.setEnabled(False)
-		
+
 		sbList = QGridLayout()
 		sbList.addWidget(self.matList,0,0)
 		sbList.addWidget(self.matNbLabel,1,0)
 		sbList.addWidget(self.matListEditBut,0,1,Qt.AlignTop)
 		self.groupBoxList.setLayout(sbList)
-		
+
 		# sbTree
 		self.groupBoxTree = QGroupBox(_("Tree view"))
 
@@ -201,7 +201,7 @@ class MainWindow(QMainWindow):
 		self.deleteAction.setShortcut(Qt.Key_Delete)
 		self.swTEditBut.setMenu(self.swTEditMenu)
 		self.deleteAction.setEnabled(False)
-		
+
 		sbTree = QGridLayout()
 		sbTree.addWidget(self.treeWidget,0,0)
 		sbTree.addWidget(self.swNbLabel,1,0)
@@ -409,7 +409,7 @@ class MainWindow(QMainWindow):
 
 	def addColorSwatch(self):
 		self.addSwatch('Color')
-		
+
 	def addSwatch(self,type):
 		selected = self.treeWidget.selectedItems()
 		id = eval('self.add'+type+'()')
@@ -650,7 +650,7 @@ class MainWindow(QMainWindow):
 		for file in files:
 			if not QFile.exists(file):
 				files.removeAll(file)
-		
+
 		if fname:
 			files.removeAll(fname)
 			files.prepend(fname)
@@ -662,7 +662,7 @@ class MainWindow(QMainWindow):
 		numRecentFiles = min(files.count(), settings.value("MaxRecentFiles").toInt()[0])
 
 		recentFileActs = []
-		
+
 		for h in range(settings.value("MaxRecentFiles").toInt()[0]):
 			recentFileActs.append(QAction(self))
 			recentFileActs[h].setVisible(False)
@@ -674,7 +674,7 @@ class MainWindow(QMainWindow):
 			recentFileActs[i].setText(text)
 			recentFileActs[i].setData(QVariant(files[i]))
 			recentFileActs[i].setVisible(True)
-			
+
 		for j in range(numRecentFiles, settings.value("MaxRecentFiles").toInt()[0]):
 			recentFileActs[j].setVisible(False)
 
@@ -971,22 +971,22 @@ class InfoWidget(QWidget):
 		layout.addWidget(self.title, i, 1)
 		layout.addWidget(self.l10nTitle, i, 2)
 		i += 1
-		
+
 		layout.addWidget(QLabel(_("Description:")), i, 0, 1, 2)
 		layout.addWidget(self.description, i+1, 0, 1, 2)
 		layout.addWidget(self.l10nDescription, i+1, 2, Qt.AlignTop)
 		i = i+2
-		
+
 		if item.__class__.__name__ in ('SwatchBook',):
 			layout.addWidget(QLabel(_("Rights:")), i, 0, 1, 2)
 			layout.addWidget(self.rights, i+1, 0, 1, 2)
 			layout.addWidget(self.l10nRights, i+1, 2, Qt.AlignTop)
 			i = i+2
-		
+
 			layout.addWidget(QLabel(_("License:")), i, 0)
 			layout.addWidget(self.license, i, 1, 1, 2)
 			i += 1
-		
+
 		self.setLayout(layout)
 		self.update(item)
 
@@ -1068,11 +1068,11 @@ class l10nWidget(QWidget):
 	def __init__(self, caller, info, long=False, parent=None):
 		super(l10nWidget, self).__init__(parent)
 		self.setWindowFlags(Qt.Popup)
-		
+
 		self.caller = caller
 		self.info = info
 		self.long = long
-		
+
 		list = QWidget()
 		self.l10nList = QVBoxLayout()
 		self.l10nList.setContentsMargins(0,0,0,0)
@@ -1120,15 +1120,15 @@ class l10nWidget(QWidget):
 
 	def hideEvent(self, e):
 		self.caller.setDown(False)
-		
+
 class l10nItem(QWidget):
 	def __init__(self, lang='', text='', long=False, parent=None):
 		super(l10nItem, self).__init__(parent)
-		
+
 		self.lang = lang
 		self.text = text
 		self.parent = parent
-		
+
 		layout = QHBoxLayout()
 		layout.setContentsMargins(0,0,0,0)
 		self.langEdit = QLineEdit(lang)
@@ -1547,7 +1547,7 @@ class sbGridWidget(QListWidget):
 class GroupWidget(QGroupBox):
 	def __init__(self, item, parent):
 		super(GroupWidget, self).__init__(parent)
-		
+
 		self.setTitle(_("Group"))
 		self.infoWidget = InfoWidget(item,self)
 		infoScrollArea = QScrollArea()
@@ -1615,7 +1615,7 @@ class MaterialWidget(QGroupBox):
 			self.swExtra.setItem(row, 1, val)
 			row += 1
 			self.tExtra.append([unicode(extra),unicode(self.item.extra[extra])])
-			
+
 		self.connect(self.swExtra,
 				SIGNAL("cellChanged(int,int)"), self.editExtra)
 		self.connect(self.swExtra,
@@ -1629,7 +1629,7 @@ class MaterialWidget(QGroupBox):
 		if not hasattr(self,"tExtra"):
 			self.tExtra = []
 		self.tExtra.append([None,None])
-		
+
 	def remExtra(self):
 		if self.swExtra.item(self.swExtra.currentRow(),0):
 			extra = unicode(self.swExtra.item(self.swExtra.currentRow(),0).text())
@@ -1757,7 +1757,7 @@ class ColorWidget(QWidget):
 				grid.addWidget(QLabel("%"), count, 2)
 				val.setText(str(round(values[count]*100,2)))
 				count += 1
-				
+
 		valWidget.setLayout(grid)
 		valScrollArea = QScrollArea()
 		valScrollArea.setWidget(valWidget)
@@ -1766,7 +1766,7 @@ class ColorWidget(QWidget):
 		palette.setColor(QPalette.Window,Qt.transparent)
 		valScrollArea.viewport().setPalette(palette)
 		valScrollArea.setFrameShape(QFrame.NoFrame)
-		
+
 		spaceWidget = QWidget()
 		spaceLayout = QVBoxLayout()
 		spaceLayout.addWidget(valScrollArea)
@@ -1888,7 +1888,7 @@ class ColorWidget(QWidget):
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
 		self.set_preview()
-		
+
 	def getProfList(self,model):
 		profList = []
 		if model in form.profiles:
@@ -1976,14 +1976,14 @@ class drawIconThread(QThread):
 class SettingsDlg(QDialog):
 	def __init__(self, parent=None):
 		super(SettingsDlg, self).__init__(parent)
-		
+
 		self.mntrProfile = False
 		self.cmykProfile = False
 		self.profiles = []
 		self.listProfiles()
-		
+
 		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
-		
+
 		self.mntrCombo = QComboBox()
 		self.cmykCombo = QComboBox()
 		self.mntrCombo.addItem(_('sRGB built-in'))
@@ -2005,7 +2005,7 @@ class SettingsDlg(QDialog):
 			self.cmykCombo.addItem(prof['desc'][prof['desc'].keys()[0]],settings.value("cmykProfile"))
 		self.mntrCombo.addItem(_("Other..."))
 		self.cmykCombo.addItem(_("Other..."))
-		
+
 		profilesBox = QGroupBox(_("Color profiles"))
 		profilesLayout = QVBoxLayout()
 		profilesLayout.addWidget(QLabel(_("Display Profile")))
@@ -2110,7 +2110,7 @@ class SettingsDlg(QDialog):
 				self.cmykCombo.setCurrentIndex(self.cmykCombo.findData(self.cmykProfile) or 0)
 			else:
 				self.cmykCombo.setCurrentIndex(0)
-		
+
 	def setLang(self,index):
 		if index > 0:
 			self.lang = self.sender().itemData(index)
@@ -2166,7 +2166,7 @@ if __name__ == "__main__":
 	settings = QSettings()
 
 	translate_sb(app,settings,globals())
-	
+
 	if len(sys.argv) > 1:
 		form = MainWindow(sys.argv[1])
 	else:
