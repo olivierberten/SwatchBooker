@@ -42,6 +42,7 @@ breaks = []
 models = SortedDict()
 models['sRGB'] = (('R',1),('G',1),('B',1))
 models['Lab'] = (('L',0),('a',0),('b',0))
+models['LCH'] = (('L',0),('C',0),('H',0))
 models['XYZ'] = (('X',0),('Y',0),('Z',0))
 models['RGB'] = (('R',1),('G',1),('B',1))
 models['CMY'] = (('C',1),('M',1),('Y',1))
@@ -1790,9 +1791,9 @@ class ColorWidget(QWidget):
 		spaceLayout = QVBoxLayout()
 		spaceLayout.addWidget(valScrollArea)
 
-		if model not in ('Lab','XYZ','sRGB'):
+		if model not in ('Lab','LCH','XYZ','sRGB'):
 			spaceLayout.addWidget(QLabel(_("Profile")))
-			if model in ('RGB','HSL','HSV','YIQ','CMY'):
+			if model in ('HSL','HSV','YIQ','CMY'):
 				modellist = 'RGB'
 			else:
 				modellist = model

@@ -23,6 +23,7 @@ from __future__ import division
 from lcms import *
 from icc import *
 import os.path
+import math
 
 def dirpath(name):
 	if not name:
@@ -55,6 +56,9 @@ def toRGB(model,values,prof_in=False,prof_out=False):
 	elif model == 'Lab':
 		L,a,b = values
 		R,G,B = Lab2RGB(L,a,b,prof_out)
+	elif model == 'LCH':
+		L,C,H = values
+		R,G,B = LCH2RGB(L,C,H,prof_out)
 	elif model == 'XYZ':
 		X,Y,Z = values
 		R,G,B = XYZ2RGB(X,Y,Z,prof_out)
@@ -71,7 +75,30 @@ def Lab2RGB(L,a,b,prof_out=False):
 
 	Lab = cmsCIELab(L,a,b)
 	RGB = COLORW()
-	
+
+	hLab    = cmsCreateLabProfile(None)
+	if prof_out:
+		hRGB = cmsOpenProfileFromFile(prof_out,'r')
+	else:
+		hRGB = cmsCreate_sRGBProfile()
+
+	xform = cmsCreateTransform(hLab, TYPE_Lab_DBL, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+
+	cmsDoTransform(xform, Lab, RGB, 1)
+
+	cmsDeleteTransform(xform)
+	cmsCloseProfile(hRGB)
+	cmsCloseProfile(hLab)
+
+	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+
+def LCH2RGB(L,C,H,prof_out=False):
+
+	LCH = cmsCIELCh(L,C,H)
+	Lab = cmsCIELab()
+	cmsLCh2Lab(Lab,LCH)
+	RGB = COLORW()
+
 	hLab    = cmsCreateLabProfile(None)
 	if prof_out:
 		hRGB = cmsOpenProfileFromFile(prof_out,'r')
@@ -92,7 +119,7 @@ def XYZ2RGB(X,Y,Z,prof_out=False):
 
 	XYZ = cmsCIEXYZ(X/100,Y/100,Z/100)
 	RGB = COLORW()
-	
+
 	hXYZ    = cmsCreateXYZProfile()
 	if prof_out:
 		hRGB = cmsOpenProfileFromFile(prof_out,'r')
@@ -110,10 +137,10 @@ def XYZ2RGB(X,Y,Z,prof_out=False):
 	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
 
 def CMYK2RGB(C,M,Y,K,prof_in=False,prof_out=False):
-	
+
 	CMYK = COLORW()
 	RGB = COLORW()
-	
+
 	CMYK[0] = int(C*0xFFFF)
 	CMYK[1] = int(M*0xFFFF)
 	CMYK[2] = int(Y*0xFFFF)
@@ -144,7 +171,7 @@ def RGB2RGB(RR,GG,BB,prof_in=False,prof_out=False):
 	else:
 		RRGGBB = COLORW()
 		RGB = COLORW()
-		
+
 		RRGGBB[0] = int(RR*0xFFFF)
 		RRGGBB[1] = int(GG*0xFFFF)
 		RRGGBB[2] = int(BB*0xFFFF)
@@ -172,7 +199,7 @@ def sRGB2RGB(RR,GG,BB,prof_out=False):
 	if prof_out:
 		RRGGBB = COLORW()
 		RGB = COLORW()
-	
+
 		RRGGBB[0] = int(RR*0xFFFF)
 		RRGGBB[1] = int(GG*0xFFFF)
 		RRGGBB[2] = int(BB*0xFFFF)
@@ -245,7 +272,13 @@ def XYZ2Lab(X,Y,Z): # This formula is used in the ASE codec
 	L = (116*Y)-16
 	a = 500*(X-Y)
 	b = 200*(Y-Z)
-	
+
+	return (L,a,b)
+
+def LCH2Lab(L,C,H):
+	a = math.cos(math.radians(H)) * C
+	b = math.sin(math.radians(H)) * C
+
 	return (L,a,b)
 
 def HSL2RGB(H,S,L):
@@ -264,7 +297,7 @@ def HSL2RGB(H,S,L):
 		R = Hue_2_RGB( var_1, var_2, H + ( 1 / 3 ) )
 		G = Hue_2_RGB( var_1, var_2, H )
 		B = Hue_2_RGB( var_1, var_2, H - ( 1 / 3 ) )
-	
+
 	return (R,G,B)
 
 def Hue_2_RGB(v1,v2,vH):
@@ -278,7 +311,7 @@ def Hue_2_RGB(v1,v2,vH):
 		return ( v2 )
 	if ( ( 3 * vH ) < 2 ):
 		return ( v1 + ( v2 - v1 ) * ( ( 2 / 3 ) - vH ) * 6 )
-	
+
 	return ( v1 )
 
 def HSV2RGB(H,S,V):

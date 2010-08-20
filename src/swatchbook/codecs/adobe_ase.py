@@ -150,6 +150,11 @@ class adobe_ase(SBCodec):
 						L,a,b = XYZ2Lab(X,Y,Z)
 						block_size += 12
 						values = 'LAB '+struct.pack('>3f',L/100,a,b)
+					elif 'LCH' in values:
+						L,C,H = values['LCH']
+						L,a,b = LCH2Lab(L,C,H)
+						block_size += 12
+						values = 'LAB '+struct.pack('>3f',L/100,a,b)
 					elif item.toRGB():
 						R,G,B = item.toRGB()
 						block_size += 12

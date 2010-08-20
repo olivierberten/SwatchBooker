@@ -179,12 +179,6 @@ class Book(object):
 		self.items = [] # Group,Swatch,Spacer,Break
 
 class SwatchBook(object):
-	"""Output values
-       sRGB,RGB,HSV,HSL,CMY,CMYK,nCLR: 0 -> 1
-       YIQ: Y 0 -> 1 : IQ -0.5 -> 0.5
-       Lab: L 0 -> 100 : ab -128 -> 127
-       XYZ: 0 -> ~100 (cfr. ref)"""
-
 	def __init__(self, file=False,codec=False,websvc=False,webid=False):
 		self.info = Info()
 		self.profiles = {}
@@ -289,6 +283,13 @@ class Break(object):
 		pass
 
 class Color(object):
+	"""Output values
+       sRGB,RGB,HSV,HSL,CMY,CMYK,nCLR: 0 -> 1
+       YIQ: Y 0 -> 1 : IQ -0.5 -> 0.5
+       Lab: L 0 -> 100 : ab -128 -> 127
+       LCH: LC 0 -> 100 : H 0 -> 360
+       XYZ: 0 -> ~100 (cfr. ref)"""
+
 	def __init__(self,swatchbook=None):
 		self.info = Info()
 		self.values = SortedDict()
