@@ -119,7 +119,6 @@ class MainWindow(QMainWindow):
 
 		breaks = []
 		self.materials = {}
-		self.swatchCount = 0
 		self.profiles = {}
 		self.groups = {}
 		self.items = {}
@@ -276,7 +275,6 @@ class MainWindow(QMainWindow):
 		global breaks
 		breaks = []
 		self.materials = {}
-		self.swatchCount = 0
 		self.profiles = {}
 		self.groups = {}
 		self.items = {}
@@ -360,8 +358,9 @@ class MainWindow(QMainWindow):
 		for id in self.materials.keys():
 			if len(self.materials[id][1]) > 0:
 				usedMaterials += 1
+		swatchCount = self.sb.book.count(True)
 		self.matNbLabel.setText(n_('%s material','%s materials',len(self.materials)) % len(self.materials) + " (" + n_('%s used','%s used',usedMaterials) % usedMaterials + ")")
-		self.swNbLabel.setText(n_('%s swatch','%s swatches',self.swatchCount) % self.swatchCount + " (" + n_('%s duplicate','%s duplicates',(self.swatchCount-usedMaterials)) % (self.swatchCount-usedMaterials) + ")")
+		self.swNbLabel.setText(n_('%s swatch','%s swatches',swatchCount) % swatchCount + " (" + n_('%s duplicate','%s duplicates',(swatchCount-usedMaterials)) % (swatchCount-usedMaterials) + ")")
 
 	def addMaterial(self,id):
 		listItemMaterial(id)
@@ -391,7 +390,6 @@ class MainWindow(QMainWindow):
 				treeItem.parent().takeChild(treeItem.parent().indexOfChild(treeItem))
 			else:
 				self.treeWidget.takeTopLevelItem(self.treeWidget.indexOfTopLevelItem(treeItem))
-			self.swatchCount -= 1
 		treeItem = None
 		for gridItem in self.materials[item.id][2]:
 			self.gridWidget.takeItem(self.gridWidget.row(gridItem))
@@ -460,7 +458,6 @@ class MainWindow(QMainWindow):
 		self.items[treeItem] = gridItem
 		self.treeWidget.setCurrentItem(treeItem)
 		self.gridWidget.update()
-		self.swatchCount += 1
 		self.updSwatchCount()
 
 	def addBreak(self):
@@ -571,7 +568,6 @@ class MainWindow(QMainWindow):
 					self.materials[selTItem.item.material][1].remove(selTItem)
 					self.materials[selTItem.item.material][2].remove(self.items[selTItem])
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[selTItem]))
-				self.swatchCount -= 1
 			if isinstance(selTItem, treeItemBreak):
 				global breaks
 				breaks.remove(self.items[selTItem])
@@ -601,7 +597,6 @@ class MainWindow(QMainWindow):
 				if isinstance(group.child(i),treeItemSwatch):
 					self.materials[group.child(i).item.material][1].remove(group.child(i))
 					self.materials[group.child(i).item.material][2].remove(self.items[group.child(i)])
-					self.swatchCount -= 1
 				self.gridWidget.takeItem(self.gridWidget.row(self.items[group.child(i)]))
 			group.item.items.remove(group.child(i).item)
 
@@ -1437,7 +1432,6 @@ class sbTreeWidget(QTreeWidget):
 			form.materials[id][2].append(newGridItem)
 			form.items[newTreeItem] = newGridItem
 			self.setCurrentItem(newTreeItem)
-			form.swatchCount += 1
 			form.updSwatchCount()
 		form.gridWidget.update()
 		form.sw_display_tree()
@@ -1985,7 +1979,6 @@ class fillViewsThread(QThread):
 				treeItem = treeItemSwatch(item,parent)
 				gridItem = gridItemSwatch(item,self.parent().gridWidget)
 				form.items[treeItem] = gridItem
-				form.swatchCount += 1
 			self.emit(SIGNAL("filled()"))
 
 class drawIconThread(QThread):

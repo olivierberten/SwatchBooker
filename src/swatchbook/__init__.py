@@ -178,6 +178,15 @@ class Book(object):
 		                'columns': False}
 		self.items = [] # Group,Swatch,Spacer,Break
 
+	def count(self,swatchesonly=False):
+		count = len(self.items)
+		for e in self.items:
+			if isinstance(e,Group):
+				count += e.count(swatchesonly)
+			if swatchesonly and not isinstance(e,Swatch):
+				count -=1
+		return count
+
 class SwatchBook(object):
 	def __init__(self, file=False,codec=False,websvc=False,webid=False):
 		self.info = Info()
@@ -269,6 +278,15 @@ class Group(object):
 	def __init__(self,parent=None):
 		self.info = Info()
 		self.items = []
+
+	def count(self,swatchesonly=False):
+		count = len(self.items)
+		for e in self.items:
+			if isinstance(e,Group):
+				count += e.count(swatchesonly)
+			if swatchesonly and not isinstance(e,Swatch):
+				count -=1
+		return count
 
 class Swatch(object):
 	def __init__(self,material,parent=None):
