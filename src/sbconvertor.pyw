@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
 
 		mainWidget = QWidget()
 
-		self.threads = 0
+		self.threads = []
 		self.tobeadded = 0
 		self.added = 0
 		self.tobeconverted = []
@@ -159,38 +159,40 @@ class MainWindow(QMainWindow):
 		if flist.count() > 0:
 			settings.setValue('lastOpenCodec',QVariant(filetype))
 			settings.setValue('lastOpenDir',QVariant(os.path.dirname(unicode(flist[0]))))
-			thread = fileOpenThread(flist,self)
-			self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
-			self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
-			self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
 			self.tobeadded += flist.count()
 			self.progress.setMaximum(self.tobeadded)
 			self.progress.setValue(self.added)
 			self.progress.show()
-			self.threads += 1
 			self.convertButton.setEnabled(False)
 			self.removeAllButton.setEnabled(False)
-			thread.start()
+			for fname in flist:
+				thread = fileOpenThread(fname,self)
+				self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
+				self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
+				self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
+				self.threads.append(thread)
+				thread.start()
 
 	def webOpen(self):
 		dialog = webOpenDlg(self,settings,True)
 		if dialog.exec_() and dialog.svc and dialog.ids:
-			thread = webOpenThread(dialog.svc,dialog.ids,self)
-			self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
-			self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
-			self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
 			self.tobeadded += len(dialog.ids)
 			self.progress.setMaximum(self.tobeadded)
 			self.progress.setValue(self.added)
 			self.progress.show()
-			self.threads += 1
 			self.convertButton.setEnabled(False)
 			self.removeAllButton.setEnabled(False)
-			thread.start()
+			for id in dialog.ids:
+				thread = webOpenThread(dialog.svc,id,self)
+				self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
+				self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
+				self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
+				self.threads.append(thread)
+				thread.start()
 
 	def toggleAdding(self):
-		self.threads -= 1
-		if self.threads == 0:
+		self.threads.remove(self.sender())
+		if len(self.threads) == 0:
 			if  len(self.tobeconverted) > 0:
 				self.removeAllButton.setEnabled(True)
 				self.convertButton.setEnabled(True)
@@ -263,38 +265,36 @@ class MainWindow(QMainWindow):
 #		self.list.setCurrentRow(-1)
 
 class fileOpenThread(QThread):
-	def __init__(self, flist, parent = None):
+	def __init__(self, fname, parent = None):
 		super(fileOpenThread, self).__init__(parent)
-		self.flist = flist
+		self.fname = fname
 
 	def run(self):
-		for fname in self.flist:
-			try:
-				sb = SwatchBook(unicode(fname))
-				self.parent().tobeconverted.append([sb,False])
-				row = self.parent().list.rowCount()
-				self.parent().list.insertRow(row)
-				self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
-				self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
-				self.emit(SIGNAL("added()"))
-			except FileFormatError:
-				pass
-
-class webOpenThread(QThread):
-	def __init__(self, svc, ids, parent = None):
-		super(webOpenThread, self).__init__(parent)
-		self.svc = svc
-		self.ids = ids
-
-	def run(self):
-		for id in self.ids:
-			sb = SwatchBook(websvc=self.svc,webid=id)
+		try:
+			sb = SwatchBook(unicode(self.fname))
 			self.parent().tobeconverted.append([sb,False])
 			row = self.parent().list.rowCount()
 			self.parent().list.insertRow(row)
 			self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
-			self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
+#			self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
 			self.emit(SIGNAL("added()"))
+		except FileFormatError:
+			pass
+
+class webOpenThread(QThread):
+	def __init__(self, svc, id, parent = None):
+		super(webOpenThread, self).__init__(parent)
+		self.svc = svc
+		self.id = id
+
+	def run(self):
+		sb = SwatchBook(websvc=self.svc,webid=self.id)
+		self.parent().tobeconverted.append([sb,False])
+		row = self.parent().list.rowCount()
+		self.parent().list.insertRow(row)
+		self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
+#		self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
+		self.emit(SIGNAL("added()"))
 
 class convertThread(QThread):
 	def __init__(self, path, codec, parent = None):
