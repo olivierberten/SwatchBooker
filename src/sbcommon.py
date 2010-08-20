@@ -171,12 +171,27 @@ class webWidgetList(QTreeWidget):
 			except IOError:
 				root = []
 			for item in root:
-				itemtext = QStringList()
-				itemtext << root[item] << item
-				titem = QTreeWidgetItem(self,itemtext)
-				if self.svc.nbLevels > 1:
-					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
-					titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
+				if isinstance(root[item],SortedDict):
+					pitemtext = QStringList()
+					pitemtext << root[item][0] << item
+					pitem = QTreeWidgetItem(self,pitemtext)
+					pitem.setFlags(pitem.flags() & ~(Qt.ItemIsSelectable))
+					for sitem in root[item]:
+						if sitem == 0:
+							continue
+						itemtext = QStringList()
+						itemtext << root[item][sitem] << str(sitem)
+						titem = QTreeWidgetItem(pitem,itemtext)
+						if self.svc.nbLevels > 1:
+							titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
+							titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
+				else:
+					itemtext = QStringList()
+					itemtext << root[item] << item
+					titem = QTreeWidgetItem(self,itemtext)
+					if self.svc.nbLevels > 1:
+						titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
+						titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
 			self.loaded = True
 
 	def nextLevel(self,treeItem):
