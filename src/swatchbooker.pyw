@@ -710,8 +710,10 @@ class MainWindow(QMainWindow):
 				thread = webOpenThread(dialog.svc, dialog.ids[0], self)
 				self.connect(thread, SIGNAL("finished()"), self.fill)
 				self.connect(thread, SIGNAL("terminated()"), self.misloaded)
-				self.fileMenu.setEnabled(False)
 				app.setOverrideCursor(Qt.WaitCursor)
+				self.loadingDlg = LoadingDlg(self)
+				self.loadingDlg.label.setText(_("Loading swatch book"))
+				self.loadingDlg.show()
 				thread.start()
 		except IOError:
 			QMessageBox.critical(self, _('Error'), _("No internet connexion has been found"))
@@ -751,12 +753,18 @@ class MainWindow(QMainWindow):
 		self.connect(thread, SIGNAL("finished()"), self.fill)
 		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
 		self.connect(thread, SIGNAL("fileFormatError()"), self.fileFormatError)
-		self.fileMenu.setEnabled(False)
 		app.setOverrideCursor(Qt.WaitCursor)
+		self.loadingDlg = LoadingDlg(self)
+		self.loadingDlg.label.setText(_("Loading swatch"))
+		self.loadingDlg.show()
 		thread.start()
 
 	def fill(self):
 		self.sbInfo.update(self.sb)
+		self.loadingDlg.label.setText(_("Filling views"))
+		self.loadingDlg.progress.setMaximum(self.sb.book.count()+len(self.sb.materials))
+		self.loadingDlg.progress.setValue(0)
+		self.loadingDlg.progress.show()
 
 		for prof in self.sb.profiles:
 			self.addProfileToList(prof,self.sb.profiles[prof])
@@ -769,11 +777,15 @@ class MainWindow(QMainWindow):
 			self.updateFileMenu(self.filename)
 		thread = fillViewsThread(self)
 		self.connect(thread, SIGNAL("finished()"), self.buildIcons)
+		self.connect(thread, SIGNAL("filled()"), self.filled)
 		thread.start()
 
 	def misloaded(self):
 		app.restoreOverrideCursor()
 		QMessageBox.critical(self, _("Error"), _("There was an error while opening that file"))
+
+	def filled(self):
+		self.loadingDlg.progress.setValue(self.loadingDlg.progress.value()+1)
 
 	def fileFormatError(self):
 		app.restoreOverrideCursor()
@@ -781,6 +793,10 @@ class MainWindow(QMainWindow):
 
 	def buildIcons(self):
 		self.updSwatchCount()
+		self.loadingDlg.label.setText(_("Drawing icons"))
+		self.loadingDlg.progress.setMaximum(len(self.sb.materials))
+		self.loadingDlg.progress.setValue(0)
+		self.loadingDlg.progress.show()
 		self.treeWidget.expandAll()
 		if len(self.materials) > 0:
 			for id in self.materials:
@@ -836,18 +852,19 @@ class MainWindow(QMainWindow):
 
 		return [normal,selected]
 
-
 	def addIcon(self,id,normal,selected):
+		if self.loadingDlg.isVisible():
+			self.loadingDlg.progress.setValue(self.loadingDlg.progress.value()+1)
 		id = unicode(id)
 		icon = QIcon(QPixmap.fromImage(normal))
 		icon.addPixmap(QPixmap.fromImage(selected),QIcon.Selected)
 		self.materials[id][3] = icon
 		swupdate(id)
-		self.gridWidget.update()
 
 	def fullyLoaded(self):
-		self.fileMenu.setEnabled(True)
+		self.gridWidget.update()
 		app.restoreOverrideCursor()
+		self.loadingDlg.hide()
 
 	def fileSave(self):
 		if self.filename and self.codec:
@@ -1931,6 +1948,7 @@ class fillViewsThread(QThread):
 		form.matList.setSortingEnabled(False)
 		for id in form.sb.materials:
 			form.addMaterial(id)
+			self.emit(SIGNAL("filled()"))
 		form.matList.sortItems()
 		form.matList.setSortingEnabled(True)
 		self.fillViews(self.parent().sb.book.items)
@@ -1965,6 +1983,7 @@ class fillViewsThread(QThread):
 				gridItem = gridItemSwatch(item,self.parent().gridWidget)
 				form.items[treeItem] = gridItem
 				form.swatchCount += 1
+			self.emit(SIGNAL("filled()"))
 
 class drawIconThread(QThread):
 	def __init__(self, id, parent=None):
@@ -1974,6 +1993,21 @@ class drawIconThread(QThread):
 	def run(self):
 		icon = self.parent().drawIcon(self.id)
 		self.emit(SIGNAL("icon(QString,QImage,QImage)"),self.id,icon[0],icon[1])
+
+class LoadingDlg(QDialog):
+	def __init__(self, parent=None):
+		super(LoadingDlg, self).__init__(parent)
+		self.setModal(True)
+		self.setWindowFlags(Qt.ToolTip)
+
+		self.label = QLabel()
+		self.progress = QProgressBar()
+		self.progress.hide()
+
+		layout = QVBoxLayout()
+		layout.addWidget(self.label)
+		layout.addWidget(self.progress)
+		self.setLayout(layout)
 
 class SettingsDlg(QDialog):
 	def __init__(self, parent=None):
