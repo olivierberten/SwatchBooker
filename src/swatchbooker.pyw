@@ -30,7 +30,9 @@ NUM_RE = re.compile('([0-9]+)')
 
 availables_lang = {'de': u'Deutsch',
                    'en': u'English',
+                   'es': u'Español',
                    'fr': u'Français',
+                   'pl': u'Polski',
                    'pt_BR': u'Português do Brasil',
                    'ru': u'Русский',
                    'uk': u'Українська'}
