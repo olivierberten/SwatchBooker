@@ -24,7 +24,7 @@ import sys
 from datetime import *
 from color import *
 
-__version__ = "0.7"
+VERSION = "0.7.3"
 
 # from http://code.djangoproject.com/browser/django/trunk/django/utils/datastructures.py
 class SortedDict(dict):
