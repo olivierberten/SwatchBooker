@@ -174,21 +174,27 @@ class MainWindow(QMainWindow):
 				thread.start()
 
 	def webOpen(self):
-		dialog = webOpenDlg(self,settings,True)
-		if dialog.exec_() and dialog.svc and dialog.ids:
-			self.tobeadded += len(dialog.ids)
-			self.progress.setMaximum(self.tobeadded)
-			self.progress.setValue(self.added)
-			self.progress.show()
-			self.convertButton.setEnabled(False)
-			self.removeAllButton.setEnabled(False)
-			for id in dialog.ids:
-				thread = webOpenThread(dialog.svc,id,self)
-				self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
-				self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
-				self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
-				self.threads.append(thread)
-				thread.start()
+		try:
+			# workaround for http://bugs.python.org/issue9062
+			test = urllib.urlopen('http://www.selapa.net')
+	
+			dialog = webOpenDlg(self,settings,True)
+			if dialog.exec_() and dialog.svc and dialog.ids:
+				self.tobeadded += len(dialog.ids)
+				self.progress.setMaximum(self.tobeadded)
+				self.progress.setValue(self.added)
+				self.progress.show()
+				self.convertButton.setEnabled(False)
+				self.removeAllButton.setEnabled(False)
+				for id in dialog.ids:
+					thread = webOpenThread(dialog.svc,id,self)
+					self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
+					self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
+					self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
+					self.threads.append(thread)
+					thread.start()
+		except IOError:
+			QMessageBox.critical(self, _('Error'), _("No internet connexion has been found"))
 
 	def toggleAdding(self):
 		self.threads.remove(self.sender())

@@ -22,7 +22,6 @@
 from __future__ import division
 import re
 import tempfile
-import urllib
 
 from sbcommon import *
 
