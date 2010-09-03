@@ -70,6 +70,7 @@ class MainWindow(QMainWindow):
 		self.setWindowTitle(_('SwatchBooker Editor'))
 		self.setWindowIcon(QIcon(":/swatchbooker.svg"))
 
+		self.loadingDlg = LoadingDlg(self)
 		self.fileMenu = self.menuBar().addMenu(_("&File"))
 		viewMenu = self.menuBar().addMenu(_("&View"))
 		viewActionGroup = QActionGroup(self)
@@ -708,7 +709,6 @@ class MainWindow(QMainWindow):
 				self.connect(thread, SIGNAL("finished()"), self.fill)
 				self.connect(thread, SIGNAL("terminated()"), self.misloaded)
 				app.setOverrideCursor(Qt.WaitCursor)
-				self.loadingDlg = LoadingDlg(self)
 				self.loadingDlg.label.setText(_("Loading swatch book"))
 				self.loadingDlg.show()
 				thread.start()
@@ -751,7 +751,6 @@ class MainWindow(QMainWindow):
 		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
 		self.connect(thread, SIGNAL("fileFormatError()"), self.fileFormatError)
 		app.setOverrideCursor(Qt.WaitCursor)
-		self.loadingDlg = LoadingDlg(self)
 		self.loadingDlg.label.setText(_("Loading swatch"))
 		self.loadingDlg.show()
 		thread.start()
