@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class ooo(SBCodec):
+class ooo_soc(SBCodec):
 	"""OpenOffice.org Color"""
 	ext = ('soc',)
 	@staticmethod
@@ -35,7 +35,6 @@ class ooo(SBCodec):
 	@staticmethod
 	def read(swatchbook,file):
 		xml = etree.parse(file).getroot()
-		i = 0
 		if xml.tag == '{http://openoffice.org/2000/office}color-table': # OOo 2
 			draw = '{http://openoffice.org/2000/drawing}'
 		elif xml.tag == '{http://openoffice.org/2004/office}color-table': # OOo 3

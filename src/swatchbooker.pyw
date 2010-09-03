@@ -831,6 +831,16 @@ class MainWindow(QMainWindow):
 			else:
 				paint.drawRect(0, 0, 15, 15)
 			paint.end()
+		elif isinstance(material,Pattern):
+			image = QImage(os.path.join(material.swatchbook.tmpdir,"patterns",material.info.identifier))
+			paint.begin(pix)
+			paint.drawImage(0,0,image.scaled(16,16,Qt.KeepAspectRatioByExpanding))
+			normal = pix.copy()
+			paint.setPen(QColor(255,255,255))
+			paint.drawRect(0, 0, 15, 15)
+			paint.setPen(Qt.DotLine)
+			paint.drawRect(0, 0, 15, 15)
+			paint.end()
 		else:
 			paint.begin(pix)
 			paint.setPen(QPen(QColor(218,218,218),3.0))
@@ -1590,6 +1600,9 @@ class MaterialWidget(QGroupBox):
 		if isinstance(self.item, Color):
 			self.setTitle(_("Color"))
 			self.swatch = ColorWidget(id,self)
+		elif isinstance(self.item, Pattern):
+			self.setTitle(_("Pattern"))
+			self.swatch = PatternWidget(id,self)
 
 		self.swExtra = QTableWidget()
 		self.swExtra.setColumnCount(2)
@@ -1672,7 +1685,7 @@ class ColorWidget(QWidget):
 
 		self.item = form.sb.materials[id]
 
-		self.sample = QLabel()
+		self.sample = SwatchPreview(self.item,self)
 		self.sample.setMinimumHeight(30)
 		self.usageSpot = QCheckBox(_("Spot"))
 		self.valuesWidget = QTabWidget()
@@ -1708,9 +1721,7 @@ class ColorWidget(QWidget):
 		self.val = {}
 		if len(self.item.values) > 0:
 			self.delValAction.setEnabled(True)
-			prof_out = str(settings.value("mntrProfile").toString()) or False
-			r,g,b = self.item.toRGB8(prof_out)
-			self.sample.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
+			self.sample.update()
 			for space in self.item.values:
 				self.add_val_tab(space,self.item.values[space])
 		self.def_current_sp()
@@ -1734,7 +1745,7 @@ class ColorWidget(QWidget):
 		self.item.values.insert(tfrom,key,val)
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
-		self.set_preview()
+		self.sample.update()
 
 	def add_val_tab(self,space,values):
 		profile = space[1]
@@ -1805,7 +1816,7 @@ class ColorWidget(QWidget):
 		self.valuesWidget.addTab(spaceWidget,model)
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
-		self.set_preview()
+		self.sample.update()
 
 	def edit(self):
 		if self.sender() == self.usageSpot:
@@ -1815,14 +1826,6 @@ class ColorWidget(QWidget):
 				self.item.usage.remove('spot')
 			icon = form.drawIcon(self.item.info.identifier)
 			form.addIcon(self.item.info.identifier,icon[0],icon[1])
-
-	def set_preview(self):
-		prof_out = str(settings.value("mntrProfile").toString()) or False
-		if self.item.toRGB8(prof_out):
-			r,g,b = self.item.toRGB8(prof_out)
-			self.sample.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
-		else:
-			self.sample.setStyleSheet("")
 
 	def valedit(self):
 		sender = self.val[self.sender()]
@@ -1838,7 +1841,7 @@ class ColorWidget(QWidget):
 			self.item.values[sender[0]][sender[1]] = eval(str(self.sender().text()))
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
-		self.set_preview()
+		self.sample.update()
 
 	def def_current_sp(self):
 		global current_sp
@@ -1874,7 +1877,7 @@ class ColorWidget(QWidget):
 			self.val[field] = (current_sp,self.val[field][1])
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
-		self.set_preview()
+		self.sample.update()
 
 	def delVal(self):
 		global current_sp
@@ -1882,7 +1885,7 @@ class ColorWidget(QWidget):
 		self.valuesWidget.removeTab(self.valuesWidget.currentIndex())
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
-		self.set_preview()
+		self.sample.update()
 
 	def addVal(self):
 		model = str(self.sender().text())
@@ -1901,7 +1904,7 @@ class ColorWidget(QWidget):
 		self.delValAction.setEnabled(True)
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier,icon[0],icon[1])
-		self.set_preview()
+		self.sample.update()
 
 	def getProfList(self,model):
 		profList = []
@@ -1909,6 +1912,61 @@ class ColorWidget(QWidget):
 			for prof in form.profiles[model]:
 				profList.append((form.sb.profiles[prof].info['desc'][0],prof))
 		return profList
+
+class PatternWidget(QWidget):
+	def __init__(self, id, parent):
+		super(PatternWidget, self).__init__(parent)
+
+		self.item = form.sb.materials[id]
+
+		self.sample = SwatchPreview(self.item,self)
+		self.sample.setMinimumHeight(100)
+
+		layout = QVBoxLayout()
+		layout.setContentsMargins(0,0,0,0)
+		layout.addWidget(self.sample)
+		self.setLayout(layout)
+		
+		self.sample.update()
+
+class SwatchPreview(QLabel):
+	def __init__(self,swatch,parent):
+		super(SwatchPreview, self).__init__(parent)
+		self.swatch = swatch
+		self.setToolTip(_("Click to see in full screen"))
+
+	def update(self):
+		if isinstance(self.swatch,Pattern):
+			self.setStyleSheet("QWidget { background-image: url("+os.path.join(self.swatch.swatchbook.tmpdir,"patterns",self.swatch.info.identifier)+") }")
+		elif isinstance(self.swatch,Color):
+			prof_out = str(settings.value("mntrProfile").toString()) or False
+			if self.swatch.toRGB8(prof_out):
+				r,g,b = self.swatch.toRGB8(prof_out)
+				self.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
+			else:
+				self.setStyleSheet("")
+
+	def mousePressEvent(self,event):
+		if self.isFullScreen():
+			self.setWindowFlags(Qt.Widget)
+			self.showNormal()
+			self.releaseKeyboard()
+			self.releaseMouse()
+		else:
+			self.setToolTip('')
+			self.setWindowFlags(Qt.Window)
+			self.showFullScreen()
+			self.grabKeyboard()
+			self.grabMouse()
+
+	def keyPressEvent(self,event):
+		if event.key() == Qt.Key_Escape:
+			self.setWindowFlags(Qt.Widget)
+			self.showNormal()
+			self.releaseKeyboard()
+			self.releaseMouse()
+		else:
+			QWidget.keyPressEvent(self,event)
 
 class fileOpenThread(QThread):
 	def __init__(self, fname, parent=None):

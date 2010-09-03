@@ -23,6 +23,8 @@ import os
 import sys
 from datetime import *
 from color import *
+from tempfile import mkdtemp
+from shutil import rmtree
 
 VERSION = "0.7.3"
 
@@ -189,6 +191,7 @@ class Book(object):
 
 class SwatchBook(object):
 	def __init__(self, file=False,codec=False,websvc=False,webid=False):
+		self.tmpdir = mkdtemp()
 		self.info = Info()
 		self.profiles = {}
 		self.materials = {}
@@ -199,6 +202,9 @@ class SwatchBook(object):
 			self.read(file,codec)
 		elif websvc:
 			self.webread(websvc,webid)
+
+	def __del__(self):
+		rmtree(self.tmpdir)
 
 	def test(self,file,codec=False):
 		# test 1: codec
@@ -275,8 +281,9 @@ class SwatchBook(object):
 			raise FileFormatError,'unsupported output format'
 
 class Group(object):
-	def __init__(self,parent=None):
+	def __init__(self,title="",parent=None):
 		self.info = Info()
+		self.info.title = title
 		self.items = []
 
 	def count(self,swatchesonly=False):
@@ -308,7 +315,7 @@ class Color(object):
        LCH: LC 0 -> 100 : H 0 -> 360
        XYZ: 0 -> ~100 (cfr. ref)"""
 
-	def __init__(self,swatchbook=None):
+	def __init__(self,swatchbook):
 		self.info = Info()
 		self.values = SortedDict()
 		self.usage = []
@@ -336,3 +343,9 @@ class Color(object):
 			return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
 		else:
 			return False
+
+class Pattern(object):
+	def __init__(self,swatchbook):
+		self.info = Info()
+		self.extra = {}
+		self.swatchbook = swatchbook

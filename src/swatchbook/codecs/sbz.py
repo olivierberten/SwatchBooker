@@ -53,6 +53,8 @@ class sbz(SBCodec):
 				f.write(zip.read(zipped))
 				f.close()
 				swatchbook.profiles[zipped[9:]] = ICCprofile(uri)
+			if "patterns/" in zipped and zipped != "patterns/":
+				zip.extract(zipped,swatchbook.tmpdir)
 		if xml.attrib['version'] == '0.7':
 			for elem in xml:
 				if elem.tag == 'metadata':
@@ -107,21 +109,23 @@ class sbz(SBCodec):
 			sitem = Color(swatchbook)
 			if 'usage' in material.attrib:
 				sitem.usage = material.attrib['usage'].split(',')
-			for elem in material:
-				if elem.tag == 'values':
-					values = map(eval,elem.text.split())
-					if 'space' in elem.attrib:
-						sitem.values[(elem.attrib['model'],unicode(elem.attrib['space']))] = values
-					else:
-						sitem.values[(elem.attrib['model'],False)] = values
-				elif elem.tag == 'metadata':
-					sbz.readmeta(sitem,elem)
-				elif elem.tag == 'extra':
-					sitem.extra[xmlunescape(elem.attrib['type'])] = xmlunescape(elem.text)
-			if sitem.info.identifier > '':
-				id = sitem.info.identifier
-			else:
-				raise FileFormatError
+		elif material.tag == 'pattern':
+			sitem = Pattern(swatchbook)
+		for elem in material:
+			if elem.tag == 'values':
+				values = map(eval,elem.text.split())
+				if 'space' in elem.attrib:
+					sitem.values[(elem.attrib['model'],unicode(elem.attrib['space']))] = values
+				else:
+					sitem.values[(elem.attrib['model'],False)] = values
+			elif elem.tag == 'metadata':
+				sbz.readmeta(sitem,elem)
+			elif elem.tag == 'extra':
+				sitem.extra[xmlunescape(elem.attrib['type'])] = xmlunescape(elem.text)
+		if sitem.info.identifier > '':
+			id = sitem.info.identifier
+		else:
+			raise FileFormatError
 		swatchbook.materials[id] = sitem
 
 	@staticmethod
@@ -147,8 +151,8 @@ class sbz(SBCodec):
 		xml += sbz.writemeta(swatchbook.info)
 		xml += '  <materials>\n'
 		for id in swatchbook.materials:
+			material = swatchbook.materials[id]
 			if isinstance(swatchbook.materials[id], Color):
-				material = swatchbook.materials[id]
 				xml += '    <color'
 				if len(material.usage) > 0:
 					xml += ' usage="'+(','.join(material.usage))+'"'
@@ -165,6 +169,15 @@ class sbz(SBCodec):
 						xml += xmlescape(unicode(material.extra[extra]))
 					xml += '</extra>\n'
 				xml += '    </color>\n'
+			elif isinstance(swatchbook.materials[id], Pattern):
+				xml += '    <pattern>\n'
+				xml += sbz.writemeta(material.info,2)
+				for extra in material.extra:
+					xml += '      <extra type="'+xmlescape(extra)+'">'
+					if material.extra[extra]:
+						xml += xmlescape(unicode(material.extra[extra]))
+					xml += '</extra>\n'
+				xml += '    </pattern>\n'
 		xml += '  </materials>\n'
 		if len(swatchbook.book.items) > 0:
 			xml += '  <book'
@@ -181,6 +194,14 @@ class sbz(SBCodec):
 		zip.writestr('swatchbook.xml',xml.encode('utf-8'))
 		for profile in swatchbook.profiles:
 			zip.write(swatchbook.profiles[profile].uri,'profiles/'+profile)
+		def addfiles(dir):
+			for s in sorted(os.listdir(dir)):
+				file = os.path.join(dir,s)
+				if os.path.isdir(file) and file not in ('.','..'):
+					addfiles(file)
+				else:
+					zip.write(file,file[len(swatchbook.tmpdir):])
+		addfiles(swatchbook.tmpdir)
 		zip.close()
 		tf.seek(0)
 		return tf.read()
