@@ -22,6 +22,8 @@
 from __future__ import division
 import re
 import tempfile
+from shutil import copy2
+from PIL import ImageQt
 
 from sbcommon import *
 
@@ -177,6 +179,7 @@ class MainWindow(QMainWindow):
 		self.matListEditBut = MenuButton(self)
 		self.matListEditMenu = QMenu()
 		self.matListEditMenu.addAction(_('Add Color'),self.addColor)
+		self.matListEditMenu.addAction(_('Add Pattern(s)'),self.addPatterns)
 		self.deleteMaterialAction = self.matListEditMenu.addAction(_('Delete'),self.deleteMaterial)
 		self.matListEditMenu.addAction(_('Delete unused materials'),self.deleteUnusedMaterials)
 		self.matListEditBut.setMenu(self.matListEditMenu)
@@ -293,7 +296,7 @@ class MainWindow(QMainWindow):
 			self.editWidget.setParent(None)
 
 	def sw_display_list(self):
-		if self.matList.selectedItems() and self.matList.hasFocus():
+		if self.matList.selectedItems() and (self.matList.hasFocus() or app.focusWidget() == None):
 			listItem = self.matList.selectedItems()[0]
 			if hasattr(self,'editWidget'):
 				self.editWidget.setParent(None)
@@ -383,6 +386,34 @@ class MainWindow(QMainWindow):
 		self.updSwatchCount()
 		return id
 
+	def addPatterns(self):
+		Image.init()
+		supported = " ("
+		for ext in Image.EXTENSION:
+			if Image.EXTENSION[ext] in Image.ID:
+				supported += " *"+ext
+		supported += ")"
+		fnames = QFileDialog.getOpenFileNames(self,
+							_("Choose image file"), ".",
+							(_("Supported image files")+supported))
+		if len(fnames) > 0:
+			for fname in fnames:
+				id = os.path.basename(unicode(fname))
+				if not os.path.isdir(os.path.join(self.sb.tmpdir,"patterns")):
+					os.mkdir(os.path.join(self.sb.tmpdir,"patterns"))
+				copy2(unicode(fname),os.path.join(self.sb.tmpdir,"patterns"))
+				material = Pattern(self.sb)
+				material.info.identifier = id
+				if "title" in material.image().info:
+					material.info.title = material.image().info["title"]
+				form.sb.materials[id] = material
+				self.addMaterial(id)
+				icon = self.drawIcon(id)
+				self.addIcon(id,icon[0],icon[1])
+			self.updSwatchCount()
+			self.matList.setFocus()
+			self.matList.setCurrentItem(self.materials[id][0])
+
 	def deleteMaterial(self):
 		item = self.matList.selectedItems()[0]
 		for treeItem in self.materials[item.id][1]:
@@ -397,6 +428,8 @@ class MainWindow(QMainWindow):
 		if hasattr(self,'editWidget'):
 			self.editWidget.setParent(None)
 		self.matList.takeItem(self.matList.row(item))
+		if isinstance(self.sb.materials[item.id], Pattern):
+			self.sb.materials[item.id].deleteFile()
 		del self.sb.materials[item.id]
 		del self.materials[item.id]
 		self.deleteAction.setEnabled(False)
@@ -832,14 +865,14 @@ class MainWindow(QMainWindow):
 				paint.drawRect(0, 0, 15, 15)
 			paint.end()
 		elif isinstance(material,Pattern):
-			image = QImage(os.path.join(material.swatchbook.tmpdir,"patterns",material.info.identifier))
+			image = ImageQt.ImageQt(material.imageRGB())
 			paint.begin(pix)
-			paint.drawImage(0,0,image.scaled(16,16,Qt.KeepAspectRatioByExpanding))
+			paint.drawImage(0,0,image.scaled(16,16,Qt.KeepAspectRatioByExpanding,Qt.SmoothTransformation))
 			normal = pix.copy()
 			paint.setPen(QColor(255,255,255))
 			paint.drawRect(0, 0, 15, 15)
 			paint.setPen(Qt.DotLine)
-			paint.drawRect(0, 0, 15, 15)
+				paint.drawRect(0, 0, 15, 15)
 			paint.end()
 		else:
 			paint.begin(pix)
@@ -1933,11 +1966,15 @@ class SwatchPreview(QLabel):
 	def __init__(self,swatch,parent):
 		super(SwatchPreview, self).__init__(parent)
 		self.swatch = swatch
+		self.update()
 		self.setToolTip(_("Click to see in full screen"))
 
 	def update(self):
 		if isinstance(self.swatch,Pattern):
-			self.setStyleSheet("QWidget { background-image: url("+os.path.join(self.swatch.swatchbook.tmpdir,"patterns",self.swatch.info.identifier)+") }")
+			palette = self.palette()
+			palette.setBrush(self.backgroundRole(),QBrush(QPixmap.fromImage(ImageQt.ImageQt(self.swatch.imageRGB()))))
+			self.setPalette(palette)
+			self.setAutoFillBackground(True)
 		elif isinstance(self.swatch,Color):
 			prof_out = str(settings.value("mntrProfile").toString()) or False
 			if self.swatch.toRGB8(prof_out):

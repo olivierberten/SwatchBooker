@@ -25,8 +25,10 @@ from datetime import *
 from color import *
 from tempfile import mkdtemp
 from shutil import rmtree
+from cStringIO import StringIO
+from PIL import Image,ImageCms
 
-VERSION = "0.7.3"
+VERSION = "0.8"
 
 # from http://code.djangoproject.com/browser/django/trunk/django/utils/datastructures.py
 class SortedDict(dict):
@@ -349,3 +351,45 @@ class Pattern(object):
 		self.info = Info()
 		self.extra = {}
 		self.swatchbook = swatchbook
+
+	def indexed(self):
+		if self.image().palette():
+			return True
+		else:
+			return False
+
+	def image(self):
+		return Image.open(os.path.join(self.swatchbook.tmpdir,"patterns",self.info.identifier))
+
+	def imageRGB(self,prof_out=False):
+		#TODO: color management
+		image = self.image()
+		alpha_band = False
+		if image.mode in ('LA','PA','RGBA'):
+			image.load()
+			bands = image.split()
+			alpha_band = bands[-1]
+			image = Image.merge(image.mode[:-1],bands[:-1])
+		sRGB = ImageCms.createProfile("sRGB")
+		if 'icc_profile' in image.info:
+			inputProfile = ImageCms.ImageCmsProfile(StringIO(image.info['icc_profile']))
+		else:
+			if image.mode == "CMYK":
+				inputProfile = (dirpath(__file__) or ".")+"/Fogra27L.icm"
+			elif image.mode == "LAB":
+				inputProfile = ImageCms.createProfile("LAB")
+			else:
+				image = image.convert('RGB')
+				inputProfile = sRGB
+		if prof_out:
+			outputProfile = prof_out
+		else:
+			outputProfile = sRGB
+		new_image = ImageCms.profileToProfile(image,inputProfile,outputProfile)
+		if alpha_band:
+			new_image.putalpha(alpha_band)
+		return new_image
+
+	# to be called before deleting a pattern from the book
+	def deleteFile(self):
+		return os.remove(os.path.join(self.swatchbook.tmpdir,"patterns",self.info.identifier))

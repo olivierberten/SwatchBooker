@@ -111,21 +111,21 @@ class sbz(SBCodec):
 				sitem.usage = material.attrib['usage'].split(',')
 		elif material.tag == 'pattern':
 			sitem = Pattern(swatchbook)
-		for elem in material:
-			if elem.tag == 'values':
-				values = map(eval,elem.text.split())
-				if 'space' in elem.attrib:
-					sitem.values[(elem.attrib['model'],unicode(elem.attrib['space']))] = values
-				else:
-					sitem.values[(elem.attrib['model'],False)] = values
-			elif elem.tag == 'metadata':
-				sbz.readmeta(sitem,elem)
-			elif elem.tag == 'extra':
-				sitem.extra[xmlunescape(elem.attrib['type'])] = xmlunescape(elem.text)
-		if sitem.info.identifier > '':
-			id = sitem.info.identifier
-		else:
-			raise FileFormatError
+			for elem in material:
+				if elem.tag == 'values':
+					values = map(eval,elem.text.split())
+					if 'space' in elem.attrib:
+						sitem.values[(elem.attrib['model'],unicode(elem.attrib['space']))] = values
+					else:
+						sitem.values[(elem.attrib['model'],False)] = values
+				elif elem.tag == 'metadata':
+					sbz.readmeta(sitem,elem)
+				elif elem.tag == 'extra':
+					sitem.extra[xmlunescape(elem.attrib['type'])] = xmlunescape(elem.text)
+			if sitem.info.identifier > '':
+				id = sitem.info.identifier
+			else:
+				raise FileFormatError
 		swatchbook.materials[id] = sitem
 
 	@staticmethod
@@ -151,7 +151,7 @@ class sbz(SBCodec):
 		xml += sbz.writemeta(swatchbook.info)
 		xml += '  <materials>\n'
 		for id in swatchbook.materials:
-			material = swatchbook.materials[id]
+				material = swatchbook.materials[id]
 			if isinstance(swatchbook.materials[id], Color):
 				xml += '    <color'
 				if len(material.usage) > 0:
