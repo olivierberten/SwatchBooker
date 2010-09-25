@@ -32,19 +32,22 @@ class pantone(WebSvc):
 	nbLevels = 1
 	url = 'http://www.pantone.com/images/xref/'
 
-	guide = {'1': u'PANTONE® COLOR BRIDGE® coated',
-	         '2': u'PANTONE® COLOR BRIDGE® uncoated',
-	         '3': u'PANTONE® FORMULA GUIDE solid coated',
-	         '4': u'PANTONE® FORMULA GUIDE solid matte',
-	         '5': u'PANTONE® FORMULA GUIDE solid uncoated',
+	guide = {'1': u'PANTONE® COLOR BRIDGE® Coated',
+	         '2': u'PANTONE® COLOR BRIDGE® Uncoated',
+	         '3': u'PANTONE® FORMULA GUIDE Solid Coated',
+	         '4': u'PANTONE® FORMULA GUIDE Solid Matte',
+	         '5': u'PANTONE® FORMULA GUIDE Solid Uncoated',
 	         '6': u'PANTONE® GoeGuide™ coated',
 	         '7': u'PANTONE® GoeGuide™ uncoated',
 	         '8': u'PANTONE® FASHION + HOME cotton',
 	         '9': u'PANTONE® FASHION + HOME paper',
 	         '10':u'PANTONE® GoeBridge™ coated',
-	         '11':u'PANTONE® METALLIC FORMULA GUIDE coated',
-	         '12':u'PANTONE® PASTEL FORMULA GUIDE coated',
-	         '13':u'PANTONE® PASTEL FORMULA GUIDE uncoated'}
+	         '15': u'PANTONE® PREMIUM METALLICS Coated',
+	         '16': u'PANTONE® PASTELS & NEONS Coated',
+	         '17': u'PANTONE® PASTELS & NEONS Uncoated',
+	         '18': u'PANTONE® CMYK Coated',
+	         '19': u'PANTONE® CMYK Uncoated',
+	         '20': u'PANTONE® METALLIC FORMULA GUIDE coated'}
 	
 	def level0(self):
 		list0 = SortedDict()
@@ -53,6 +56,12 @@ class pantone(WebSvc):
 		list0['4'] = self.guide['4']
 		list0['1'] = self.guide['1']
 		list0['2'] = self.guide['2']
+		list0['15'] = self.guide['15']
+		list0['20'] = self.guide['20']
+		list0['16'] = self.guide['16']
+		list0['17'] = self.guide['17']
+		list0['18'] = self.guide['18']
+		list0['19'] = self.guide['19']
 		list0['6'] = self.guide['6']
 		list0['7'] = self.guide['7']
 		list0['10'] = self.guide['10']
