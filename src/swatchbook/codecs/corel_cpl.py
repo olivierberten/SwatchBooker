@@ -226,7 +226,7 @@ class corel_cpl(SBCodec):
 				file.seek(4, 1)
 			if spot:
 				item.usage.append('spot')
-			if 'title' in vars() and (find(title,'NONASSIGNED') >= 0 or find(title,'UNASSIGNED') >= 0):
+			if title and (find(title,'NONASSIGNED') >= 0 or find(title,'UNASSIGNED') >= 0):
 				swatchbook.book.items.append(Spacer())
 				continue
 			if 'row' in vars() and i in row and row[i] > 0 and col[i] == 0 and col[i-1] < swatchbook.book.display['columns']-1:
