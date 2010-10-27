@@ -872,7 +872,7 @@ class MainWindow(QMainWindow):
 			paint.setPen(QColor(255,255,255))
 			paint.drawRect(0, 0, 15, 15)
 			paint.setPen(Qt.DotLine)
-				paint.drawRect(0, 0, 15, 15)
+			paint.drawRect(0, 0, 15, 15)
 			paint.end()
 		else:
 			paint.begin(pix)
