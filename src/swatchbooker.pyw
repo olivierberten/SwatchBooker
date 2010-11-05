@@ -120,6 +120,7 @@ class MainWindow(QMainWindow):
 			self.availMaterialsAction.setChecked(False)
 
 		breaks = []
+		self.iconsLoading = 0
 		self.materials = {}
 		self.profiles = {}
 		self.groups = {}
@@ -199,6 +200,7 @@ class MainWindow(QMainWindow):
 		self.swTEditBut = MenuButton(self)
 		self.swTEditMenu = QMenu()
 		self.swTEditMenu.addAction(_('Add Color'),self.addColorSwatch)
+		self.swTEditMenu.addAction(_('Add Pattern(s)'),self.addPatternsSwatch)
 		self.swTEditMenu.addAction(_('Add Spacer'),self.addSpacer)
 		self.swTEditMenu.addAction(_('Add Break'),self.addBreak)
 		self.swTEditMenu.addAction(_('Add Group'),self.addGroup)
@@ -227,6 +229,7 @@ class MainWindow(QMainWindow):
 		self.swGEditBut = MenuButton(self)
 		self.swGEditMenu = QMenu()
 		self.swGEditMenu.addAction(_('Add Color'),self.addColorSwatch)
+		self.swGEditMenu.addAction(_('Add Pattern(s)'),self.addPatternsSwatch)
 		self.swGEditMenu.addAction(_('Add Spacer'),self.addSpacer)
 		self.swGEditMenu.addAction(_('Add Break'),self.addBreak)
 		self.swGEditMenu.addAction(self.deleteAction)
@@ -384,7 +387,32 @@ class MainWindow(QMainWindow):
 		self.matList.setFocus()
 		self.matList.setCurrentItem(self.materials[id][0])
 		self.updSwatchCount()
-		return id
+		return [id]
+
+	def addPattern(self,fname):
+		try:
+			fname = unicode(fname)
+			Image.open(fname)
+			id = os.path.basename(fname)
+			if not os.path.isdir(os.path.join(self.sb.tmpdir,"patterns")):
+				os.mkdir(os.path.join(self.sb.tmpdir,"patterns"))
+			copy2(fname,os.path.join(self.sb.tmpdir,"patterns"))
+			material = Pattern(self.sb)
+			material.info.identifier = id
+			if "title" in material.image().info:
+				material.info.title = material.image().info["title"]
+			else:
+				material.info.title = os.path.splitext(os.path.basename(fname))[0]
+			form.sb.materials[id] = material
+			self.addMaterial(id)
+			icon = self.drawIcon(id)
+			self.addIcon(id,icon[0],icon[1])
+			self.matList.setFocus()
+			self.matList.setCurrentItem(self.materials[id][0])
+			self.updSwatchCount()
+			return id
+		except IOError:
+			QMessageBox.critical(self, _("Error"), _("Unsupported file"))			
 
 	def addPatterns(self):
 		Image.init()
@@ -397,24 +425,13 @@ class MainWindow(QMainWindow):
 							_("Choose image file"), ".",
 							(_("Supported image files")+supported))
 		if len(fnames) > 0:
+			ids =[]
 			for fname in fnames:
-				id = os.path.basename(unicode(fname))
-				if not os.path.isdir(os.path.join(self.sb.tmpdir,"patterns")):
-					os.mkdir(os.path.join(self.sb.tmpdir,"patterns"))
-				copy2(unicode(fname),os.path.join(self.sb.tmpdir,"patterns"))
-				material = Pattern(self.sb)
-				material.info.identifier = id
-				if "title" in material.image().info:
-					material.info.title = material.image().info["title"]
-				form.sb.materials[id] = material
-				self.addMaterial(id)
-				icon = self.drawIcon(id)
-				self.addIcon(id,icon[0],icon[1])
-			self.updSwatchCount()
-			self.matList.setFocus()
-			self.matList.setCurrentItem(self.materials[id][0])
+				ids.append(self.addPattern(fname))
+			return ids
 
 	def deleteMaterial(self):
+		#TODO: deal with Gradients, DerivedPatterns, etc. using that material
 		item = self.matList.selectedItems()[0]
 		for treeItem in self.materials[item.id][1]:
 			if treeItem.parent():
@@ -446,49 +463,54 @@ class MainWindow(QMainWindow):
 	def addColorSwatch(self):
 		self.addSwatch('Color')
 
+	def addPatternsSwatch(self):
+		self.addSwatch('Patterns')
+
 	def addSwatch(self,type):
 		selected = self.treeWidget.selectedItems()
-		id = eval('self.add'+type+'()')
-		item = Swatch(id)
-		icon = self.drawIcon(id)
-		self.addIcon(id,icon[0],icon[1])
-		gridItem = gridItemSwatch(item)
-		treeItem = treeItemSwatch(item)
-		if selected:
-			selTItem = selected[0]
-			if selTItem.parent():
-				parent = selTItem.parent().item
-				if isinstance(selTItem,noChild):
-					index = 0
+		ids = eval('self.add'+type+'()')
+		for id in ids:
+			item = Swatch(id)
+			icon = self.drawIcon(id)
+			self.addIcon(id,icon[0],icon[1])
+			gridItem = gridItemSwatch(item)
+			treeItem = treeItemSwatch(item)
+			if selected:
+				selTItem = selected[0]
+				if selTItem.parent():
+					parent = selTItem.parent().item
+					if isinstance(selTItem,noChild):
+						index = 0
+					else:
+						index = selTItem.parent().indexOfChild(selTItem)+1
 				else:
-					index = selTItem.parent().indexOfChild(selTItem)+1
+					parent = form.sb.book
+					index = self.treeWidget.indexOfTopLevelItem(selTItem)+1
+				parent.items.insert(index,item)
+	
+				if selTItem.parent() == None:
+					tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
+					self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
+				else:
+					tIndex = selTItem.parent().indexOfChild(selTItem)
+					selTItem.parent().insertChild(tIndex+1,treeItem)
+	
+				if isinstance(selTItem,treeItemGroup):
+					selLItem = self.groups[selTItem.item][1][1]
+				elif isinstance(selTItem,noChild):
+					selLItem = self.groups[selTItem.parent().item][1][0]
+				else:
+					selLItem = self.items[selTItem]
+				lIndex = self.gridWidget.indexFromItem(selLItem).row()
+				self.gridWidget.insertItem(lIndex+1,gridItem)
+				if isinstance(selTItem,noChild):
+					selTItem.parent().takeChild(0)
 			else:
-				parent = form.sb.book
-				index = self.treeWidget.indexOfTopLevelItem(selTItem)+1
-			parent.items.insert(index,item)
-
-			if selTItem.parent() == None:
-				tIndex = self.treeWidget.indexOfTopLevelItem(selTItem)
-				self.treeWidget.insertTopLevelItem(tIndex+1, treeItem)
-			else:
-				tIndex = selTItem.parent().indexOfChild(selTItem)
-				selTItem.parent().insertChild(tIndex+1,treeItem)
-
-			if isinstance(selTItem,treeItemGroup):
-				selLItem = self.groups[selTItem.item][1][1]
-			elif isinstance(selTItem,noChild):
-				selLItem = self.groups[selTItem.parent().item][1][0]
-			else:
-				selLItem = self.items[selTItem]
-			lIndex = self.gridWidget.indexFromItem(selLItem).row()
-			self.gridWidget.insertItem(lIndex+1,gridItem)
-			if isinstance(selTItem,noChild):
-				selTItem.parent().takeChild(0)
-		else:
-			self.sb.book.items.append(item)
-			self.treeWidget.addTopLevelItem(treeItem)
-			self.gridWidget.addItem(gridItem)
-		self.items[treeItem] = gridItem
+				self.sb.book.items.append(item)
+				self.treeWidget.addTopLevelItem(treeItem)
+				self.gridWidget.addItem(gridItem)
+			self.items[treeItem] = gridItem
+			selected = [treeItem]
 		self.treeWidget.setCurrentItem(treeItem)
 		self.gridWidget.update()
 		self.updSwatchCount()
@@ -830,10 +852,16 @@ class MainWindow(QMainWindow):
 		if len(self.materials) > 0:
 			for id in self.materials:
 				thread = drawIconThread(id,self)
+				self.iconsLoading += 1
 				self.connect(thread, SIGNAL("icon(QString,QImage,QImage)"), self.addIcon)
+				self.connect(thread, SIGNAL("finished()"), self.iconLoaded)
 				thread.start()
-			self.connect(thread, SIGNAL("finished()"), self.fullyLoaded)
 		else:
+			self.fullyLoaded()
+
+	def iconLoaded(self):
+		self.iconsLoading -= 1
+		if self.iconsLoading == 0:
 			self.fullyLoaded()
 
 	def drawIcon(self,id):
