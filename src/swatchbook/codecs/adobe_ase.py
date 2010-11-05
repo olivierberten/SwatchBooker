@@ -30,7 +30,7 @@ class adobe_ase(SBCodec):
 		file = open(file,'rb')
 		data = file.read(4)
 		file.close()
-		if struct.unpack('4s', data)[0] == 'ASEF':
+		if data == 'ASEF':
 			return True
 		else:
 			return False
@@ -75,7 +75,7 @@ class adobe_ase(SBCodec):
 				elif type == 1:
 					item.usage.append('spot')
 				if not id or id == '':
-					id = str(item.values[item.values.keys()[0]])
+					id = idfromvals(item.values[item.values.keys()[0]])
 				if id in swatchbook.materials:
 					if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 						parent.items.append(Swatch(id))
@@ -83,7 +83,7 @@ class adobe_ase(SBCodec):
 					else:
 						sys.stderr.write('duplicated id: '+id+'\n')
 						item.info.title = id
-						id = id+str(item.values[item.values.keys()[0]])
+						id = id+idfromvals(item.values[item.values.keys()[0]])
 				item.info.identifier = id
 				swatchbook.materials[id] = item
 				parent.items.append(Swatch(id))

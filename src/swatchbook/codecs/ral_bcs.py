@@ -62,7 +62,7 @@ class ral_bcs(SBCodec):
 			if sig == 'clf':
 				item.usage.append('spot')
 			if not id or id == '':
-				id = str(item.values[('Lab',False)])
+				id = idfromvals(item.values[('Lab',False)])
 			if id in swatchbook.materials:
 				if item.values[('Lab',False)] == swatchbook.materials[id].values[('Lab',False)]:
 					swatchbook.book.items.append(Swatch(id))
@@ -70,7 +70,7 @@ class ral_bcs(SBCodec):
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
 					item.info.title = id
-					id = id+str(item.values[('Lab',False)])
+					id = id+idfromvals(item.values[('Lab',False)])
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

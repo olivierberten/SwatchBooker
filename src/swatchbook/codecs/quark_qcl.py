@@ -95,7 +95,7 @@ class quark_qcl(SBCodec):
 			if usage in ('4','5'):
 				item.usage.append('spot')
 			if not id or id == '':
-				id = str(item.values[item.values.keys()[0]])
+				id = idfromvals(item.values[item.values.keys()[0]])
 			if id in swatchbook.materials:
 				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
@@ -103,7 +103,7 @@ class quark_qcl(SBCodec):
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
 					item.info.title = id
-					id = id+str(item.values[item.values.keys()[0]])
+					id = id+idfromvals(item.values[item.values.keys()[0]])
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

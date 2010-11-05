@@ -47,6 +47,7 @@ class adobe_aco(SBCodec):
 			id = False
 			item = Color(swatchbook)
 			model = struct.unpack('>H',file.read(2))[0]
+			ColorModels = ['RGB','HSB','CMYK','Pantone','Focoltone','Trumatch','Toyo','Lab','Gray','WideCMYK','HKS','DIC','TotalInk','MonitorRGB','Duotone','Opacity']
 			if model == 2:
 				C,M,Y,K = struct.unpack('>4H',file.read(8))
 				item.values[('CMYK',False)] = [1-C/0xFFFF,1-M/0xFFFF,1-Y/0xFFFF,1-K/0xFFFF]
@@ -71,7 +72,7 @@ class adobe_aco(SBCodec):
 				file.seek(6, 1)
 			else:
 				file.seek(8, 1)
-				sys.stderr.write('unknown color model ['+str(model)+']\n')
+				sys.stderr.write('unsupported color model ['+ColorModels[model]+']\n')
 			if version == 2:
 				length = struct.unpack('>L',file.read(4))[0]
 				if length > 0:

@@ -122,7 +122,7 @@ class adobe_bcf(SBCodec):
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
 					item.info.title = id
-					id = id+str(item.values[item.values.keys()[0]])
+					id = id+idfromvals(item.values[item.values.keys()[0]])
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

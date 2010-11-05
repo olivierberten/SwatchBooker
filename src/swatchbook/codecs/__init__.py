@@ -29,6 +29,12 @@ from zipfile import *
 from swatchbook import *
 from string import *
 
+def idfromvals(vals):
+	id = []
+	for val in vals:
+		id.append(str(round(val,3)))
+	return "("+", ".join(id)+")"
+
 def hex2(val):
 	return hex(int(round(val)))[2:].rjust(2,'0')
 

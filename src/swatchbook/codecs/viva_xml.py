@@ -59,7 +59,7 @@ class viva_xml(SBCodec):
 											   eval(color.find('yellow').text)/100,\
 											   eval(color.find('key').text)/100]
 			if not id_tmp or id_tmp == '':
-				id = str(item.values[item.values.keys()[0]])
+				id = idfromvals(item.values[item.values.keys()[0]])
 			else:
 				id = prefix+id_tmp+suffix
 			if id in swatchbook.materials:
@@ -69,7 +69,7 @@ class viva_xml(SBCodec):
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
 					item.info.title = id
-					id = id+str(item.values[item.values.keys()[0]])
+					id = id+idfromvals(item.values[item.values.keys()[0]])
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

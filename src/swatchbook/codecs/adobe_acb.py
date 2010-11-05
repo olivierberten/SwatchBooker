@@ -89,9 +89,9 @@ class adobe_acb(SBCodec):
 					continue
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
-					id = id+str(item.values[item.values.keys()[0]])
+					id = id+idfromvals(item.values[item.values.keys()[0]])
 			elif len(id) == 0:
-				id = str(item.values[item.values.keys()[0]])
+				id = idfromvals(item.values[item.values.keys()[0]])
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))
