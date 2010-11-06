@@ -46,12 +46,12 @@ class adobe_clr(SBCodec):
 			item = Color(swatchbook)
 			file.seek(1, 1)
 			R,G,B,a = struct.unpack('4B',file.read(4))
-			id = [R,G,B]
-			item.values['RGB',False] = [R/0xFF,G/0xFF,B/0xFF]
+			item.values[('RGB',False)] = [R/0xFF,G/0xFF,B/0xFF]
+			id = item.values[('RGB',False)]
 			if a < 0xFF:
 				item.extra['alpha'] = str(a/0xFF)
 				id.append(a)
-			id = str(tuple(id))
+			id = idfromvals(id)
 			file.seek(2, 1)
 			H,S,L = struct.unpack('<3H',file.read(6))
 			item.values[('HLS',False)] = [H/240,L/240,S/240]
@@ -62,5 +62,43 @@ class adobe_clr(SBCodec):
 				item.info.identifier = id
 				swatchbook.materials[id] = item
 				swatchbook.book.items.append(Swatch(id))
+		file.seek(1, 1)
+		nbgradients = struct.unpack('<H',file.read(2))[0]
+		for i in range(nbgradients):
+			item = Gradient()
+			id = "Gradient "+str(i+1)
+			file.seek(2, 1)
+			v = struct.unpack('B',file.read(1))[0]
+			file.seek(30, 1)
+			nbstops = struct.unpack('B',file.read(1))[0]
+			if v == 4:
+				file.seek(8, 1)
+			opstops = []
+			transparency = False
+			for j in range(nbstops):
+				stop = ColorStop()
+				color = Color(swatchbook)
+				offset,R,G,B,opacity = struct.unpack('5B',file.read(5))
+				stop.location = offset/0xFF
+				color.values[('RGB',False)] = [R/0xFF, G/0xFF, B/0xFF]
+				colorid = idfromvals(color.values[('RGB',False)])
+				if not colorid in swatchbook.materials:
+					color.info.identifier = colorid
+					swatchbook.materials[colorid] = color
+				stop.color = colorid
+				item.stops.append(stop)
+				if opacity != 0xFF:
+					transparency = True
+				opstops.append((offset,opacity))
+			if transparency:
+				for opstop in opstops:
+					stop = TransparencyStop()
+					stop.location = opstop[0]/0xFF
+					stop.opacity = opstop[1]/0xFF
+					item.transparencystops.append(stop)
+			item.info.identifier = id
+			swatchbook.materials[id] = item
+			swatchbook.book.items.append(Swatch(id))
+			file.seek(6, 1)
 		file.close()
 

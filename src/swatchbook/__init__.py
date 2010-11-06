@@ -393,3 +393,28 @@ class Pattern(object):
 	# to be called before deleting a pattern from the book
 	def deleteFile(self):
 		return os.remove(os.path.join(self.swatchbook.tmpdir,"patterns",self.info.identifier))
+
+class Gradient(object):
+	def __init__(self):
+		self.info = Info()
+		self.stops = []
+		self.transparencystops = []
+		self.blending = False
+		self.coloring = False
+		self.smoothness = False
+		self.extra = {}
+
+class ColorStop(object):
+	def __init__(self):
+		self.position = False
+		self.midpoint = False
+		self.color = False
+		self.blending = False
+		self.coloring = False
+
+class TransparencyStop(object):
+	def __init__(self):
+		self.position = False
+		self.midpoint = False
+		self.opacity = False
+		self.blending = False

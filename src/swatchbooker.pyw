@@ -1664,6 +1664,9 @@ class MaterialWidget(QGroupBox):
 		elif isinstance(self.item, Pattern):
 			self.setTitle(_("Pattern"))
 			self.swatch = PatternWidget(id,self)
+		elif isinstance(self.item, Gradient):
+			self.setTitle(_("Gradient"))
+			self.swatch = GradientWidget(id,self)
 
 		self.swExtra = QTableWidget()
 		self.swExtra.setColumnCount(2)
@@ -1989,6 +1992,27 @@ class PatternWidget(QWidget):
 		self.setLayout(layout)
 		
 		self.sample.update()
+
+class GradientWidget(QWidget):
+	def __init__(self, id, parent):
+		super(GradientWidget, self).__init__(parent)
+		
+		self.item = form.sb.materials[id]
+
+		stopList = QListWidget()
+		for stop in self.item.stops:
+			stopList.addItem(str(round(stop.location,2))+'|'+stop.color+'|'+str(stop.midpoint))
+		opstopList = QListWidget()
+		for opstop in self.item.transparencystops:
+			opstopList.addItem(str(round(opstop.location,2))+'|'+str(opstop.opacity)+'|'+str(opstop.midpoint))
+
+		layout = QVBoxLayout()
+		layout.setContentsMargins(0,0,0,0)
+		layout.addWidget(QLabel(_("Color stops")))
+		layout.addWidget(stopList)
+		layout.addWidget(QLabel(_("Transparency stops")))
+		layout.addWidget(opstopList)
+		self.setLayout(layout)
 
 class SwatchPreview(QLabel):
 	def __init__(self,swatch,parent):
