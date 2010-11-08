@@ -378,7 +378,7 @@ class Shade(object):
 	def toRGB(self,prof_out=False):
 		R,G,B = self.color.toRGB(prof_out)
 		H,S,L = RGB2HSL(R,G,B)
-		L = L*(1-self.amount)
+		L = L*(self.amount)
 		return HSL2RGB(H,S,L)
 
 	def toRGB8(self,prof_out=False):

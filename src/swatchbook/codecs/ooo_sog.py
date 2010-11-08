@@ -78,7 +78,7 @@ class ooo_sog(SBCodec):
 					stop.color = colorid
 				else:
 					shade = Shade()
-					shade.color = swatchbook.materials[stops.attrib['NAME']]
+					shade.color = swatchbook.materials[colorid]
 					shade.amount = eval(elem.attrib[draw+'end-intensity'][:-1])/100
 					shadeid = colorid+' (Shade '+elem.attrib[draw+'end-intensity']+')'
 					shade.info.identifier = shadeid
