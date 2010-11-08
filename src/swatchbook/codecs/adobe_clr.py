@@ -79,7 +79,7 @@ class adobe_clr(SBCodec):
 				stop = ColorStop()
 				color = Color(swatchbook)
 				offset,R,G,B,opacity = struct.unpack('5B',file.read(5))
-				stop.location = offset/0xFF
+				stop.position = offset/0xFF
 				color.values[('RGB',False)] = [R/0xFF, G/0xFF, B/0xFF]
 				colorid = idfromvals(color.values[('RGB',False)])
 				if not colorid in swatchbook.materials:
@@ -93,7 +93,7 @@ class adobe_clr(SBCodec):
 			if transparency:
 				for opstop in opstops:
 					stop = TransparencyStop()
-					stop.location = opstop[0]/0xFF
+					stop.position = opstop[0]/0xFF
 					stop.opacity = opstop[1]/0xFF
 					item.transparencystops.append(stop)
 			item.info.identifier = id

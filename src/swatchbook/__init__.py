@@ -346,6 +346,48 @@ class Color(object):
 		else:
 			return False
 
+class Tint(object):
+	def __init__(self):
+		self.info = Info()
+		self.color = False
+		self.amount = False # 1 = color, 0 = white
+		self.usage = [] # for compatibility with colors
+		self.extra = {}
+
+	def toRGB(self,prof_out=False):
+		R,G,B = self.color.toRGB(prof_out)
+		H,S,L = RGB2HSL(R,G,B)
+		L = L + (1-L)*(1-self.amount)
+		return HSL2RGB(H,S,L)
+
+	def toRGB8(self,prof_out=False):
+		if self.toRGB(prof_out):
+			R,G,B = self.toRGB(prof_out)
+			return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
+		else:
+			return False
+
+class Shade(object):
+	def __init__(self):
+		self.info = Info()
+		self.color = False
+		self.amount = False # 1 = color, 0 = black
+		self.usage = [] # for compatibility with colors
+		self.extra = {}
+
+	def toRGB(self,prof_out=False):
+		R,G,B = self.color.toRGB(prof_out)
+		H,S,L = RGB2HSL(R,G,B)
+		L = L*(1-self.amount)
+		return HSL2RGB(H,S,L)
+
+	def toRGB8(self,prof_out=False):
+		if self.toRGB(prof_out):
+			R,G,B = self.toRGB(prof_out)
+			return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
+		else:
+			return False
+
 class Pattern(object):
 	def __init__(self,swatchbook):
 		self.info = Info()

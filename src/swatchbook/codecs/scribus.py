@@ -37,22 +37,51 @@ class scribus(SBCodec):
 		xml = etree.parse(file).getroot()
 		if 'Name' in xml.attrib:
 			swatchbook.info.title = xmlunescape(unicode(xml.attrib['Name']))
-		colors = xml.getiterator('COLOR')
-		i = 0
-		for color in colors:
-			item = Color(swatchbook)
-			rgb = cmyk = False
-			id = unicode(xmlunescape(color.attrib['NAME']))
-			if "RGB" in color.attrib:
-				rgb = color.attrib['RGB']
-				item.values[('RGB',False)] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]
-			if "CMYK" in color.attrib:
-				cmyk = color.attrib['CMYK']
-				item.values[('CMYK',False)] = [int(cmyk[1:3],16)/0xFF,int(cmyk[3:5],16)/0xFF,int(cmyk[5:7],16)/0xFF,int(cmyk[7:],16)/0xFF]
-			if "Spot" in color.attrib and color.attrib['Spot'] == 1:
-				item.usage.append('spot')
+
+		for elem in xml:
+			if elem.tag == 'COLOR':
+				item = Color(swatchbook)
+				id = unicode(xmlunescape(elem.attrib['NAME']))
+				if "RGB" in elem.attrib:
+					rgb = elem.attrib['RGB']
+					item.values[('RGB',False)] = [int(rgb[1:3],16)/0xFF,int(rgb[3:5],16)/0xFF,int(rgb[5:],16)/0xFF]
+				if "CMYK" in elem.attrib:
+					cmyk = elem.attrib['CMYK']
+					item.values[('CMYK',False)] = [int(cmyk[1:3],16)/0xFF,int(cmyk[3:5],16)/0xFF,int(cmyk[5:7],16)/0xFF,int(cmyk[7:],16)/0xFF]
+				if "Spot" in elem.attrib and elem.attrib['Spot'] == 1:
+					item.usage.append('spot')
+			elif elem.tag == 'Gradient':
+				item = Gradient()
+				id = unicode(xmlunescape(elem.attrib['Name']))
+				opstops = []
+				for stops in elem:
+					if stops.tag == 'CSTOP':
+						stop = ColorStop()
+						stop.position = eval(stops.attrib['RAMP'])
+						if stops.attrib['SHADE'] == "100":
+							stop.color = stops.attrib['NAME']
+						else:
+							tint = Tint()
+							tint.color = swatchbook.materials[stops.attrib['NAME']]
+							tint.amount = eval(stops.attrib['SHADE'])/100
+							tintid = stops.attrib['NAME']+' (Tint '+stops.attrib['SHADE']+'%)'
+							tint.info.identifier = tintid
+							swatchbook.materials[tintid] = tint
+							stop.color = tintid
+						item.stops.append(stop)
+						opstops.append((stop.position, eval(stops.attrib['TRANS'])))
+				if not (len(opstops) == 2 and opstops[0][1] == opstops[1][1]):
+					for i in range(len(opstops)):
+						if i > 0 and i < len(opstops)-1 and (opstops[i-1][1] == opstops[i][1] and opstops[i+1][1] == opstops[i][1]):
+							pass
+						else:
+							stop = TransparencyStop()
+							stop.position = opstops[i][0]
+							stop.opacity = opstops[i][1]
+							item.transparencystops.append(stop)
+
 			if not id or id == '':
-				id = (cmyk or rgb)
+				id = idfromvals(item.values[item.values.keys()[0]])
 			if id in swatchbook.materials:
 				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
 					swatchbook.book.items.append(Swatch(id))
@@ -60,7 +89,7 @@ class scribus(SBCodec):
 				else:
 					sys.stderr.write('duplicated id: '+id+'\n')
 					item.info.title = id
-					id = id+(cmyk or rgb)
+					id = id+idfromvals(item.values[item.values.keys()[0]])
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

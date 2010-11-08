@@ -281,25 +281,6 @@ def LCH2Lab(L,C,H):
 
 	return (L,a,b)
 
-def HSL2RGB(H,S,L):
-	if ( S == 0 ): 
-		R = L 
-		G = L
-		B = L
-	else:
-		if ( L < 0.5 ):
-			var_2 = L * ( 1 + S )
-		else:
-			var_2 = ( L + S ) - ( S * L )
-
-		var_1 = 2 * L - var_2
-
-		R = Hue_2_RGB( var_1, var_2, H + ( 1 / 3 ) )
-		G = Hue_2_RGB( var_1, var_2, H )
-		B = Hue_2_RGB( var_1, var_2, H - ( 1 / 3 ) )
-
-	return (R,G,B)
-
 def Hue_2_RGB(v1,v2,vH):
 	if ( vH < 0 ):
 		vH = vH+1
@@ -354,6 +335,52 @@ def HSV2RGB(H,S,V):
 			B = var_2
 
 	return (R,G,B)
+
+def HSL2RGB(H,S,L):
+	if ( S == 0 ): 
+		R = L 
+		G = L
+		B = L
+	else:
+		if ( L < 0.5 ):
+			var_2 = L * ( 1 + S )
+		else:
+			var_2 = ( L + S ) - ( S * L )
+
+		var_1 = 2 * L - var_2
+
+		R = Hue_2_RGB( var_1, var_2, H + ( 1 / 3 ) )
+		G = Hue_2_RGB( var_1, var_2, H )
+		B = Hue_2_RGB( var_1, var_2, H - ( 1 / 3 ) )
+
+	return (R,G,B)
+
+def RGB2HSL(var_R,var_G,var_B):
+	var_Min = min( var_R, var_G, var_B )    # Min. value of RGB
+	var_Max = max( var_R, var_G, var_B )    # Max. value of RGB
+	del_Max = var_Max - var_Min             # Delta RGB value
+	
+	L = ( var_Max + var_Min ) / 2
+	
+	if del_Max == 0:                        # This is a gray, no chroma...
+	   H = 0                                # HSL results from 0 to 1
+	   S = 0
+	else:                                   # Chromatic data...
+		if L < 0.5: S = del_Max / ( var_Max + var_Min )
+		else: S = del_Max / ( 2 - var_Max - var_Min )
+		
+		del_R = ( ( ( var_Max - var_R ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		del_G = ( ( ( var_Max - var_G ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		del_B = ( ( ( var_Max - var_B ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		
+		if var_R == var_Max: H = del_B - del_G
+		elif var_G == var_Max: H = ( 1 / 3 ) + del_R - del_B
+		elif var_B == var_Max: H = ( 2 / 3 ) + del_G - del_R
+		
+		if H < 0: H += 1
+		if H > 1: H -= 1
+
+	return H,S,L
 
 def CMY2RGB(C,M,Y):
 	R = ( 1 - C )

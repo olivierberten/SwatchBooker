@@ -149,15 +149,16 @@ class gimp_ggr(SBCodec):
 		stop.color = colorid
 		item.stops.append(stop)
 
-		for i in range(len(opstops)):
-			if i > 0 and i < len(opstops)-1 and (opstops[i-1][2] == opstops[i][2] and opstops[i+1][2] == opstops[i][2]):
-				pass
-			else:
-				stop = TransparencyStop()
-				stop.location = opstops[i][0]
-				stop.midpoint = opstops[i][1]
-				stop.opacity = opstops[i][2]
-				item.transparencystops.append(stop)
+		if not (len(opstops) == 2 and opstops[0][2] == opstops[1][2]):
+			for i in range(len(opstops)):
+				if i > 0 and i < len(opstops)-1 and (opstops[i-1][2] == opstops[i][2] and opstops[i+1][2] == opstops[i][2]):
+					pass
+				else:
+					stop = TransparencyStop()
+					stop.location = opstops[i][0]
+					stop.midpoint = opstops[i][1]
+					stop.opacity = opstops[i][2]
+					item.transparencystops.append(stop)
 
 		swatchbook.materials[item.info.identifier] = item
 		swatchbook.book.items.append(Swatch(item.info.identifier))

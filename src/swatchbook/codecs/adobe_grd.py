@@ -127,7 +127,7 @@ class adobe_grd(SBCodec):
 				for j in range(nbstops):
 					stop = ColorStop()
 					location,midpoint,model = struct.unpack('>2L H',file.read(10))
-					stop.location = location/0x1000
+					stop.position = location/0x1000
 					if midpoint != 50:
 						stop.midpoint = midpoint/100
 					color = Color(swatchbook)
@@ -178,16 +178,18 @@ class adobe_grd(SBCodec):
 				if transparency:
 					for opstop in opstops:
 						stop = TransparencyStop()
-						stop.location = opstop[0]/0x1000
+						stop.position = opstop[0]/0x1000
 						if opstop[1] != 50:
 							stop.midpoint = opstop[1]/100
 						stop.opacity = opstop[2]/0xFF
 						item.transparencystops.append(stop)
 				file.seek(6, 1)
 				id = name
-				if id in swatchbook.materials:
+				if id in swatchbook.materials or id == '':
 					if name > '':
 						item.info.title = name
+					else:
+						name = 'Gradient'
 					i = 1
 					while id in form.sb.materials:
 						id = name+' ('+str(i)+')'
@@ -209,7 +211,7 @@ class adobe_grd(SBCodec):
 					item.smoothness = grdn['Intr']/0x1000
 					for CstS in grdn['Clrs']:
 						stop = ColorStop()
-						stop.location = CstS[2]['Lctn']/0x1000
+						stop.position = CstS[2]['Lctn']/0x1000
 						if CstS[2]['Mdpn'] != 50:
 							stop.midpoint = CstS[2]['Mdpn']/100
 						color = Color(swatchbook)
@@ -260,7 +262,7 @@ class adobe_grd(SBCodec):
 					if transparency:
 						for opstop in opstops:
 							stop = TransparencyStop()
-							stop.location = opstop[0]/0x1000
+							stop.position = opstop[0]/0x1000
 							if opstop[1] != 50:
 								stop.midpoint = opstop[1]/100
 							stop.opacity = opstop[2]/100

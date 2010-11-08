@@ -869,8 +869,8 @@ class MainWindow(QMainWindow):
 		pix = QImage(16,16,QImage.Format_ARGB32_Premultiplied)
 		pix.fill(Qt.transparent)
 		paint = QPainter()
-		if isinstance(material,Color) and material.toRGB8():
-			prof_out = str(settings.value("mntrProfile").toString()) or False
+		prof_out = str(settings.value("mntrProfile").toString()) or False
+		if material.__class__.__name__ in ('Color','Tint','Shade') and material.toRGB8():
 			r,g,b = material.toRGB8(prof_out)
 			paint.begin(pix)
 			paint.setBrush(QColor(r,g,b))
@@ -897,6 +897,28 @@ class MainWindow(QMainWindow):
 			paint.begin(pix)
 			paint.drawImage(0,0,image.scaled(16,16,Qt.KeepAspectRatioByExpanding,Qt.SmoothTransformation))
 			normal = pix.copy()
+			paint.setPen(QColor(255,255,255))
+			paint.drawRect(0, 0, 15, 15)
+			paint.setPen(Qt.DotLine)
+			paint.drawRect(0, 0, 15, 15)
+			paint.end()
+		elif isinstance(material,Gradient):
+			gradient = QLinearGradient(0,0,1,0)
+			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
+			stops = material.stops
+			for i in range(len(stops)):
+				if i > 0 and stops[i].position == stops[i-1].position:
+					location = stops[i].position+0.001
+				else:
+					location = stops[i].position
+				c = form.sb.materials[stops[i].color].toRGB8(prof_out) or (218,218,218)
+				gradient.setColorAt(location, QColor(c[0],c[1],c[2]))
+			paint.begin(pix)
+			paint.setBrush(gradient)
+			paint.drawRect(0, 0, 15, 15)
+			paint.end()
+			normal = pix.copy()
+			paint.begin(pix)
 			paint.setPen(QColor(255,255,255))
 			paint.drawRect(0, 0, 15, 15)
 			paint.setPen(Qt.DotLine)
@@ -1999,15 +2021,18 @@ class GradientWidget(QWidget):
 		
 		self.item = form.sb.materials[id]
 
+		self.sample = SwatchPreview(self.item,self)
+
 		stopList = QListWidget()
 		for stop in self.item.stops:
-			stopList.addItem(str(round(stop.location,2))+'|'+stop.color+'|'+str(stop.midpoint))
+			stopList.addItem(str(round(stop.position,2))+'|'+stop.color+'|'+str(stop.midpoint))
 		opstopList = QListWidget()
 		for opstop in self.item.transparencystops:
-			opstopList.addItem(str(round(opstop.location,2))+'|'+str(opstop.opacity)+'|'+str(opstop.midpoint))
+			opstopList.addItem(str(round(opstop.position,2))+'|'+str(opstop.opacity)+'|'+str(opstop.midpoint))
 
 		layout = QVBoxLayout()
 		layout.setContentsMargins(0,0,0,0)
+		layout.addWidget(self.sample)
 		layout.addWidget(QLabel(_("Color stops")))
 		layout.addWidget(stopList)
 		layout.addWidget(QLabel(_("Transparency stops")))
@@ -2022,18 +2047,29 @@ class SwatchPreview(QLabel):
 		self.setToolTip(_("Click to see in full screen"))
 
 	def update(self):
-		if isinstance(self.swatch,Pattern):
-			palette = self.palette()
-			palette.setBrush(self.backgroundRole(),QBrush(QPixmap.fromImage(ImageQt.ImageQt(self.swatch.imageRGB()))))
-			self.setPalette(palette)
-			self.setAutoFillBackground(True)
-		elif isinstance(self.swatch,Color):
+		palette = QLabel().palette()
+		if isinstance(self.swatch,Color):
 			prof_out = str(settings.value("mntrProfile").toString()) or False
 			if self.swatch.toRGB8(prof_out):
 				r,g,b = self.swatch.toRGB8(prof_out)
-				self.setStyleSheet("QWidget { background-color: rgb("+str(r)+","+str(g)+","+str(b)+") }")
-			else:
-				self.setStyleSheet("")
+				palette.setBrush(self.backgroundRole(),QBrush(QColor(r,g,b)))
+		elif isinstance(self.swatch,Pattern):
+			palette.setBrush(self.backgroundRole(),QBrush(QPixmap.fromImage(ImageQt.ImageQt(self.swatch.imageRGB()))))
+		elif isinstance(self.swatch,Gradient):
+			gradient = QLinearGradient(0,0,1,0)
+			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
+			prof_out = str(settings.value("mntrProfile").toString()) or False
+			stops = self.swatch.stops
+			for i in range(len(stops)):
+				if i > 0 and stops[i].position == stops[i-1].position:
+					location = stops[i].position+0.001
+				else:
+					location = stops[i].position
+				c = form.sb.materials[stops[i].color].toRGB8(prof_out) or (218,218,218)
+				gradient.setColorAt(location, QColor(c[0],c[1],c[2]))
+			palette.setBrush(self.backgroundRole(),QBrush(gradient))
+		self.setPalette(palette)
+		self.setAutoFillBackground(True)
 
 	def mousePressEvent(self,event):
 		if self.isFullScreen():
