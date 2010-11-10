@@ -234,6 +234,9 @@ class adobe_grd(SBCodec):
 								Y = Clr[2]['Ylw ']/100
 								K = Clr[2]['Blck']/100
 								color.values[('CMYK',False)] = [C,M,Y,K]
+							elif Clr[0] == 'Grsc':
+								K = Clr[2]['Gry ']/100
+								color.values[('GRAY',False)] = [K]
 							elif Clr[0] == 'LbCl':
 								L = Clr[2]['Lmnc']
 								a = Clr[2]['A   ']
@@ -272,7 +275,7 @@ class adobe_grd(SBCodec):
 					if name > '':
 						item.info.title = name
 					i = 1
-					while id in form.sb.materials:
+					while id in swatchbook.materials:
 						id = name+' ('+str(i)+')'
 						i += 1
 				item.info.identifier = id

@@ -93,7 +93,7 @@ class ooo_sog(SBCodec):
 					else:
 						name = 'Gradient'
 					i = 1
-					while id in form.sb.materials:
+					while id in swatchbook.materials:
 						id = name+' ('+str(i)+')'
 						i += 1
 				item.info.identifier = id

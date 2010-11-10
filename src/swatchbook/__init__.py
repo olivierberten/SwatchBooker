@@ -400,11 +400,11 @@ class Pattern(object):
 		else:
 			return False
 
+	#TODO: SVG support
 	def image(self):
 		return Image.open(os.path.join(self.swatchbook.tmpdir,"patterns",self.info.identifier))
 
 	def imageRGB(self,prof_out=False):
-		#TODO: color management
 		image = self.image()
 		alpha_band = False
 		if image.mode in ('LA','PA','RGBA'):

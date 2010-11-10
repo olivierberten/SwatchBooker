@@ -41,7 +41,7 @@ class pantone(WebSvc):
 	         '7': u'PANTONE® GoeGuide™ uncoated',
 	         '8': u'PANTONE® FASHION + HOME cotton',
 	         '9': u'PANTONE® FASHION + HOME paper',
-	         '10':u'PANTONE® GoeBridge™ coated',
+	         '10': u'PANTONE® GoeBridge™ coated',
 	         '15': u'PANTONE® PREMIUM METALLICS Coated',
 	         '16': u'PANTONE® PASTELS & NEONS Coated',
 	         '17': u'PANTONE® PASTELS & NEONS Uncoated',
@@ -91,7 +91,7 @@ class pantone(WebSvc):
 					else:
 						sys.stderr.write('duplicated id: '+id+'\n')
 						item.info.title = id
-						id = id+str(item.values[item.values.keys()[0]])
+						id = id+idfromvals(item.values[item.values.keys()[0]])
 				item.info.identifier = id
 				swatchbook.materials[id] = item
 				swatchbook.book.items.append(Swatch(id))

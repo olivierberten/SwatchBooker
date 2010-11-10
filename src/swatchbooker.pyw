@@ -998,7 +998,7 @@ class MainWindow(QMainWindow):
 	def addProfile(self):
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							_("Choose file"), ".",
-							(_("ICC profiles (*.icc *.icm)"))))
+							(_("ICC profiles (*.icc *.icm);;"+_("All files (*)")))))
 		if fname:
 			# the next 6 lines are a workaround for the unability of lcms to deal with unicode file names
 			fi = open(fname, 'rb')
@@ -1680,15 +1680,8 @@ class MaterialWidget(QGroupBox):
 		infoScrollArea.viewport().setPalette(palette)
 		infoScrollArea.setFrameShape(QFrame.NoFrame)
 
-		if isinstance(self.item, Color):
-			self.setTitle(_("Color"))
-			self.swatch = ColorWidget(id,self)
-		elif isinstance(self.item, Pattern):
-			self.setTitle(_("Pattern"))
-			self.swatch = PatternWidget(id,self)
-		elif isinstance(self.item, Gradient):
-			self.setTitle(_("Gradient"))
-			self.swatch = GradientWidget(id,self)
+		self.setTitle(_(self.item.__class__.__name__))
+		self.swatch = eval(self.item.__class__.__name__+'Widget(id,self)')
 
 		self.swExtra = QTableWidget()
 		self.swExtra.setColumnCount(2)
@@ -1999,6 +1992,40 @@ class ColorWidget(QWidget):
 				profList.append((form.sb.profiles[prof].info['desc'][0],prof))
 		return profList
 
+class TintWidget(QWidget):
+	def __init__(self, id, parent):
+		super(TintWidget, self).__init__(parent)
+
+		self.item = form.sb.materials[id]
+
+		self.sample = SwatchPreview(self.item,self)
+
+		layout = QVBoxLayout()
+		layout.setContentsMargins(0,0,0,0)
+		layout.addWidget(self.sample)
+		layout.addWidget(QLabel(self.item.color.info.identifier))
+		layout.addWidget(QLabel(str(self.item.amount*100)+'%'))
+		self.setLayout(layout)
+		
+		self.sample.update()
+
+class ShadeWidget(QWidget):
+	def __init__(self, id, parent):
+		super(ShadeWidget, self).__init__(parent)
+
+		self.item = form.sb.materials[id]
+
+		self.sample = SwatchPreview(self.item,self)
+
+		layout = QVBoxLayout()
+		layout.setContentsMargins(0,0,0,0)
+		layout.addWidget(self.sample)
+		layout.addWidget(QLabel(self.item.color.info.identifier))
+		layout.addWidget(QLabel(str(self.item.amount*100)+'%'))
+		self.setLayout(layout)
+		
+		self.sample.update()
+
 class PatternWidget(QWidget):
 	def __init__(self, id, parent):
 		super(PatternWidget, self).__init__(parent)
@@ -2048,7 +2075,7 @@ class SwatchPreview(QLabel):
 
 	def update(self):
 		palette = QLabel().palette()
-		if isinstance(self.swatch,Color):
+		if self.swatch.__class__.__name__ in ('Color','Tint','Shade'):
 			prof_out = str(settings.value("mntrProfile").toString()) or False
 			if self.swatch.toRGB8(prof_out):
 				r,g,b = self.swatch.toRGB8(prof_out)
@@ -2285,7 +2312,7 @@ class SettingsDlg(QDialog):
 			return self.cmykProfile
 
 	def setRGBFile(self):
-		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm)"))
+		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm);;"+_("All files (*)")))
 		if fname:
 			profile = icc.ICCprofile(fname)
 			if profile.info['class'] == "mntr" and profile.info['space'] == 'RGB ':
@@ -2305,7 +2332,7 @@ class SettingsDlg(QDialog):
 				self.mntrCombo.setCurrentIndex(0)
 
 	def setCMYKFile(self):
-		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm)"))
+		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(),_("ICC profiles (*.icc *.icm);;"+_("All files (*)")))
 		if fname:
 			profile = icc.ICCprofile(fname)
 			if profile.info['space'] == 'CMYK':
