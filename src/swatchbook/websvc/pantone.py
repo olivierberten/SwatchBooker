@@ -70,7 +70,7 @@ class pantone(WebSvc):
 		return list0
 
 	def read(self,swatchbook,guide):
-		page = urllib.urlopen(self.url+'xref_lib'+guide+'.js').readlines()
+		page = urlopen(self.url+'xref_lib'+guide+'.js').readlines()
 		swatchbook.info.title = self.guide[guide]
 		for line in page[1:]:
 			if line.strip() > '':

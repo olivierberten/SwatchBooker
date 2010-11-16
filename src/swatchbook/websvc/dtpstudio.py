@@ -32,15 +32,15 @@ class dtpstudio(WebSvc):
 	url = "http://www.dtpstudio.de/colordesigner/"
 
 	def level0(self):
-		page = urllib.urlopen(self.url+"popup_d.htm").read()
+		page = urlopen(self.url+"popup_d.htm").read()
 		namelist = page.split('<option value="-1" selected>Farbsystem auswählen...</option>')[1].split('</option>\n            </select>')[0].strip().split('</option>')
-		page = urllib.urlopen(self.url+"Scripts/main.js").read()
+		page = urlopen(self.url+"Scripts/main.js").read()
 		syslist = page.split("var targetSystems = new Array('")[1].split("');",1)[0].split("','")
 		systems = SortedDict()
 		for i in range(len(namelist)):
 			systems[syslist[i]] = namelist[i].split('">')[1]
 		# Fix for some mistakes in the color system list
-		if urllib.urlopen(self.url+"popup_d.htm").info().getdate('Last-Modified') == (2009, 10, 5, 7, 15, 57, 0, 1, 0) and urllib.urlopen(self.url+"Scripts/main.js").info().getdate('Last-Modified') == (2009, 10, 5, 13, 59, 20, 0, 1, 0):
+		if urlopen(self.url+"popup_d.htm").info().getdate('Last-Modified') == (2009, 10, 5, 7, 15, 57, 0, 1, 0) and urlopen(self.url+"Scripts/main.js").info().getdate('Last-Modified') == (2009, 10, 5, 13, 59, 20, 0, 1, 0):
 			systems['AVERY900SUPERCAST-PANTONE.js'] = 'Avery900SuperCast-Pantone'
 			systems['AVERY900SUPERCAST.js'] = 'Avery900SuperCast'
 			del systems['BRILLUXSCALA.js']
@@ -63,7 +63,7 @@ class dtpstudio(WebSvc):
 		return systems
 
 	def read(self,swatchbook,system):
-		page = urllib.urlopen(self.url+"ColorSystems/"+system).readlines()
+		page = urlopen(self.url+"ColorSystems/"+system).readlines()
 		swatchbook.info.title = page[1].split('// ...::: ')[1].split(' :::...')[0]
 		for line in page[2:]:
 			line = eval(line.split('completeColor')[1].split(";")[0].replace('false','False').replace('true','True'))

@@ -20,12 +20,14 @@
 #
 
 from __future__ import division
-import urllib
+from urllib import quote_plus,unquote_plus,urlencode,urlretrieve
+from urllib2 import urlopen
 import xml.etree.cElementTree as etree
 from xml.sax.saxutils import escape as xmlescape
 from xml.sax.saxutils import unescape as xmlunescape
 from swatchbook import *
 from string import *
+from swatchbook.codecs import idfromvals
 
 class WebSvc(object):
 	about = False

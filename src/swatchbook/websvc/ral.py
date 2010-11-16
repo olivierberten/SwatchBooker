@@ -36,7 +36,7 @@ class ral(WebSvc):
 		return {'0': u'RAL CLASSIC'}
 
 	def read(self,swatchbook,palette):
-		webpage = urllib.urlopen(self.url).read()
+		webpage = urlopen(self.url).read()
 		data = webpage.split('<tbody>')[1].split('</tbody>')[0]
 		data = data.split('<tr')[1:]
 		swatchbook.info.title = u'RAL CLASSIC'

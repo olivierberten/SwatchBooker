@@ -104,7 +104,7 @@ class ccorg(WebSvc):
 
 	def level0(self):
 		categories = SortedDict()
-		page = urllib.urlopen(self.url).read()
+		page = urlopen(self.url).read()
 
 		cats = page.partition('<ul id="cats">')
 		cats = cats[1]+cats[2]
@@ -120,7 +120,7 @@ class ccorg(WebSvc):
 
 	def level1(self,cat):
 		companies = SortedDict()
-		page = urllib.urlopen(self.url+"resources/companies.aspx?categoryid="+cat).read()
+		page = urlopen(self.url+"resources/companies.aspx?categoryid="+cat).read()
 
 		if page.find('ctl00_mainbody_DigCertList'):
 			DigCertList = page.partition('<table id="ctl00_mainbody_DigCertList"')
@@ -151,7 +151,7 @@ class ccorg(WebSvc):
 
 	def level2(self,companyid):
 		collections = SortedDict()
-		page = urllib.urlopen(self.url+"resources/colors.aspx?companyid="+companyid).read()
+		page = urlopen(self.url+"resources/colors.aspx?companyid="+companyid).read()
 
 		dlProducts = page.partition('<table id="ctl00_mainbody_dlProducts"')
 		dlProducts = dlProducts[1]+dlProducts[2]
@@ -169,7 +169,7 @@ class ccorg(WebSvc):
 	def read(self,swatchbook,coll):
 		companyid,lineid = eval(coll)
 		url = self.url+"resources/colors.aspx?companyid="+companyid+"&lineid="+lineid
-		page = urllib.urlopen(url).read()
+		page = urlopen(url).read()
 		data = page.split('ReceiveServerData("fandeck^&')[1].split('");</script>')[0]
 		deck = ccorg.parse_deck(data)
 
@@ -178,7 +178,7 @@ class ccorg(WebSvc):
 			
 			for i in range(1,int(pages)):
 				viewstate = page.split('__VIEWSTATE" value="')[1].split('" />')[0]
-				sock = urllib.urlopen(url +'&'+urllib.urlencode({'__VIEWSTATE': viewstate})+'&ctl00%24mainbody%24Pager1%24Next.x=7&ctl00%24mainbody%24Pager1%24Next.y=7')
+				sock = urlopen(url +'&'+urlencode({'__VIEWSTATE': viewstate})+'&ctl00%24mainbody%24Pager1%24Next.x=7&ctl00%24mainbody%24Pager1%24Next.y=7')
 				page = sock.read()
 				sock.close()
 				data = page.split('ReceiveServerData("fandeck^&')[1].split('");</script>')[0]
