@@ -62,6 +62,9 @@ def toRGB(model,values,prof_in=False,prof_out=False):
 	elif model == 'XYZ':
 		X,Y,Z = values
 		R,G,B = XYZ2RGB(X,Y,Z,prof_out)
+	elif model == 'xyY':
+		x,y,Y = values
+		R,G,B = xyY2RGB(x,y,Y,prof_out)
 	elif model == 'CMYK':
 		C,M,Y,K = values
 		R,G,B = CMYK2RGB(C,M,Y,K,prof_in,prof_out)
@@ -135,6 +138,13 @@ def XYZ2RGB(X,Y,Z,prof_out=False):
 	cmsCloseProfile(hXYZ)
 
 	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+
+def xyY2RGB(x,y,Y,prof_out=False):
+
+	X,Y,Z = xyY2XYZ(x,y,Y)
+	R,G,B = XYZ2RGB(X,Y,Z,prof_out)
+
+	return (R,G,B)
 
 def CMYK2RGB(C,M,Y,K,prof_in=False,prof_out=False):
 
@@ -274,6 +284,14 @@ def XYZ2Lab(X,Y,Z): # This formula is used in the ASE codec
 	b = 200*(Y-Z)
 
 	return (L,a,b)
+
+def xyY2XYZ(x,y,Y):
+	if y == 0: # trick for the Munsell full range palette
+		y = 5e-324
+	X = x * ( Y / y )
+	Z = ( 1 - x - y ) * ( Y / y )
+
+	return (X,Y,Z)
 
 def LCH2Lab(L,C,H):
 	a = math.cos(math.radians(H)) * C

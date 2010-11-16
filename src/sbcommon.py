@@ -174,7 +174,7 @@ class webWidgetList(QTreeWidget):
 			for item in root:
 				if isinstance(root[item],SortedDict):
 					pitemtext = QStringList()
-					pitemtext << root[item][0] << item
+					pitemtext << item
 					pitem = QTreeWidgetItem(self,pitemtext)
 					pitem.setFlags(pitem.flags() & ~(Qt.ItemIsSelectable))
 					for sitem in root[item]:
