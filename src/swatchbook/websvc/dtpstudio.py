@@ -68,7 +68,7 @@ class dtpstudio(WebSvc):
 		for line in page[2:]:
 			line = eval(line.split('completeColor')[1].split(";")[0].replace('false','False').replace('true','True'))
 			item = Color(swatchbook)
-			item.usage.append('spot')
+			item.usage.add('spot')
 			try:
 				id = unicode(line[4],'utf-8')
 			except UnicodeDecodeError:

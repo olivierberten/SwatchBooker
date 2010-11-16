@@ -70,7 +70,7 @@ class icc_nmcl(SBCodec):
 				X,Y,Z = struct.unpack('>3H',file.read(6))
 				item.values[('XYZ',False)] = [X*100/0x8000,Y*100/0x8000,Z*100/0x8000]
 			file.seek(m*2,1)
-			item.usage.append('spot')
+			item.usage.add('spot')
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

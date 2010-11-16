@@ -46,7 +46,7 @@ class adobe_aco(SBCodec):
 			item = Color(swatchbook)
 			A,B,C,D,ColorName = struct.unpack('<4H '+str(namesize)+'s',file.read(8+namesize))
 			if type % 2:
-				item.usage.append('spot')
+				item.usage.add('spot')
 			id = unicode(ColorName.split('\x00')[0],'iso-8859-1')
 			if type % 16 < 8:
 				id = "PANTONE "+id

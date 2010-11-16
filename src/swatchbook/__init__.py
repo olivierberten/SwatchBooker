@@ -320,7 +320,7 @@ class Color(object):
 	def __init__(self,swatchbook):
 		self.info = Info()
 		self.values = SortedDict()
-		self.usage = []
+		self.usage = set()
 		self.extra = {}
 		self.swatchbook = swatchbook
 

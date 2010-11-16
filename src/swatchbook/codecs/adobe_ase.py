@@ -71,9 +71,9 @@ class adobe_ase(SBCodec):
 					item.values[('GRAY',False)] = [1-struct.unpack('>f',file.read(4))[0],]
 				type = struct.unpack('>H',file.read(2))[0]
 				if type == 0:
-					item.usage.append('global')
+					item.usage.add('global')
 				elif type == 1:
-					item.usage.append('spot')
+					item.usage.add('spot')
 				if not id or id == '':
 					id = idfromvals(item.values[item.values.keys()[0]])
 				if id in swatchbook.materials:

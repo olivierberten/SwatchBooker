@@ -49,7 +49,7 @@ class scribus(SBCodec):
 					cmyk = elem.attrib['CMYK']
 					item.values[('CMYK',False)] = [int(cmyk[1:3],16)/0xFF,int(cmyk[3:5],16)/0xFF,int(cmyk[5:7],16)/0xFF,int(cmyk[7:],16)/0xFF]
 				if "Spot" in elem.attrib and elem.attrib['Spot'] == 1:
-					item.usage.append('spot')
+					item.usage.add('spot')
 			elif elem.tag == 'Gradient':
 				item = Gradient()
 				id = unicode(xmlunescape(elem.attrib['Name']))

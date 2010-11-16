@@ -99,7 +99,7 @@ class adobe_bcf(SBCodec):
 				file.seek((8-col_nbinks)*4, 1)
 			col_type = struct.unpack('>H',file.read(2))[0]
 			if col_type == 1:
-				item.usage.append('spot')
+				item.usage.add('spot')
 			if version in ('ACF 2.1','BCF 2.0') and type in (8,16):
 				preferredmodel = bcf_model[struct.unpack('>H',file.read(2))[0]]
 			if preferredmodel == 'hifi':

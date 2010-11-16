@@ -89,7 +89,7 @@ class adobe_acf(SBCodec):
 			if type == 'Mixed':
 				col_type = file[pos].strip()
 				if col_type == 'Spot' or spot:
-					item.usage.append('spot')
+					item.usage.add('spot')
 				pos = pos+1
 			id = prefix+unicode(file[pos].strip(),'macroman')+suffix
 			pos = pos+1

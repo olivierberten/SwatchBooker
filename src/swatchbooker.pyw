@@ -1900,7 +1900,7 @@ class ColorWidget(QWidget):
 	def edit(self):
 		if self.sender() == self.usageSpot:
 			if self.usageSpot.isChecked():
-				self.item.usage.append('spot')
+				self.item.usage.add('spot')
 			else:
 				self.item.usage.remove('spot')
 			icon = form.drawIcon(self.item.info.identifier)

@@ -93,7 +93,7 @@ class quark_qcl(SBCodec):
 											  eval(color.getchildren()[eval(data_format['PC6_6'])-1].text)/100]
 			item.values.insert(0,(preferredmodel,False),item.values.pop((preferredmodel,False)))
 			if usage in ('4','5'):
-				item.usage.append('spot')
+				item.usage.add('spot')
 			if not id or id == '':
 				id = idfromvals(item.values[item.values.keys()[0]])
 			if id in swatchbook.materials:

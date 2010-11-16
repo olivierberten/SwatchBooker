@@ -76,7 +76,7 @@ class pantone(WebSvc):
 			if line.strip() > '':
 				line = line.split('"')[1].split(',')
 				item = Color(swatchbook)
-				item.usage.append('spot')
+				item.usage.add('spot')
 				id = unicode(line[1])
 				item.info.title = u'PANTONE® '+id
 				item.values[('Lab',False)] = [eval(line[2]),eval(line[3]),eval(line[4])]

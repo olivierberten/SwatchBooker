@@ -201,7 +201,7 @@ class ccorg(WebSvc):
 		
 		for i in range(len(deck['colours'])):
 			item = Color(swatchbook)
-			item.usage.append('spot')
+			item.usage.add('spot')
 			rgb = deck['colours'][i]
 			item.values[('sRGB',False)] = [int(rgb[0:2],16)/0xFF,int(rgb[2:4],16)/0xFF,int(rgb[4:],16)/0xFF]
 			if deck['names'][i] not in swatchbook.materials:

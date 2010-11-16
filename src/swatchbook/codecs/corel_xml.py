@@ -132,7 +132,7 @@ class corel_xml(SBCodec):
 							else:
 								material.values[('6CLR',False)] = list(value)
 					if not 'process' in cs.attrib:
-						material.usage.append('spot')
+						material.usage.add('spot')
 					swatchbook.materials[material.info.identifier] = material
 		colors = xml.find('colors')
 		if len(colors.getchildren()) > 1:

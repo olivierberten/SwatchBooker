@@ -225,7 +225,7 @@ class corel_cpl(SBCodec):
 				row[i], col[i] = struct.unpack('<2L',file.read(8))
 				file.seek(4, 1)
 			if spot:
-				item.usage.append('spot')
+				item.usage.add('spot')
 			if title and (find(title,'NONASSIGNED') >= 0 or find(title,'UNASSIGNED') >= 0):
 				swatchbook.book.items.append(Spacer())
 				continue

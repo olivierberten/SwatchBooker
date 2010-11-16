@@ -99,6 +99,6 @@ class adobe_acb(SBCodec):
 			if struct.unpack('>4s',file.read(4))[0] == 'spot':
 				for id in swatchbook.materials:
 					if isinstance(swatchbook.materials[id],Color):
-						swatchbook.materials[id].usage.append('spot')
+						swatchbook.materials[id].usage.add('spot')
 		file.close()
 

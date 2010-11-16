@@ -60,7 +60,7 @@ class ral_bcs(SBCodec):
 					id =  unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
 			item.values[('Lab',False)] = list(struct.unpack('<3f',file.read(12)))
 			if sig == 'clf':
-				item.usage.append('spot')
+				item.usage.add('spot')
 			if not id or id == '':
 				id = idfromvals(item.values[('Lab',False)])
 			if id in swatchbook.materials:

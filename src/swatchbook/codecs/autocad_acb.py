@@ -50,7 +50,7 @@ class autocad_acb(SBCodec):
 					encrypted = True
 				elif colorEntry.find('RGB8'):
 					item.values[('RGB',False)] = [eval(colorEntry.find('RGB8').find('red').text)/0xFF,eval(colorEntry.find('RGB8').find('green').text)/0xFF,eval(colorEntry.find('RGB8').find('blue').text)/0xFF]
-				item.usage.append('spot')
+				item.usage.add('spot')
 				id = unicode(colorEntry.find('colorName').text)
 				if id in swatchbook.materials:
 					if len(item.values) > 0 and item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:

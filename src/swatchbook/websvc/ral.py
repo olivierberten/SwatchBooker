@@ -44,7 +44,7 @@ class ral(WebSvc):
 		i = 0
 		for line in data:
 			item = Color(swatchbook)
-			item.usage.append('spot')
+			item.usage.add('spot')
 			if line.find(' style="BACKGROUND: rgb(') >= 0:
 				line = line.split(' style="BACKGROUND: rgb(')[1]
 				R,G,B = eval("["+line.split(');',1)[0]+"]")

@@ -75,7 +75,7 @@ class icipaints(WebSvc):
 		colorlist = urllib.urlopen(self.url[self.brands[brand][1]]+self.brands[brand][2]+'Action=GetPaletteCompact&Gammas=2.2!2.2!2.2&ColourTemp=6500').read().replace("Error 500: SRVE0199E: OutputStream already obtained\r\n","").split('::')
 		for c in colorlist:
 			item = Color(swatchbook)
-			item.usage.append('spot')
+			item.usage.add('spot')
 			c = c.split('!')
 			item.info.identifier = c[0]
 			item.info.title = unicode(c[1],'UTF-8')
