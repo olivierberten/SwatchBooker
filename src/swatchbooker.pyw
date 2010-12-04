@@ -181,6 +181,7 @@ class MainWindow(QMainWindow):
 		self.matListEditBut = MenuButton(self)
 		self.matListEditMenu = QMenu()
 		self.matListEditMenu.addAction(_('Add Color'),self.addColor)
+		self.matListEditMenu.addAction(_('Add Gradient'), self.addGradient)
 		self.matListEditMenu.addAction(_('Add Pattern(s)'),self.addPatterns)
 		self.deleteMaterialAction = self.matListEditMenu.addAction(_('Delete'),self.deleteMaterial)
 		self.matListEditMenu.addAction(_('Delete unused materials'),self.deleteUnusedMaterials)
@@ -201,6 +202,7 @@ class MainWindow(QMainWindow):
 		self.swTEditBut = MenuButton(self)
 		self.swTEditMenu = QMenu()
 		self.swTEditMenu.addAction(_('Add Color'),self.addColorSwatch)
+		self.swTEditMenu.addAction(_('Add Gradient'), self.addGradientSwatch)
 		self.swTEditMenu.addAction(_('Add Pattern(s)'),self.addPatternsSwatch)
 		self.swTEditMenu.addAction(_('Add Spacer'),self.addSpacer)
 		self.swTEditMenu.addAction(_('Add Break'),self.addBreak)
@@ -230,6 +232,7 @@ class MainWindow(QMainWindow):
 		self.swGEditBut = MenuButton(self)
 		self.swGEditMenu = QMenu()
 		self.swGEditMenu.addAction(_('Add Color'),self.addColorSwatch)
+		self.swGEditMenu.addAction(_('Add Gradient'), self.addGradientSwatch)
 		self.swGEditMenu.addAction(_('Add Pattern(s)'),self.addPatternsSwatch)
 		self.swGEditMenu.addAction(_('Add Spacer'),self.addSpacer)
 		self.swGEditMenu.addAction(_('Add Break'),self.addBreak)
@@ -390,6 +393,30 @@ class MainWindow(QMainWindow):
 		self.updSwatchCount()
 		return [id]
 
+	def addGradient(self):
+		id = _('New Gradient')
+		if id in form.sb.materials:
+			i = 1
+			while id in form.sb.materials:
+				id = _('New Gradient') + ' (' + str(i) + ')'
+				i += 1
+		material = Gradient()
+		stop0 = ColorStop()
+		stop0.position = 0
+		material.stops.append(stop0)
+		stop1 = ColorStop()
+		stop1.position = 1
+		material.stops.append(stop1)
+		material.info.identifier = id
+		form.sb.materials[id] = material
+		self.addMaterial(id)
+		icon = self.drawIcon(id)
+		self.addIcon(id, icon[0], icon[1])
+		self.matList.setFocus()
+		self.matList.setCurrentItem(self.materials[id][0])
+		self.updSwatchCount()
+		return [id]
+
 	def addPattern(self,fname):
 		try:
 			fname = unicode(fname)
@@ -463,6 +490,9 @@ class MainWindow(QMainWindow):
 
 	def addColorSwatch(self):
 		self.addSwatch('Color')
+
+	def addGradientSwatch(self):
+		self.addSwatch('Gradient')
 
 	def addPatternsSwatch(self):
 		self.addSwatch('Patterns')
@@ -897,6 +927,8 @@ class MainWindow(QMainWindow):
 			image = ImageQt.ImageQt(material.imageRGB())
 			paint.begin(pix)
 			paint.drawImage(0,0,image.scaled(16,16,Qt.KeepAspectRatioByExpanding,Qt.SmoothTransformation))
+			paint.setPen(QColor(0, 0, 0))
+			paint.drawRect(0, 0, 15, 15)
 			normal = pix.copy()
 			paint.setPen(QColor(255,255,255))
 			paint.drawRect(0, 0, 15, 15)
@@ -912,7 +944,10 @@ class MainWindow(QMainWindow):
 					location = stops[i].position+0.001
 				else:
 					location = stops[i].position
+				try:
 				c = form.sb.materials[stops[i].color].toRGB8(prof_out) or (218,218,218)
+				except KeyError:
+					c = (218, 218, 218)
 				gradient.setColorAt(location, QColor(c[0],c[1],c[2]))
 			paint.begin(pix)
 			paint.setBrush(gradient)
@@ -2051,53 +2086,278 @@ class GradientWidget(QWidget):
 
 		self.sample = SwatchPreview(self.item,self)
 
-		stopList = QListWidget()
+		self.colorSample = QLabel()
+		self.colorSampleUpdate()
+
+		self.currentStop = False
+		self.currentOpacityStop = False
+
+		self.colorSlider = MultiSlider(self)
+		self.colorSlider.setMaximum(10000)
+		self.colorSlider.flipHandles = True
 		for stop in self.item.stops:
-			stopList.addItem(str(round(stop.position,2))+'|'+stop.color+'|'+str(stop.midpoint))
-		opstopList = QListWidget()
-		for opstop in self.item.transparencystops:
-			opstopList.addItem(str(round(opstop.position,2))+'|'+str(opstop.opacity)+'|'+str(opstop.midpoint))
+			self.colorSlider.addHandle(stop.position * 10000)
+		
+		m = self.colorSlider.margins()
+		colorSampleLayout = QVBoxLayout()
+		colorSampleLayout.setContentsMargins(m, 0, m, 0)
+		colorSampleLayout.addWidget(self.colorSample)
+
+		self.colorIcon = QLabel()
+		self.colorIcon.setFixedWidth(50)
+		self.colorIcon.setFixedHeight(50)
+		self.colorStopFormula = QLineEdit()
+		colorEditLayout = QVBoxLayout()
+		colorEditLayout.addWidget(self.colorIcon)
+		colorEditLayout.addWidget(self.colorStopFormula)
+
+		colorLayout = QVBoxLayout()
+		colorLayout.setContentsMargins(0, 0, 0, 0)
+		colorLayout.addLayout(colorSampleLayout)
+		colorLayout.addWidget(self.colorSlider)
+		colorLayout.addLayout(colorEditLayout)
+		
+		colorGroup = QGroupBox(_("Color stops"))
+		colorGroup.setLayout(colorLayout)
+
+		self.opacitySample = QLabel()
+		self.opacitySlider = MultiSlider(self)
+		self.opacitySlider.setMaximum(100)
+		self.opacitySlider.flipHandles = True
+		for opstop in self.item.opacitystops:
+			self.opacitySlider.addHandle(opstop.position * 100)
+		self.opacitySampleUpdate()
+
+		self.opacitySpin = QSpinBox()
+		self.opacitySpin.setMaximum(100)
+		opacitySampleLayout = QVBoxLayout()
+		opacitySampleLayout.setContentsMargins(m, 0, m, 0)
+		opacitySampleLayout.addWidget(self.opacitySample)
+
+		opacitySpinLayout = QHBoxLayout()
+		opacitySpinLayout.addWidget(QLabel(_("Opacity:")))
+		opacitySpinLayout.addWidget(self.opacitySpin)
+		opacitySpinLayout.addWidget(QLabel("%"))
+		
+		opacityLayout = QVBoxLayout()
+		opacityLayout.setContentsMargins(0, 0, 0, 0)
+		opacityLayout.addLayout(opacitySampleLayout)
+		opacityLayout.addWidget(self.opacitySlider)
+		opacityLayout.addLayout(opacitySpinLayout)
+
+		opacityGroup = QGroupBox(_("Transparency stops"))
+		opacityGroup.setLayout(opacityLayout)
 
 		layout = QVBoxLayout()
 		layout.setContentsMargins(0,0,0,0)
 		layout.addWidget(self.sample)
-		layout.addWidget(QLabel(_("Color stops")))
-		layout.addWidget(stopList)
-		layout.addWidget(QLabel(_("Transparency stops")))
-		layout.addWidget(opstopList)
+		layout.addWidget(colorGroup)
+		layout.addWidget(opacityGroup)
 		self.setLayout(layout)
 
-class SwatchPreview(QLabel):
-	def __init__(self,swatch,parent):
-		super(SwatchPreview, self).__init__(parent)
-		self.swatch = swatch
-		self.update()
-		self.setToolTip(_("Click to see in full screen"))
+		self.colorEditReset()
+		self.opacityEditReset()
 
-	def update(self):
+		self.connect(self.colorSlider,
+				SIGNAL("sliderMoved(int)"), self.colorMove)
+		self.connect(self.colorSlider,
+				SIGNAL("sliderAdded(int)"), self.colorAddStop)
+		self.connect(self.colorSlider,
+				SIGNAL("sliderDeleted(int)"), self.colorDelStop)
+		self.connect(self.colorSlider,
+				SIGNAL("sliderPressed()"), self.colorActivate)
+		self.connect(self.colorSlider,
+				SIGNAL("currentHandleChanged(int)"), self.colorActivate)
+
+		self.connect(self.opacitySlider,
+				SIGNAL("sliderMoved(int)"), self.opacityMove)
+		self.connect(self.opacitySlider,
+				SIGNAL("sliderAdded(int)"), self.opacityAddStop)
+		self.connect(self.opacitySlider,
+				SIGNAL("sliderDeleted(int)"), self.opacityDelStop)
+		self.connect(self.opacitySlider,
+				SIGNAL("sliderPressed()"), self.opacityActivate)
+		self.connect(self.opacitySlider,
+				SIGNAL("currentHandleChanged(int)"), self.opacityActivate)
+		self.connect(self.opacitySpin,
+				SIGNAL("valueChanged(int)"), self.opacityEdit)
+
+	def colorActivate(self):
+		self.currentStop = sorted(self.colorSlider.handles).index(self.colorSlider.handles[0])
+		if self.item.stops[self.currentStop].color:
+			id = self.item.stops[self.currentStop].color
 		palette = QLabel().palette()
-		if self.swatch.__class__.__name__ in ('Color','Tint','Shade'):
+			material = form.sb.materials[id]
 			prof_out = str(settings.value("mntrProfile").toString()) or False
-			if self.swatch.toRGB8(prof_out):
-				r,g,b = self.swatch.toRGB8(prof_out)
+			if material.toRGB8(prof_out):
+				r, g, b = material.toRGB8(prof_out)
 				palette.setBrush(self.backgroundRole(),QBrush(QColor(r,g,b)))
-		elif isinstance(self.swatch,Pattern):
-			palette.setBrush(self.backgroundRole(),QBrush(QPixmap.fromImage(ImageQt.ImageQt(self.swatch.imageRGB()))))
-		elif isinstance(self.swatch,Gradient):
+			self.colorIcon.setPalette(palette)
+			self.colorIcon.setAutoFillBackground(True)
+			if material.info.title > '':
+				text = material.info.title
+			else:
+				text = material.info.identifier
+			self.colorIcon.setToolTip(text)
+			self.colorStopFormula.setEnabled(True)
+		else:
+			self.colorIcon.setText(_("empty"))
+
+	def colorEditReset(self):
+		self.colorIcon.clear()
+		self.colorIcon.setToolTip("")
+		self.colorIcon.setPalette(QLabel().palette())
+		self.colorStopFormula.setEnabled(False)
+		self.colorStopFormula.clear()
+
+	def colorMove(self, val):
+		self.item.stops[self.currentStop].position = val / 10000
+		self.colorSampleUpdate()
+
+	def colorAddStop(self, val):
+		stop = ColorStop()
+		stop.position = val / 10000
+		self.item.stops.insert(sorted(self.colorSlider.handles).index(val), stop)
+		self.colorSampleUpdate()
+		self.colorActivate()
+
+	def colorDelStop(self, index):
+		self.item.stops.pop(index)
+		self.colorSampleUpdate()
+		self.colorEditReset()
+
+	def colorSampleUpdate(self):
 			gradient = QLinearGradient(0,0,1,0)
 			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
+		palette = QLabel().palette()
+		stops = self.item.stops
 			prof_out = str(settings.value("mntrProfile").toString()) or False
-			stops = self.swatch.stops
-			for i in range(len(stops)):
-				if i > 0 and stops[i].position == stops[i-1].position:
-					location = stops[i].position+0.001
+		if len(stops) > 0:
+			for i,stop in enumerate(stops):
+				if i > 0 and stop.position == stops[i - 1].position:
+					location = stop.position + 0.001
 				else:
-					location = stops[i].position
-				c = form.sb.materials[stops[i].color].toRGB8(prof_out) or (218,218,218)
+					location = stop.position
+				try:
+					c = form.sb.materials[stop.color].toRGB8(prof_out) or (218, 218, 218)
+				except KeyError:
+					c = (218, 218, 218)
 				gradient.setColorAt(location, QColor(c[0],c[1],c[2]))
 			palette.setBrush(self.backgroundRole(),QBrush(gradient))
+		else:
+			palette.setBrush(self.backgroundRole(), QBrush(QColor(0,0,0)))
+		self.colorSample.setPalette(palette)
+		self.colorSample.setAutoFillBackground(True)
+		self.sample.update()
+
+	def opacityActivate(self):
+		self.currentOpacityStop = sorted(self.opacitySlider.handles).index(self.opacitySlider.handles[0])
+		self.opacitySpin.setValue(self.item.opacitystops[self.currentOpacityStop].opacity * 100)
+		self.opacitySpin.setEnabled(True)
+
+	def opacityEditReset(self):
+		self.opacitySpin.setEnabled(False)
+		self.opacitySpin.clear()
+
+	def opacityEdit(self,val):
+		self.item.opacitystops[self.currentOpacityStop].opacity = val / 100
+		self.opacitySampleUpdate()
+
+	def opacityMove(self, val):
+		self.item.opacitystops[self.currentOpacityStop].position = val / 100
+		self.opacitySampleUpdate()
+
+	def opacityAddStop(self, val):
+		stop = OpacityStop()
+		stop.position = val / 100
+		stop.opacity = 1
+		self.item.opacitystops.insert(sorted(self.opacitySlider.handles).index(val), stop)
+		self.opacitySampleUpdate()
+		self.opacityActivate()
+
+	def opacityDelStop(self, index):
+		self.item.opacitystops.pop(index)
+		self.opacitySampleUpdate()
+		self.opacityEditReset()
+
+	def opacitySampleUpdate(self):
+		gradient = QLinearGradient(0, 0, 1, 0)
+		gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
+		palette = QLabel().palette()
+		stops = self.item.opacitystops
+		if len(stops) > 0:
+			for i,stop in enumerate(stops):
+				if i > 0 and stop.position == stops[i - 1].position:
+					location = stop.position + 0.001
+				else:
+					location = stop.position
+				o = int((1-stop.opacity)*255)
+				gradient.setColorAt(location, QColor(o, o, o))
+			palette.setBrush(self.backgroundRole(), QBrush(gradient))
+		else:
+			palette.setBrush(self.backgroundRole(), QBrush(QColor(0,0,0)))
+		self.opacitySample.setPalette(palette)
+		self.opacitySample.setAutoFillBackground(True)
+		self.sample.update()
+
+class SwatchPreview(QLabel):
+	def __init__(self, material, parent):
+		super(SwatchPreview, self).__init__(parent)
+		self.material = material
+		self.setToolTip(_("Click to see in full screen"))
+
+		palette = QLabel().palette()
+		bgpix = QPixmap(16,16)
+		bgpix.fill(QColor(204, 204, 204))
+		bgpaint = QPainter()
+		bgpaint.begin(bgpix)
+		bgpaint.setPen(Qt.transparent)
+		bgpaint.setBrush(QColor(128, 128, 128))
+		bgpaint.drawRect(8, 0, 8, 8)
+		bgpaint.drawRect(0, 8, 8, 8)
+		bgpaint.end()
+		palette.setBrush(QPalette.Window, QBrush(bgpix))
 		self.setPalette(palette)
 		self.setAutoFillBackground(True)
+
+	def update(self):
+		s = self.size()
+		pix = QPixmap(s)
+		pix.fill(Qt.transparent)
+		paint = QPainter()
+		paint.begin(pix)
+		paint.setPen(Qt.transparent)
+		prof_out = str(settings.value("mntrProfile").toString()) or False
+		if self.material.__class__.__name__ in ('Color', 'Tint', 'Shade'):
+			if self.material.toRGB8(prof_out):
+				r, g, b = self.material.toRGB8(prof_out)
+				paint.setBrush(QBrush(QColor(r, g, b)))
+		elif isinstance(self.material, Pattern):
+			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(prof_out)))
+			paint.setBrush(QBrush(image))
+		elif isinstance(self.material, Gradient):
+			gradient = QLinearGradient(0, 0, 1, 0)
+			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
+			stops = self.material.stops
+			for i,stop in enumerate(stops):
+				if i > 0 and stop.position == stops[i - 1].position:
+					location = stop.position + 0.001
+				else:
+					location = stop.position
+				try:
+					c = form.sb.materials[stop.color].toRGB8(prof_out) or (218, 218, 218)
+				except KeyError:
+					c = (218, 218, 218)
+				gradient.setColorAt(location, QColor(c[0], c[1], c[2]))
+			paint.setBrush(QBrush(gradient))
+		paint.drawRect(0, 0, s.width(), s.height())
+		paint.end()
+		
+		self.setPixmap(pix)
+
+	def resizeEvent(self, event):
+		QLabel.resizeEvent(self, event)
+		self.update()
 
 	def mousePressEvent(self,event):
 		if self.isFullScreen():
@@ -2120,6 +2380,309 @@ class SwatchPreview(QLabel):
 			self.releaseMouse()
 		else:
 			QWidget.keyPressEvent(self,event)
+
+class MultiSlider(QSlider):
+	# freely inspired by QT's code ;-) 
+	def __init__(self, parent):
+		super(MultiSlider, self).__init__(Qt.Horizontal, parent)
+		self.handles = []
+
+		self.pressedControl = QStyle.SC_None
+		self.hoverControl = QStyle.SC_None
+		self.hoverRect = QRect()
+		self.clickOffset = 0
+		self.flipHandles = False
+		self.pressed = False
+		self.position = False
+		self.minSliders = 1
+		
+	def setCurrentHandle(self, handle):
+		if handle != 0:
+			self.handles.insert(0, self.handles.pop(handle))
+			self.position = self.handles[0]
+			self.emit(SIGNAL('currentHandleChanged(int)'), handle)
+
+	def addHandle(self, pos):
+		self.handles.insert(0, pos)
+		self.position = self.handles[0]
+		self.update()
+
+	def delHandle(self, handle):
+		self.handles.pop(handle)
+		if self.handles > 0:
+			self.position = self.handles[0]
+		else:
+			self.position = False
+		self.update()
+
+	def margins(self):
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		grooveRect = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderGroove, self)
+		handleRect = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self)
+		widgetRect = opt.rect
+		if self.orientation() == Qt.Horizontal:
+			return (widgetRect.width() - grooveRect.width() + handleRect.width()) / 2
+		else:
+			return (widgetRect.height() - grooveRect.height() + handleRect.height()) / 2
+
+	def __setLayoutItemMargins(self, element, opt=False):
+		myOpt = QStyleOption()
+		if not opt:
+			myOpt.initFrom(self)
+			myOpt.rect.setRect(0, 0, 32768, 32768)
+			opt = myOpt
+
+		liRect = self.style().subElementRect(element, opt, self)
+		if liRect.isValid():
+			self.leftLayoutItemMargin = opt.rect.left() - liRect.left()
+			self.topLayoutItemMargin = opt.rect.top() - liRect.top()
+			self.rightLayoutItemMargin = liRect.right() - opt.rect.right()
+			self.bottomLayoutItemMargin = liRect.bottom() - opt.rect.bottom()
+		else:
+			self.leftLayoutItemMargin = 0
+			self.topLayoutItemMargin = 0
+			self.rightLayoutItemMargin = 0
+			self.bottomLayoutItemMargin = 0
+
+	def __resetLayoutItemMargins(self):
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		self.__setLayoutItemMargins(QStyle.SE_SliderLayoutItem, opt)
+
+	def __pixelPosToRangeValue(self, pos):
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		gr = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderGroove, self)
+		sr = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self)
+
+		sliderLength = sr.width()
+		sliderMin = gr.x()
+		sliderMax = gr.right() - sliderLength + 1
+
+		return QStyle.sliderValueFromPosition(self.minimum(), self.maximum(), pos - sliderMin,
+												sliderMax - sliderMin, opt.upsideDown)
+
+	def __pick(self, pt):
+		return pt.x()
+
+	def __updateHoverControl(self, pos):
+		if len(self.handles) > 0:
+			lastHoverRect = self.hoverRect
+			lastHoverControl = self.hoverControl
+			lastHandle = self.handles[0]
+			doesHover = self.testAttribute(Qt.WA_Hover)
+			newHoverControl = self.__newHoverControl(pos)
+			if ((lastHoverControl != newHoverControl or lastHandle != self.handles[0]) and doesHover):
+				self.update(lastHoverRect)
+				self.update(self.hoverRect)
+				return True
+			return not doesHover
+
+	def __newHoverControl(self, pos):
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		opt.subControls = QStyle.SC_All
+		isHandle = False
+		for i, hpos in enumerate(self.handles):
+			opt.sliderPosition = hpos
+			handleRect = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self)
+			if handleRect.contains(pos):
+				isHandle = True
+				if not self.pressed:
+					self.setCurrentHandle(i)
+				break
+		if isHandle:
+			self.hoverRect = handleRect
+			self.hoverControl = QStyle.SC_SliderHandle
+		else:
+			self.hoverRect = QRect()
+			self.hoverControl = QStyle.SC_None
+
+		return self.hoverControl
+
+	def paintEvent(self, event):
+		p = QPainter(self)
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		opt.subControls = QStyle.SC_SliderGroove
+		opt.sliderPosition = self.minimum()
+		w = opt.rect.width()
+		h = opt.rect.height()
+		rect1 = QRect(0, 0, int(w / 2), h)
+		rect2 = QRect(int(w / 2), 0, int(w / 2) + w % 2, h)
+		opt.upsideDown = True
+		p.setClipRect(rect1)
+		self.style().drawComplexControl(QStyle.CC_Slider, opt, p, self)
+		opt.upsideDown = False
+		p.setClipRect(rect2)
+		self.style().drawComplexControl(QStyle.CC_Slider, opt, p, self)
+		p.setClipping(False)
+		self.initStyleOption(opt)
+		opt.subControls = QStyle.SC_SliderHandle
+		if self.flipHandles:
+			sliderRect = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self)
+			p.scale(1, -1)
+			p.translate(0, -2 * sliderRect.top() - sliderRect.height())
+		for i, pos in enumerate(reversed(self.handles)):
+			opt.sliderPosition = pos
+			if self.pressedControl:
+				opt.activeSubControls = self.pressedControl
+				opt.state |= QStyle.State_Sunken
+			else:
+				opt.activeSubControls = self.hoverControl
+			opt.state |= QStyle.State_HasFocus
+			opt.state ^= QStyle.State_HasFocus
+			self.style().drawComplexControl(QStyle.CC_Slider, opt, p, self)
+
+	def event(self, event):
+		type = event.type()
+		if type in (QEvent.HoverEnter, QEvent.HoverLeave, QEvent.HoverMove):
+			self.__updateHoverControl(event.pos())
+		elif type == QEvent.StyleChange or (hasattr(QEvent, 'MacSizeChange') and type == QEvent.MacSizeChange):
+			self.__resetLayoutItemMargins()
+		return QAbstractSlider.event(self, event)
+
+	def mouseDoubleClickEvent(self, event):
+		event.accept()
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		sliderRect = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self)
+		center = sliderRect.center() - sliderRect.topLeft()
+		pos = self.__pixelPosToRangeValue(self.__pick(event.pos() - center))
+		self.addHandle(pos)
+		self.emit(SIGNAL('sliderAdded(int)'), pos)
+
+	def value(self, handle=False):
+		if handle:
+			return self.handles[handle]
+		else:
+			return self.handles[0]
+
+	def setValue(self, value, handle=0):
+		self.handles[handle] = self.bound(value, handle)
+		if handle == 0:
+			self.position = value
+
+	def orderedHandles(self):
+		handles = []
+		for value in sorted(self.handles):
+			handles.append(self.handles.index(value))
+		return handles
+
+	def bound(self, value, handle=0):
+		handles = self.orderedHandles()
+		index = handles.index(handle)
+		if len(self.handles) == 1:
+			pass
+		elif index == 0:
+			if value >= self.handles[handles[1]]:
+				value = self.handles[handles[1]] - 1
+		elif index > 0 and index == len(self.handles) - 1:
+			if value <= self.handles[handles[-2]]:
+				value = self.handles[handles[-2]] + 1
+		else:
+			if value >= self.handles[handles[index + 1]]:
+				value = self.handles[handles[index + 1]] - 1
+			if value <= self.handles[handles[index - 1]]:
+				value = self.handles[handles[index - 1]] + 1
+		if value > self.maximum():
+			value = self.maximum()
+		if value < self.minimum():
+			value = self.minimum()
+		return value
+
+	def mousePressEvent(self, ev):
+		if self.maximum() == self.minimum() or (ev.buttons() ^ ev.button()):
+			ev.ignore()
+			return
+		try:
+			if QApplication.keypadNavigationEnabled():
+				setEditFocus(True)
+		except AttributeError:
+			pass
+		ev.accept()
+		if (ev.button() and self.style().styleHint(QStyle.SH_Slider_PageSetButtons)) == ev.button():
+			opt = QStyleOptionSlider()
+			self.initStyleOption(opt)
+
+			isHandle = False
+			for i, hpos in enumerate(self.handles):
+				opt.sliderPosition = hpos
+				handleRect = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self)
+				if handleRect.contains(ev.pos()):
+					isHandle = True
+					self.setCurrentHandle(i)
+					break
+			if isHandle:
+				self.pressedControl = QStyle.SC_SliderHandle
+				opt = QStyleOptionSlider()
+				self.initStyleOption(opt)
+				opt.sliderPosition = opt.sliderValue = self.handles[0]
+				sr = self.style().subControlRect(QStyle.CC_Slider, opt, QStyle.SC_SliderHandle, self)
+				self.clickOffset = self.__pick(ev.pos() - sr.topLeft())
+				self.snapBackPosition = self.position
+				self.update(sr)
+				self.setSliderDown(True)
+		else:
+			ev.ignore()
+			return
+
+	def mouseReleaseEvent(self, ev):
+		if self.pressedControl == QStyle.SC_None or ev.buttons():
+			ev.ignore()
+			return
+		ev.accept()
+		oldPressed = QStyle.SubControl(self.pressedControl)
+		self.pressedControl = QStyle.SC_None
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		if oldPressed == QStyle.SC_SliderHandle:
+			limit = opt.rect.height()
+			pos = ev.pos().y()
+			if (pos < 0 or pos > limit) and len(self.handles) > self.minSliders:
+				index = sorted(self.handles).index(self.handles[0])
+				self.delHandle(0)
+				self.emit(SIGNAL('sliderDeleted(int)'), index)
+			self.setSliderDown(False)
+		opt.subControls = oldPressed
+		self.update(self.style().subControlRect(QStyle.CC_Slider, opt, oldPressed, self))
+
+	def mouseMoveEvent(self, ev):
+		if self.pressedControl != QStyle.SC_SliderHandle:
+			ev.ignore()
+			return
+		ev.accept()
+		newPosition = self.__pixelPosToRangeValue(self.__pick(ev.pos()) - self.clickOffset)
+		opt = QStyleOptionSlider()
+		self.initStyleOption(opt)
+		m = self.style().pixelMetric(QStyle.PM_MaximumDragDistance, opt, self)
+		if m >= 0:
+			r = self.rect()
+			r.adjust(-m, -m, m, m)
+			if not r.contains(ev.pos()):
+				newPosition = self.snapBackPosition
+		self.setSliderPosition(newPosition)
+
+	def setSliderPosition(self, position):
+		position = self.bound(position)
+		if position == self.position:
+			return
+		self.position = position
+		self.handles[0] = position
+		self.update()
+		if self.pressed:
+			self.emit(SIGNAL('sliderMoved(int)'), position)
+		self.triggerAction(QSlider.SliderMove)
+
+	def setSliderDown(self, down):
+		doEmit = self.pressed != down
+		self.pressed = down
+		if doEmit:
+			if down:
+				self.emit(SIGNAL('sliderPressed()'))
+			else:
+				self.emit(SIGNAL('sliderReleased()'))
 
 class fileOpenThread(QThread):
 	def __init__(self, fname, parent=None):

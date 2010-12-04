@@ -129,7 +129,7 @@ class adobe_grd(SBCodec):
 					location,midpoint,model = struct.unpack('>2L H',file.read(10))
 					stop.position = location/0x1000
 					if midpoint != 50:
-						stop.midpoint = midpoint/100
+						stop.args['midpoint'] = midpoint/100
 					color = Color(swatchbook)
 					if model == 2:
 						C,M,Y,K = struct.unpack('>4H',file.read(8))
@@ -177,12 +177,12 @@ class adobe_grd(SBCodec):
 						transparency = True
 				if transparency:
 					for opstop in opstops:
-						stop = TransparencyStop()
+						stop = OpacityStop()
 						stop.position = opstop[0]/0x1000
 						if opstop[1] != 50:
-							stop.midpoint = opstop[1]/100
+							stop.args['midpoint'] = opstop[1]/100
 						stop.opacity = opstop[2]/0xFF
-						item.transparencystops.append(stop)
+						item.opacitystops.append(stop)
 				file.seek(6, 1)
 				id = name
 				if id in swatchbook.materials or id == '':
@@ -208,12 +208,12 @@ class adobe_grd(SBCodec):
 				name = grdn['Nm  ']
 				type = grdn['GrdF'][1]
 				if type == 'CstS':
-					item.smoothness = grdn['Intr']/0x1000
+					item.args['smoothness'] = grdn['Intr']/0x1000
 					for CstS in grdn['Clrs']:
 						stop = ColorStop()
 						stop.position = CstS[2]['Lctn']/0x1000
 						if CstS[2]['Mdpn'] != 50:
-							stop.midpoint = CstS[2]['Mdpn']/100
+							stop.args['midpoint'] = CstS[2]['Mdpn']/100
 						color = Color(swatchbook)
 						colorid = False
 						if CstS[2]['Type'][1] == 'UsrS':
@@ -264,12 +264,12 @@ class adobe_grd(SBCodec):
 							transparency = True
 					if transparency:
 						for opstop in opstops:
-							stop = TransparencyStop()
+							stop = OpacityStop()
 							stop.position = opstop[0]/0x1000
 							if opstop[1] != 50:
-								stop.midpoint = opstop[1]/100
+								stop.args['midpoint'] = opstop[1]/100
 							stop.opacity = opstop[2]/100
-							item.transparencystops.append(stop)
+							item.opacitystops.append(stop)
 				id = name
 				if id in swatchbook.materials:
 					if name > '':

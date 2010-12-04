@@ -92,10 +92,10 @@ class adobe_clr(SBCodec):
 				opstops.append((offset,opacity))
 			if transparency:
 				for opstop in opstops:
-					stop = TransparencyStop()
+					stop = OpacityStop()
 					stop.position = opstop[0]/0xFF
 					stop.opacity = opstop[1]/0xFF
-					item.transparencystops.append(stop)
+					item.opacitystops.append(stop)
 			item.info.identifier = id
 			swatchbook.materials[id] = item
 			swatchbook.book.items.append(Swatch(id))

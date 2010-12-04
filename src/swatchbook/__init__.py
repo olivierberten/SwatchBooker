@@ -441,23 +441,21 @@ class Gradient(object):
 	def __init__(self):
 		self.info = Info()
 		self.stops = []
-		self.transparencystops = []
-		self.blending = False
-		self.coloring = False
-		self.smoothness = False
+		self.opacitystops = []
+		self.formula = False
+		self.args = {}
 		self.extra = {}
 
 class ColorStop(object):
 	def __init__(self):
 		self.position = False
-		self.midpoint = False
 		self.color = False
-		self.blending = False
-		self.coloring = False
+		self.formula = False
+		self.args = {}
 
-class TransparencyStop(object):
+class OpacityStop(object):
 	def __init__(self):
 		self.position = False
-		self.midpoint = False
 		self.opacity = False
-		self.blending = False
+		self.formula = False
+		self.args = {}

@@ -75,10 +75,10 @@ class scribus(SBCodec):
 						if i > 0 and i < len(opstops)-1 and (opstops[i-1][1] == opstops[i][1] and opstops[i+1][1] == opstops[i][1]):
 							pass
 						else:
-							stop = TransparencyStop()
+							stop = OpacityStop()
 							stop.position = opstops[i][0]
 							stop.opacity = opstops[i][1]
-							item.transparencystops.append(stop)
+							item.opacitystops.append(stop)
 
 			if not id or id == '':
 				id = idfromvals(item.values[item.values.keys()[0]])
