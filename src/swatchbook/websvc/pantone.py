@@ -32,46 +32,57 @@ class pantone(WebSvc):
 	nbLevels = 1
 	url = 'http://www.pantone.com/images/xref/'
 
-	guide = {'1': u'PANTONE® COLOR BRIDGE® Coated',
-	         '2': u'PANTONE® COLOR BRIDGE® Uncoated',
-	         '3': u'PANTONE® FORMULA GUIDE Solid Coated',
-	         '4': u'PANTONE® FORMULA GUIDE Solid Matte',
-	         '5': u'PANTONE® FORMULA GUIDE Solid Uncoated',
-	         '6': u'PANTONE® GoeGuide™ coated',
-	         '7': u'PANTONE® GoeGuide™ uncoated',
-	         '8': u'PANTONE® FASHION + HOME cotton',
-	         '9': u'PANTONE® FASHION + HOME paper',
-	         '10': u'PANTONE® GoeBridge™ coated',
-	         '15': u'PANTONE® PREMIUM METALLICS Coated',
-	         '16': u'PANTONE® PASTELS & NEONS Coated',
-	         '17': u'PANTONE® PASTELS & NEONS Uncoated',
-	         '18': u'PANTONE® CMYK Coated',
-	         '19': u'PANTONE® CMYK Uncoated',
-	         '20': u'PANTONE® METALLIC FORMULA GUIDE coated'}
+	guide = {'1': u'COLOR BRIDGE® Coated',
+	         '2': u'COLOR BRIDGE® Uncoated',
+	         '3': u'FORMULA GUIDE Solid Coated',
+	         '4': u'FORMULA GUIDE Solid Matte',
+	         '5': u'FORMULA GUIDE Solid Uncoated',
+	         '6': u'GoeGuide™ coated',
+	         '7': u'GoeGuide™ uncoated',
+	         '8': u'FASHION + HOME cotton',
+	         '9': u'FASHION + HOME paper',
+	         '10': u'GoeBridge™ coated',
+	         '11': u'COLOR BRIDGE® coated',
+	         '12': u'COLOR BRIDGE® uncoated',
+	         '13': u'FORMULA GUIDE Solid Coated',
+	         '14': u'FORMULA GUIDE Solid Uncoated',
+	         '15': u'PREMIUM METALLICS Coated',
+	         '16': u'PASTELS & NEONS Coated',
+	         '17': u'PASTELS & NEONS Uncoated',
+	         '18': u'CMYK Coated',
+	         '19': u'CMYK Uncoated',
+	         '20': u'METALLIC FORMULA GUIDE coated'}
 	
 	def level0(self):
-		list0 = SortedDict()
-		list0['3'] = self.guide['3']
-		list0['5'] = self.guide['5']
-		list0['4'] = self.guide['4']
-		list0['1'] = self.guide['1']
-		list0['2'] = self.guide['2']
-		list0['15'] = self.guide['15']
-		list0['20'] = self.guide['20']
-		list0['16'] = self.guide['16']
-		list0['17'] = self.guide['17']
-		list0['18'] = self.guide['18']
-		list0['19'] = self.guide['19']
-		list0['6'] = self.guide['6']
-		list0['7'] = self.guide['7']
-		list0['10'] = self.guide['10']
-		list0['8'] = self.guide['8']
-		list0['9'] = self.guide['9']
-		return list0
+		guides = SortedDict()
+		guides[u'PANTONE® MATCHING SYSTEM'] = SortedDict()
+		guides[u'PANTONE® MATCHING SYSTEM']['3'] = self.guide['3']
+		guides[u'PANTONE® MATCHING SYSTEM']['5'] = self.guide['5']
+		guides[u'PANTONE® MATCHING SYSTEM']['4'] = self.guide['4']
+		guides[u'PANTONE® MATCHING SYSTEM']['1'] = self.guide['1']
+		guides[u'PANTONE® MATCHING SYSTEM']['2'] = self.guide['2']
+		guides[u'PANTONE® MATCHING SYSTEM']['20'] = self.guide['20']
+		guides[u'PANTONE® MATCHING SYSTEM']['8'] = self.guide['8']
+		guides[u'PANTONE® MATCHING SYSTEM']['9'] = self.guide['9']
+		guides[u'PANTONE® Goe™ System'] = SortedDict()
+		guides[u'PANTONE® Goe™ System']['6'] = self.guide['6']
+		guides[u'PANTONE® Goe™ System']['7'] = self.guide['7']
+		guides[u'PANTONE® Goe™ System']['10'] = self.guide['10']
+		guides[u'PANTONE® PLUS SERIES'] = SortedDict()
+		guides[u'PANTONE® PLUS SERIES']['13'] = self.guide['13']
+		guides[u'PANTONE® PLUS SERIES']['14'] = self.guide['14']
+		guides[u'PANTONE® PLUS SERIES']['11'] = self.guide['11']
+		guides[u'PANTONE® PLUS SERIES']['12'] = self.guide['12']
+		guides[u'PANTONE® PLUS SERIES']['15'] = self.guide['15']
+		guides[u'PANTONE® PLUS SERIES']['16'] = self.guide['16']
+		guides[u'PANTONE® PLUS SERIES']['17'] = self.guide['17']
+		guides[u'PANTONE® PLUS SERIES']['18'] = self.guide['18']
+		guides[u'PANTONE® PLUS SERIES']['19'] = self.guide['19']
+		return guides
 
 	def read(self,swatchbook,guide):
 		page = urlopen(self.url+'xref_lib'+guide+'.js').readlines()
-		swatchbook.info.title = self.guide[guide]
+		swatchbook.info.title = 'PANTONE® '+self.guide[guide]
 		for line in page[1:]:
 			if line.strip() > '':
 				line = line.split('"')[1].split(',')

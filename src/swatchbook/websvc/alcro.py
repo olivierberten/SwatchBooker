@@ -27,7 +27,7 @@ class alcro(WebSvc):
 
 	content = ['swatchbook']
 
-	about = u'These data come from the<a href="http://alcro.colordream.com/">Alcro Designer</a> tool.<br /><br />© Alcro / MRM Starsky'
+	about = u'These data come from the <a href="http://alcro.colordream.com/">Alcro Designer</a> tool.<br /><br />© Alcro / MRM Starsky'
 
 	nbLevels = 1
 	url = "http://alcro.colordream.com/sv/palette/palettes/data/"
