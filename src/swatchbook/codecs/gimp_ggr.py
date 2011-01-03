@@ -35,7 +35,7 @@ class gimp_ggr(SBCodec):
 
 	@staticmethod
 	def read(swatchbook,file):
-		item = Gradient()
+		item = Gradient(swatchbook)
 		file = open(file, 'U').readlines()[1:]
 		if file[0][:5] == 'Name:':
 			item.info.identifier = unicode(file[0].partition('Name: ')[2].strip(),'utf-8')
@@ -55,8 +55,7 @@ class gimp_ggr(SBCodec):
 				segment.append(0)
 			segments.append(segment)
 
-		BlendingFunctions = ("linear","curved","sinusoidal","spherical (increasing)","spherical (decreasing)")
-		ColoringTypes = ("RGB","HSV CCW","HSV CW")
+		BlendingFunctions = ("linear","curved","sine","sphere_increasing","sphere_decreasing")
 		opstops = []
 		for i in range(len(segments)):
 			if i > 0 and [segments[i][3],segments[i][4],segments[i][5],segments[i][6],segments[i][13]] != [segments[i-1][7],segments[i-1][8],segments[i-1][9],segments[i-1][10],segments[i-1][14]]:
@@ -66,98 +65,116 @@ class gimp_ggr(SBCodec):
 				if segments[i-1][14] == 0:
 					color.values[('RGB',False)] = [segments[i-1][7],segments[i-1][8],segments[i-1][9]]
 					colorid = idfromvals(color.values[('RGB',False)])
-					opstops.append((segments[i-1][2],False,segments[i-1][10]))
+					opstops.append((segments[i-1][2],False,False,segments[i-1][10]))
 				elif segments[i-1][14] == 1:
 					colorid = "Foreground color"
 					sys.stderr.write('unsupported color type [Foreground color]\n')
-					opstops.append((segments[i-1][2],False,1.0))
+					opstops.append((segments[i-1][2],False,False,1.0))
 				elif segments[i-1][14] == 2:
 					colorid = "Foreground color"
 					sys.stderr.write('unsupported color type [Foreground color]\n')
-					opstops.append((segments[i-1][2],False,0.0))
+					opstops.append((segments[i-1][2],False,False,0.0))
 				elif segments[i-1][14] == 3:
 					colorid = "Background color"
 					sys.stderr.write('unsupported color type [Background color]\n')
-					opstops.append((segments[i-1][2],False,1.0))
+					opstops.append((segments[i-1][2],False,False,1.0))
 				elif segments[i-1][14] == 4:
 					colorid = "Background color"
 					sys.stderr.write('unsupported color type [Background color]\n')
-					opstops.append((segments[i-1][2],False,0.0))
+					opstops.append((segments[i-1][2],False,False,0.0))
 				if not colorid in swatchbook.materials:
 					color.info.identifier = colorid
 					swatchbook.materials[colorid] = color
 				stop.color = colorid
 				item.stops.append(stop)
+				l = len(item.stops)
+				if len(item.stops) > 2 and item.stops[l-2].color == colorid and item.stops[l-3].color == colorid:
+					item.stops.pop(l-2)
 			stop = ColorStop()
 			stop.position = segments[i][0]
 			if round(segments[i][1], 2) != round(segments[i][0] + (segments[i][2]-segments[i][0])/2, 2):
-				stop.args['midpoint'] = (segments[i][1]-segments[i][0])/(segments[i][2]-segments[i][0])
-			stop.formula = BlendingFunctions[segments[i][11]]
-			stop.args['coloring'] = ColoringTypes[segments[i][12]]
+				midpoint = stop.args['midpoint'] = (segments[i][1]-segments[i][0])/(segments[i][2]-segments[i][0])
+			else:
+				midpoint = False
+			stop.interpolation = BlendingFunctions[segments[i][11]]
+			if segments[i][12] in (1,2):
+				stop.args['space'] = 'HSV'
+			if segments[i][12] == 1:
+				stop.args['direction'] = 'CCW'
+			elif segments[i][12] == 2:
+				stop.args['direction'] = 'CW'
 			color = Color(swatchbook)
 			if segments[i][13] == 0:
 				color.values[('RGB',False)] = [segments[i][3],segments[i][4],segments[i][5]]
 				colorid = idfromvals(color.values[('RGB',False)])
-				opstops.append((segments[i][0],stop.args['midpoint'],segments[i][6]))
+				opstops.append((segments[i][0],stop.interpolation,midpoint,segments[i][6]))
 			elif segments[i][13] == 1:
 				colorid = "Foreground color"
 				sys.stderr.write('unsupported color type [Foreground color]\n')
-				opstops.append((segments[i-1][2],stop.args['midpoint'],1.0))
+				opstops.append((segments[i-1][2],stop.interpolation,midpoint,1.0))
 			elif segments[i][13] == 2:
 				colorid = "Foreground color"
 				sys.stderr.write('unsupported color type [Foreground color]\n')
-				opstops.append((segments[i][0],stop.args['midpoint'],0.0))
+				opstops.append((segments[i][0],stop.interpolation,midpoint,0.0))
 			elif segments[i][13] == 3:
 				colorid = "Background color"
 				sys.stderr.write('unsupported color type [Background color]\n')
-				opstops.append((segments[i][0],stop.args['midpoint'],1.0))
+				opstops.append((segments[i][0],stop.interpolation,midpoint,1.0))
 			elif segments[i][13] == 4:
 				colorid = "Background color"
 				sys.stderr.write('unsupported color type [Background color]\n')
-				opstops.append((segments[i][0],stop.args['midpoint'],0.0))
+				opstops.append((segments[i][0],stop.interpolation,midpoint,0.0))
 			if not colorid in swatchbook.materials:
 				color.info.identifier = colorid
 				swatchbook.materials[colorid] = color
 			stop.color = colorid
 			item.stops.append(stop)
+			l = len(item.stops)
+			if len(item.stops) > 2 and len(item.stops) > 2 and item.stops[l-2].color == colorid and item.stops[l-3].color == colorid:
+				item.stops.pop(l-2)
 		stop = ColorStop()
 		stop.position = segments[i][2]
 		color = Color(swatchbook)
 		if segments[i][14] == 0:
 			color.values[('RGB',False)] = [segments[i][7],segments[i][8],segments[i][9]]
 			colorid = idfromvals(color.values[('RGB',False)])
-			opstops.append((segments[i][2],False,segments[i][10]))
+			opstops.append((segments[i][2],False,False,segments[i][10]))
 		elif segments[i][14] == 1:
 			colorid = "Foreground color"
 			sys.stderr.write('unsupported color type [Foreground color]\n')
-			opstops.append((segments[i][2],False,1.0))
+			opstops.append((segments[i][2],False,False,1.0))
 		elif segments[i][14] == 2:
 			colorid = "Foreground color"
 			sys.stderr.write('unsupported color type [Foreground color]\n')
-			opstops.append((segments[i][2],False,0.0))
+			opstops.append((segments[i][2],False,False,0.0))
 		elif segments[i][14] == 3:
 			colorid = "Background color"
 			sys.stderr.write('unsupported color type [Background color]\n')
-			opstops.append((segments[i][2],False,1.0))
+			opstops.append((segments[i][2],False,False,1.0))
 		elif segments[i][14] == 4:
 			colorid = "Background color"
 			sys.stderr.write('unsupported color type [Background color]\n')
-			opstops.append((segments[i][2],False,0.0))
+			opstops.append((segments[i][2],False,False,0.0))
 		if not colorid in swatchbook.materials:
 			color.info.identifier = colorid
 			swatchbook.materials[colorid] = color
 		stop.color = colorid
 		item.stops.append(stop)
+		l = len(item.stops)
+		if item.stops[l-2].color == colorid and item.stops[l-3].color == colorid:
+			item.stops.pop(l-2)
 
-		if not (len(opstops) == 2 and opstops[0][2] == opstops[1][2]):
+		if not (len(opstops) == 2 and opstops[0][3] == opstops[1][3]):
 			for i in range(len(opstops)):
-				if i > 0 and i < len(opstops)-1 and (opstops[i-1][2] == opstops[i][2] and opstops[i+1][2] == opstops[i][2]):
+				if i > 0 and i < len(opstops)-1 and (opstops[i-1][3] == opstops[i][3] and opstops[i+1][3] == opstops[i][3]):
 					pass
 				else:
 					stop = OpacityStop()
 					stop.position = opstops[i][0]
-					stop.args['midpoint'] = opstops[i][1]
-					stop.opacity = opstops[i][2]
+					stop.interpolation = opstops[i][1]
+					if opstops[i][2]:
+						stop.args['midpoint'] = opstops[i][2]
+					stop.opacity = opstops[i][3]
 					item.opacitystops.append(stop)
 
 		swatchbook.materials[item.info.identifier] = item

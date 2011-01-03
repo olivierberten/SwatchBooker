@@ -42,7 +42,7 @@ class ooo_sog(SBCodec):
 			draw = '{urn:oasis:names:tc:opendocument:xmlns:drawing:1.0}'
 		for elem in xml:
 			if elem.tag == draw+'gradient':
-				item = Gradient()
+				item = Gradient(swatchbook)
 				name = xmlunescape(unicode(elem.attrib[draw+'name']))
 				stop = ColorStop()
 				stop.position = eval(elem.attrib[draw+'border'][:-1])/100

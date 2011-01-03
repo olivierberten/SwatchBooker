@@ -120,7 +120,7 @@ class adobe_grd(SBCodec):
 			ColorTypes = ['User color','Foreground color','Background color']
 			nbgradients = struct.unpack('>H',file.read(2))[0]
 			for i in range(nbgradients):
-				item = Gradient()
+				item = Gradient(swatchbook)
 				name_length = struct.unpack('B',file.read(1))[0]
 				name = file.read(name_length)
 				nbstops = struct.unpack('>H',file.read(2))[0]
@@ -203,7 +203,7 @@ class adobe_grd(SBCodec):
 			DescriptorContent = DescriptorParser(file)
 			gradients = DescriptorContent.readDescriptor()
 			for gradient in gradients[2]['GrdL']:
-				item = Gradient()
+				item = Gradient(swatchbook)
 				grdn = gradient[2]['Grad'][2]
 				name = grdn['Nm  ']
 				type = grdn['GrdF'][1]

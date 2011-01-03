@@ -939,13 +939,13 @@ class MainWindow(QMainWindow):
 			gradient = QLinearGradient(0,0,1,0)
 			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
 			stops = material.stops
-			for i in range(len(stops)):
-				if i > 0 and stops[i].position == stops[i-1].position:
-					location = stops[i].position+0.001
+			for i,stop in enumerate(stops):
+				if i > 0 and stop.position == stops[i - 1].position:
+					location = stop.position + 0.0001
 				else:
-					location = stops[i].position
+					location = stop.position
 				try:
-				c = form.sb.materials[stops[i].color].toRGB8(prof_out) or (218,218,218)
+					c = form.sb.materials[stop.color].toRGB8(prof_out) or (218, 218, 218)
 				except KeyError:
 					c = (218, 218, 218)
 				gradient.setColorAt(location, QColor(c[0],c[1],c[2]))
@@ -2122,10 +2122,10 @@ class GradientWidget(QWidget):
 
 		self.opacitySample = QLabel()
 		self.opacitySlider = MultiSlider(self)
-		self.opacitySlider.setMaximum(100)
+		self.opacitySlider.setMaximum(10000)
 		self.opacitySlider.flipHandles = True
 		for opstop in self.item.opacitystops:
-			self.opacitySlider.addHandle(opstop.position * 100)
+			self.opacitySlider.addHandle(opstop.position * 10000)
 		self.opacitySampleUpdate()
 
 		self.opacitySpin = QSpinBox()
@@ -2235,7 +2235,7 @@ class GradientWidget(QWidget):
 		if len(stops) > 0:
 			for i,stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
-					location = stop.position + 0.001
+					location = stop.position + 0.0001
 				else:
 					location = stop.position
 				try:
@@ -2264,12 +2264,12 @@ class GradientWidget(QWidget):
 		self.opacitySampleUpdate()
 
 	def opacityMove(self, val):
-		self.item.opacitystops[self.currentOpacityStop].position = val / 100
+		self.item.opacitystops[self.currentOpacityStop].position = val / 10000
 		self.opacitySampleUpdate()
 
 	def opacityAddStop(self, val):
 		stop = OpacityStop()
-		stop.position = val / 100
+		stop.position = val / 10000
 		stop.opacity = 1
 		self.item.opacitystops.insert(sorted(self.opacitySlider.handles).index(val), stop)
 		self.opacitySampleUpdate()
@@ -2288,7 +2288,7 @@ class GradientWidget(QWidget):
 		if len(stops) > 0:
 			for i,stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
-					location = stop.position + 0.001
+					location = stop.position + 0.0001
 				else:
 					location = stop.position
 				o = int((1-stop.opacity)*255)
@@ -2336,12 +2336,13 @@ class SwatchPreview(QLabel):
 			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(prof_out)))
 			paint.setBrush(QBrush(image))
 		elif isinstance(self.material, Gradient):
+			"""
 			gradient = QLinearGradient(0, 0, 1, 0)
 			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
 			stops = self.material.stops
 			for i,stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
-					location = stop.position + 0.001
+					location = stop.position + 0.0001
 				else:
 					location = stop.position
 				try:
@@ -2350,6 +2351,9 @@ class SwatchPreview(QLabel):
 					c = (218, 218, 218)
 				gradient.setColorAt(location, QColor(c[0], c[1], c[2]))
 			paint.setBrush(QBrush(gradient))
+			"""
+			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(s.width(),s.height(),prof_out)))
+			paint.setBrush(QBrush(image))
 		paint.drawRect(0, 0, s.width(), s.height())
 		paint.end()
 		

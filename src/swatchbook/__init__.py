@@ -26,7 +26,8 @@ from color import *
 from tempfile import mkdtemp
 from shutil import rmtree
 from cStringIO import StringIO
-from PIL import Image,ImageCms
+from PIL import Image,ImageDraw,ImageCms
+from math import pi, log, sin, sqrt
 
 VERSION = "0.8"
 
@@ -438,24 +439,171 @@ class Pattern(object):
 		return os.remove(os.path.join(self.swatchbook.tmpdir,"patterns",self.info.identifier))
 
 class Gradient(object):
-	def __init__(self):
+	def __init__(self,swatchbook):
 		self.info = Info()
 		self.stops = []
 		self.opacitystops = []
-		self.formula = False
-		self.args = {}
 		self.extra = {}
+		self.swatchbook = swatchbook
+
+	def colorAt(self,pos,prof_out = False):
+		if len(self.stops) == 0:
+			return False
+		left = 0
+		right = len(self.stops)-1
+		for i,stop in enumerate(self.stops):
+			if pos >= stop.position:
+				left = i
+			else:
+				right = i
+				break
+		if left == right:
+			return self.swatchbook.materials[self.stops[left].color].toRGB(prof_out)
+		seg_pos = (pos-self.stops[left].position)/(self.stops[right].position-self.stops[left].position)
+		
+		if "midpoint" in self.stops[left].args:
+			midpoint = self.stops[left].args["midpoint"]
+		else:
+			midpoint = 0.5
+
+		def linear(seg_pos,midpoint):
+			if seg_pos <= midpoint:
+				return 0.5 * seg_pos / midpoint
+			else:
+				seg_pos -= midpoint
+				midpoint = 1.0 - midpoint
+				return 0.5 + 0.5 * seg_pos / midpoint
+
+		if self.stops[left].interpolation == "curved":
+			factor = pow(seg_pos, log(0.5) / log(midpoint))
+		elif self.stops[left].interpolation == "sine":
+			factor = (sin ((-pi / 2.0) + pi * linear(seg_pos,midpoint)) + 1.0) / 2.0
+		elif self.stops[left].interpolation == "sphere_increasing":
+			factor = sqrt (1.0 - (linear(seg_pos,midpoint)-1.0) * (linear(seg_pos,midpoint)-1.0))
+		elif self.stops[left].interpolation == "sphere_decreasing":
+			factor = 1.0 - sqrt(1.0 - linear(seg_pos,midpoint) * linear(seg_pos,midpoint))
+		else:
+			factor = linear(seg_pos,midpoint)
+		r1,g1,b1 = self.swatchbook.materials[self.stops[left].color].toRGB(prof_out)
+		r2,g2,b2 = self.swatchbook.materials[self.stops[right].color].toRGB(prof_out)
+		if "space" in self.stops[left].args and self.stops[left].args["space"] == 'HSV':
+			left_hsv = RGB2HSV(r1,g1,b1)
+			right_hsv = RGB2HSV(r2,g2,b2)
+
+			s = left_hsv[1] + (right_hsv[1] - left_hsv[1]) * factor
+			v = left_hsv[2] + (right_hsv[2] - left_hsv[2]) * factor
+
+			if "direction" in self.stops[left].args and self.stops[left].args["direction"] == 'CW':
+				if right_hsv[0] < left_hsv[0]:
+					h = left_hsv[0] - (left_hsv[0] - right_hsv[0]) * factor
+				else:
+					h = left_hsv[0] - (1.0 - (right_hsv[0] - left_hsv[0])) * factor
+				if h < 0.0:
+					h += 1.0
+			else:
+				if left_hsv[0] < right_hsv[0]:
+					h = left_hsv[0] + (right_hsv[0] - left_hsv[0]) * factor
+				else:
+					h = left_hsv[0] + (1.0 - (left_hsv[0] - right_hsv[0])) * factor
+				if (h > 1.0):
+					h -= 1.0
+			r,g,b = HSV2RGB(h,s,v)
+		else:
+			r = r1 + (r2 - r1) * factor
+			g = g1 + (g2 - g1) * factor
+			b = b1 + (b2 - b1) * factor
+
+		if "gamma" in self.stops[left].args:
+			r = pow(r, self.stops[left].args["gamma"])
+			g = pow(g, self.stops[left].args["gamma"])
+			b = pow(b, self.stops[left].args["gamma"])
+
+		return (r,g,b)
+
+	def alphaAt(self,pos):
+		if len(self.opacitystops) == 0:
+			return False
+		left = 0
+		right = len(self.opacitystops)-1
+		for i,stop in enumerate(self.opacitystops):
+			if pos >= stop.position and self.opacitystops[i+1].position > stop.position:
+				left = i
+			else:
+				right = i
+				break
+
+		if left == right:
+			return self.opacitystops[left].opacity
+
+		seg_pos = (pos-self.opacitystops[left].position)/(self.opacitystops[right].position-self.opacitystops[left].position)
+		
+		if "midpoint" in self.opacitystops[left].args:
+			midpoint = self.opacitystops[left].args["midpoint"]
+		else:
+			midpoint = 0.5
+
+		def linear(seg_pos,midpoint):
+			if seg_pos <= midpoint:
+				return 0.5 * seg_pos / midpoint
+			else:
+				seg_pos -= midpoint
+				midpoint = 1.0 - midpoint
+				return 0.5 + 0.5 * seg_pos / midpoint
+
+		if self.opacitystops[left].interpolation == "curved":
+			factor = pow(seg_pos, log(0.5) / log(midpoint))
+		elif self.opacitystops[left].interpolation == "sine":
+			factor = (sin ((-pi / 2.0) + pi * linear(seg_pos,midpoint)) + 1.0) / 2.0
+		elif self.opacitystops[left].interpolation == "sphere_increasing":
+			factor = sqrt (1.0 - (linear(seg_pos,midpoint)-1.0) * (linear(seg_pos,midpoint)-1.0))
+		elif self.opacitystops[left].interpolation == "sphere_decreasing":
+			factor = 1.0 - sqrt(1.0 - linear(seg_pos,midpoint) * linear(seg_pos,midpoint))
+		else:
+			factor = linear(seg_pos,midpoint)
+
+		return self.opacitystops[left].opacity + (self.opacitystops[right].opacity - self.opacitystops[left].opacity) * factor
+
+	def imageRGB(self,width,height,prof_out=False):
+		# Color
+		image = Image.new('RGB', (width,height))
+		draw = ImageDraw.Draw(image)
+		for i in range(width):
+			try:
+				r,g,b = self.colorAt(float(i)/width)
+			except TypeError:
+				r,g,b = (218, 218, 218)
+			draw.line((i, 0, i, image.size[1]), fill=(int(round(r*0xFF)),int(round(g*0xFF)),int(round(b*0xFF))))
+		del draw
+		sRGB = ImageCms.createProfile("sRGB")
+		if prof_out:
+			outputProfile = prof_out
+		else:
+			outputProfile = sRGB
+		new_image = ImageCms.profileToProfile(image,sRGB,outputProfile)
+		# Opacity
+		if len(self.opacitystops) > 0:
+			alpha = Image.new('L', (width,height))
+			draw = ImageDraw.Draw(alpha)
+			for i in range(width):
+				try:
+					a = self.alphaAt(float(i)/width)
+				except TypeError:
+					a = 1
+				draw.line((i, 0, i, image.size[1]), fill=int(round(a*0xFF)))
+			del draw
+			new_image.putalpha(alpha)
+		return new_image
 
 class ColorStop(object):
 	def __init__(self):
 		self.position = False
 		self.color = False
-		self.formula = False
+		self.interpolation = False
 		self.args = {}
 
 class OpacityStop(object):
 	def __init__(self):
 		self.position = False
 		self.opacity = False
-		self.formula = False
+		self.interpolation = False
 		self.args = {}

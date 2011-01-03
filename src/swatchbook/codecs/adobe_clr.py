@@ -65,18 +65,22 @@ class adobe_clr(SBCodec):
 		file.seek(1, 1)
 		nbgradients = struct.unpack('<H',file.read(2))[0]
 		for i in range(nbgradients):
-			item = Gradient()
+			item = Gradient(swatchbook)
 			id = "Gradient "+str(i+1)
 			file.seek(2, 1)
 			v = struct.unpack('B',file.read(1))[0]
 			file.seek(30, 1)
 			nbstops = struct.unpack('B',file.read(1))[0]
 			if v == 4:
-				file.seek(8, 1)
+				file.seek(4, 1)
+				t = struct.unpack('B',file.read(1))[0]
+				file.seek(3, 1)
 			opstops = []
 			transparency = False
 			for j in range(nbstops):
 				stop = ColorStop()
+				if not t%2:
+					item.args["gamma"] = 1/2.2
 				color = Color(swatchbook)
 				offset,R,G,B,opacity = struct.unpack('5B',file.read(5))
 				stop.position = offset/0xFF

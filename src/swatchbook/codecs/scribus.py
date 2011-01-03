@@ -51,7 +51,7 @@ class scribus(SBCodec):
 				if "Spot" in elem.attrib and elem.attrib['Spot'] == 1:
 					item.usage.add('spot')
 			elif elem.tag == 'Gradient':
-				item = Gradient()
+				item = Gradient(swatchbook)
 				id = unicode(xmlunescape(elem.attrib['Name']))
 				opstops = []
 				for stops in elem:
