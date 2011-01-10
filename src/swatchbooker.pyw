@@ -901,7 +901,7 @@ class MainWindow(QMainWindow):
 		pix.fill(Qt.transparent)
 		paint = QPainter()
 		prof_out = str(settings.value("mntrProfile").toString()) or False
-		if material.__class__.__name__ in ('Color','Tint','Shade') and material.toRGB8():
+		if material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade') and material.toRGB8():
 			r,g,b = material.toRGB8(prof_out)
 			paint.begin(pix)
 			paint.setBrush(QColor(r,g,b))
@@ -2045,6 +2045,23 @@ class TintWidget(QWidget):
 		
 		self.sample.update()
 
+class ToneWidget(QWidget):
+	def __init__(self, id, parent):
+		super(ToneWidget, self).__init__(parent)
+
+		self.item = form.sb.materials[id]
+
+		self.sample = SwatchPreview(self.item, self)
+
+		layout = QVBoxLayout()
+		layout.setContentsMargins(0, 0, 0, 0)
+		layout.addWidget(self.sample)
+		layout.addWidget(QLabel(self.item.color.info.identifier))
+		layout.addWidget(QLabel(str(self.item.amount * 100) + '%'))
+		self.setLayout(layout)
+		
+		self.sample.update()
+
 class ShadeWidget(QWidget):
 	def __init__(self, id, parent):
 		super(ShadeWidget, self).__init__(parent)
@@ -2328,7 +2345,7 @@ class SwatchPreview(QLabel):
 		paint.begin(pix)
 		paint.setPen(Qt.transparent)
 		prof_out = str(settings.value("mntrProfile").toString()) or False
-		if self.material.__class__.__name__ in ('Color', 'Tint', 'Shade'):
+		if self.material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade'):
 			if self.material.toRGB8(prof_out):
 				r, g, b = self.material.toRGB8(prof_out)
 				paint.setBrush(QBrush(QColor(r, g, b)))

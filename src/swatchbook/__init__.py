@@ -369,6 +369,28 @@ class Tint(object):
 		else:
 			return False
 
+class Tone(object):
+	def __init__(self):
+		self.info = Info()
+		self.color = False
+		self.amount = False # 1 = color, 0 = gray
+		self.usage = [] # for compatibility with colors
+		self.extra = {}
+
+	def toRGB(self,prof_out=False):
+		R,G,B = self.color.toRGB(prof_out)
+		H,S,L = RGB2HSL(R,G,B)
+		S = S*self.amount
+		L = L*0.5*self.amount
+		return HSL2RGB(H,S,L)
+
+	def toRGB8(self,prof_out=False):
+		if self.toRGB(prof_out):
+			R,G,B = self.toRGB(prof_out)
+			return (int(round(R*0xFF)),int(round(G*0xFF)),int(round(B*0xFF)))
+		else:
+			return False
+
 class Shade(object):
 	def __init__(self):
 		self.info = Info()
@@ -380,7 +402,7 @@ class Shade(object):
 	def toRGB(self,prof_out=False):
 		R,G,B = self.color.toRGB(prof_out)
 		H,S,L = RGB2HSL(R,G,B)
-		L = L*(self.amount)
+		L = L*self.amount
 		return HSL2RGB(H,S,L)
 
 	def toRGB8(self,prof_out=False):
