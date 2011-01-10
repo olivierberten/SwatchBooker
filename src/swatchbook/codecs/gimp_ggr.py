@@ -57,31 +57,32 @@ class gimp_ggr(SBCodec):
 
 		BlendingFunctions = ("linear","curved","sine","sphere_increasing","sphere_decreasing")
 		opstops = []
+		transparency = False
 		for i in range(len(segments)):
 			if i > 0 and [segments[i][3],segments[i][4],segments[i][5],segments[i][6],segments[i][13]] != [segments[i-1][7],segments[i-1][8],segments[i-1][9],segments[i-1][10],segments[i-1][14]]:
 				stop = ColorStop()
 				stop.location = segments[i-1][2]
 				color = Color(swatchbook)
+				color.values[('RGB',False)] = [segments[i-1][7],segments[i-1][8],segments[i-1][9]]
 				if segments[i-1][14] == 0:
-					color.values[('RGB',False)] = [segments[i-1][7],segments[i-1][8],segments[i-1][9]]
 					colorid = idfromvals(color.values[('RGB',False)])
 					opstops.append((segments[i-1][2],False,False,segments[i-1][10]))
+					if segments[i-1][10] < 1.0:
+						transparency = True
 				elif segments[i-1][14] == 1:
 					colorid = "Foreground color"
-					sys.stderr.write('unsupported color type [Foreground color]\n')
 					opstops.append((segments[i-1][2],False,False,1.0))
 				elif segments[i-1][14] == 2:
 					colorid = "Foreground color"
-					sys.stderr.write('unsupported color type [Foreground color]\n')
 					opstops.append((segments[i-1][2],False,False,0.0))
+					transparency = True
 				elif segments[i-1][14] == 3:
 					colorid = "Background color"
-					sys.stderr.write('unsupported color type [Background color]\n')
 					opstops.append((segments[i-1][2],False,False,1.0))
 				elif segments[i-1][14] == 4:
 					colorid = "Background color"
-					sys.stderr.write('unsupported color type [Background color]\n')
 					opstops.append((segments[i-1][2],False,False,0.0))
+					transparency = True
 				if not colorid in swatchbook.materials:
 					color.info.identifier = colorid
 					swatchbook.materials[colorid] = color
@@ -104,26 +105,26 @@ class gimp_ggr(SBCodec):
 			elif segments[i][12] == 2:
 				stop.args['direction'] = 'CW'
 			color = Color(swatchbook)
+			color.values[('RGB',False)] = [segments[i][3],segments[i][4],segments[i][5]]
 			if segments[i][13] == 0:
-				color.values[('RGB',False)] = [segments[i][3],segments[i][4],segments[i][5]]
 				colorid = idfromvals(color.values[('RGB',False)])
 				opstops.append((segments[i][0],stop.interpolation,midpoint,segments[i][6]))
+				if segments[i-1][6] < 1.0:
+					transparency = True
 			elif segments[i][13] == 1:
 				colorid = "Foreground color"
-				sys.stderr.write('unsupported color type [Foreground color]\n')
 				opstops.append((segments[i-1][2],stop.interpolation,midpoint,1.0))
 			elif segments[i][13] == 2:
 				colorid = "Foreground color"
-				sys.stderr.write('unsupported color type [Foreground color]\n')
 				opstops.append((segments[i][0],stop.interpolation,midpoint,0.0))
+				transparency = True
 			elif segments[i][13] == 3:
 				colorid = "Background color"
-				sys.stderr.write('unsupported color type [Background color]\n')
 				opstops.append((segments[i][0],stop.interpolation,midpoint,1.0))
 			elif segments[i][13] == 4:
 				colorid = "Background color"
-				sys.stderr.write('unsupported color type [Background color]\n')
 				opstops.append((segments[i][0],stop.interpolation,midpoint,0.0))
+				transparency = True
 			if not colorid in swatchbook.materials:
 				color.info.identifier = colorid
 				swatchbook.materials[colorid] = color
@@ -135,26 +136,26 @@ class gimp_ggr(SBCodec):
 		stop = ColorStop()
 		stop.position = segments[i][2]
 		color = Color(swatchbook)
+		color.values[('RGB',False)] = [segments[i][7],segments[i][8],segments[i][9]]
 		if segments[i][14] == 0:
-			color.values[('RGB',False)] = [segments[i][7],segments[i][8],segments[i][9]]
 			colorid = idfromvals(color.values[('RGB',False)])
 			opstops.append((segments[i][2],False,False,segments[i][10]))
+			if segments[i-1][10] < 1.0:
+				transparency = True
 		elif segments[i][14] == 1:
 			colorid = "Foreground color"
-			sys.stderr.write('unsupported color type [Foreground color]\n')
 			opstops.append((segments[i][2],False,False,1.0))
 		elif segments[i][14] == 2:
 			colorid = "Foreground color"
-			sys.stderr.write('unsupported color type [Foreground color]\n')
 			opstops.append((segments[i][2],False,False,0.0))
+			transparency = True
 		elif segments[i][14] == 3:
 			colorid = "Background color"
-			sys.stderr.write('unsupported color type [Background color]\n')
 			opstops.append((segments[i][2],False,False,1.0))
 		elif segments[i][14] == 4:
 			colorid = "Background color"
-			sys.stderr.write('unsupported color type [Background color]\n')
 			opstops.append((segments[i][2],False,False,0.0))
+			transparency = True
 		if not colorid in swatchbook.materials:
 			color.info.identifier = colorid
 			swatchbook.materials[colorid] = color
@@ -164,7 +165,7 @@ class gimp_ggr(SBCodec):
 		if item.stops[l-2].color == colorid and item.stops[l-3].color == colorid:
 			item.stops.pop(l-2)
 
-		if not (len(opstops) == 2 and opstops[0][3] == opstops[1][3]):
+		if transparency:
 			for i in range(len(opstops)):
 				if i > 0 and i < len(opstops)-1 and (opstops[i-1][3] == opstops[i][3] and opstops[i+1][3] == opstops[i][3]):
 					pass

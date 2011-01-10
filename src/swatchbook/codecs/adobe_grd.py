@@ -159,13 +159,12 @@ class adobe_grd(SBCodec):
 					colorid = idfromvals(color.values[color.values.keys()[0]])
 					type = struct.unpack('>H',file.read(2))[0]
 					if type != 0:
-						sys.stderr.write('unsupported color type ['+ColorTypes[type]+']\n')
 						colorid = ColorTypes[type]
-						color.values = {}
 					if not colorid in swatchbook.materials:
 						color.info.identifier = colorid
 						swatchbook.materials[colorid] = color
 					stop.color = colorid
+					stop.interpolation = "sine"
 					item.stops.append(stop)
 				nbopstops = struct.unpack('>H',file.read(2))[0]
 				opstops = []
@@ -208,7 +207,7 @@ class adobe_grd(SBCodec):
 				name = grdn['Nm  ']
 				type = grdn['GrdF'][1]
 				if type == 'CstS':
-					item.args['smoothness'] = grdn['Intr']/0x1000
+					item.extra['smoothness'] = grdn['Intr']/0x1000
 					for CstS in grdn['Clrs']:
 						stop = ColorStop()
 						stop.position = CstS[2]['Lctn']/0x1000
@@ -246,15 +245,19 @@ class adobe_grd(SBCodec):
 								colorid = Clr[2]['Nm  ']
 							else:
 								sys.stderr.write('unknown color model ['+Clr[0]+']\n')
-						else:
-							sys.stderr.write('unsupported color type ['+ColorTypes[CstS[2]['Type'][1]]+']\n')
-							colorid = ColorTypes[CstS[2]['Type'][1]]
+						elif CstS[2]['Type'][1] == 'FrgC':
+							colorid = 'Foreground color'
+							color.values[('sRGB',False)] = [0,0,0]
+						elif CstS[2]['Type'][1] == 'BckC':
+							colorid = 'Background color'
+							color.values[('sRGB',False)] = [1,1,1]
 						if not colorid:
 							colorid = idfromvals(color.values[color.values.keys()[0]])
 						if not colorid in swatchbook.materials:
 							color.info.identifier = colorid
 							swatchbook.materials[colorid] = color
 						stop.color = colorid
+						stop.interpolation = "sine"
 						item.stops.append(stop)
 					opstops = []
 					transparency = False

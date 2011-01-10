@@ -484,8 +484,8 @@ class Gradient(object):
 			factor = 1.0 - sqrt(1.0 - linear(seg_pos,midpoint) * linear(seg_pos,midpoint))
 		else:
 			factor = linear(seg_pos,midpoint)
-		r1,g1,b1 = self.swatchbook.materials[self.stops[left].color].toRGB(prof_out)
-		r2,g2,b2 = self.swatchbook.materials[self.stops[right].color].toRGB(prof_out)
+		r1,g1,b1 = self.swatchbook.materials[self.stops[left].color].toRGB(prof_out) or (128,128,128)
+		r2,g2,b2 = self.swatchbook.materials[self.stops[right].color].toRGB(prof_out) or (128,128,128)
 		if "space" in self.stops[left].args and self.stops[left].args["space"] == 'HSV':
 			left_hsv = RGB2HSV(r1,g1,b1)
 			right_hsv = RGB2HSV(r2,g2,b2)
@@ -522,7 +522,7 @@ class Gradient(object):
 
 	def alphaAt(self,pos):
 		if len(self.opacitystops) == 0:
-			return False
+			return 1
 		left = 0
 		right = len(self.opacitystops)-1
 		for i,stop in enumerate(self.opacitystops):
