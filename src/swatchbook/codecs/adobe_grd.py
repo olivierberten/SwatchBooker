@@ -181,6 +181,7 @@ class adobe_grd(SBCodec):
 						if opstop[1] != 50:
 							stop.args['midpoint'] = opstop[1]/100
 						stop.opacity = opstop[2]/0xFF
+						stop.interpolation = "sine"
 						item.opacitystops.append(stop)
 				file.seek(6, 1)
 				id = name

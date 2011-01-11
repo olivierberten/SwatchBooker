@@ -99,7 +99,7 @@ class gimp_ggr(SBCodec):
 				midpoint = False
 			stop.interpolation = BlendingFunctions[segments[i][11]]
 			if segments[i][12] in (1,2):
-				stop.args['space'] = 'HSV'
+				stop.model = 'HSV'
 			if segments[i][12] == 1:
 				stop.args['direction'] = 'CCW'
 			elif segments[i][12] == 2:

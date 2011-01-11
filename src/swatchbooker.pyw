@@ -939,7 +939,7 @@ class MainWindow(QMainWindow):
 			gradient = QLinearGradient(0, 0, 1, 0)
 			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
 			stops = material.stops
-			for i,stop in enumerate(stops):
+			for i, stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
 					location = stop.position + 0.0001
 				else:
@@ -948,7 +948,7 @@ class MainWindow(QMainWindow):
 					c = form.sb.materials[stop.color].toRGB8(prof_out) or (218, 218, 218)
 				except KeyError:
 					c = (218, 218, 218)
-				gradient.setColorAt(location, QColor(c[0],c[1],c[2]))
+				gradient.setColorAt(location, QColor(c[0], c[1], c[2]))
 			paint.begin(pix)
 			paint.setBrush(gradient)
 			paint.drawRect(0, 0, 15, 15)
@@ -2250,7 +2250,7 @@ class GradientWidget(QWidget):
 		stops = self.item.stops
 		prof_out = str(settings.value("mntrProfile").toString()) or False
 		if len(stops) > 0:
-			for i,stop in enumerate(stops):
+			for i, stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
 					location = stop.position + 0.0001
 				else:
@@ -2259,10 +2259,10 @@ class GradientWidget(QWidget):
 					c = form.sb.materials[stop.color].toRGB8(prof_out) or (218, 218, 218)
 				except KeyError:
 					c = (218, 218, 218)
-				gradient.setColorAt(location, QColor(c[0],c[1],c[2]))
+				gradient.setColorAt(location, QColor(c[0], c[1], c[2]))
 			palette.setBrush(self.backgroundRole(), QBrush(gradient))
 		else:
-			palette.setBrush(self.backgroundRole(), QBrush(QColor(0,0,0)))
+			palette.setBrush(self.backgroundRole(), QBrush(QColor(0, 0, 0)))
 		self.colorSample.setPalette(palette)
 		self.colorSample.setAutoFillBackground(True)
 		self.sample.update()
@@ -2276,7 +2276,7 @@ class GradientWidget(QWidget):
 		self.opacitySpin.setEnabled(False)
 		self.opacitySpin.clear()
 
-	def opacityEdit(self,val):
+	def opacityEdit(self, val):
 		self.item.opacitystops[self.currentOpacityStop].opacity = val / 100
 		self.opacitySampleUpdate()
 
@@ -2303,16 +2303,16 @@ class GradientWidget(QWidget):
 		palette = QLabel().palette()
 		stops = self.item.opacitystops
 		if len(stops) > 0:
-			for i,stop in enumerate(stops):
+			for i, stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
 					location = stop.position + 0.0001
 				else:
 					location = stop.position
-				o = int((1-stop.opacity)*255)
+				o = int((1 - stop.opacity) * 255)
 				gradient.setColorAt(location, QColor(o, o, o))
 			palette.setBrush(self.backgroundRole(), QBrush(gradient))
 		else:
-			palette.setBrush(self.backgroundRole(), QBrush(QColor(0,0,0)))
+			palette.setBrush(self.backgroundRole(), QBrush(QColor(0, 0, 0)))
 		self.opacitySample.setPalette(palette)
 		self.opacitySample.setAutoFillBackground(True)
 		self.sample.update()
@@ -2324,7 +2324,7 @@ class SwatchPreview(QLabel):
 		self.setToolTip(_("Click to see in full screen"))
 
 		palette = QLabel().palette()
-		bgpix = QPixmap(16,16)
+		bgpix = QPixmap(16, 16)
 		bgpix.fill(QColor(204, 204, 204))
 		bgpaint = QPainter()
 		bgpaint.begin(bgpix)
@@ -2353,23 +2353,7 @@ class SwatchPreview(QLabel):
 			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(prof_out)))
 			paint.setBrush(QBrush(image))
 		elif isinstance(self.material, Gradient):
-			"""
-			gradient = QLinearGradient(0, 0, 1, 0)
-			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
-			stops = self.material.stops
-			for i,stop in enumerate(stops):
-				if i > 0 and stop.position == stops[i - 1].position:
-					location = stop.position + 0.0001
-				else:
-					location = stop.position
-				try:
-					c = form.sb.materials[stop.color].toRGB8(prof_out) or (218, 218, 218)
-				except KeyError:
-					c = (218, 218, 218)
-				gradient.setColorAt(location, QColor(c[0], c[1], c[2]))
-			paint.setBrush(QBrush(gradient))
-			"""
-			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(s.width(),s.height(),prof_out)))
+			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(s.width(), s.height(), prof_out)))
 			paint.setBrush(QBrush(image))
 		paint.drawRect(0, 0, s.width(), s.height())
 		paint.end()
@@ -2728,7 +2712,7 @@ class webOpenThread(QThread):
 	def run(self):
 		self.parent().filename = False
 		self.parent().codec = 'sbz'
-		self.parent().sb = SwatchBook(websvc=self.svc,webid=self.id)
+		self.parent().sb = SwatchBook(websvc=self.svc, webid=self.id)
 
 class fillViewsThread(QThread):
 	def __init__(self, parent=None):
