@@ -22,7 +22,7 @@
 from __future__ import division
 from swatchbook.codecs import *
 
-class adobe_aco(SBCodec):
+class xara_jcw(SBCodec):
 	"""Xara Color Palette"""
 	ext = ('jcw',)
 	@staticmethod

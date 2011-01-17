@@ -30,7 +30,7 @@ class adobe_aco(SBCodec):
 		file = open(file,'rb')
 		data = file.read(2)
 		file.close()
-		if struct.unpack('>h', data)[0] in (1,2):
+		if struct.unpack('>h', data)[0] in (0,1,2):
 			return True
 		else:
 			return False
@@ -40,7 +40,7 @@ class adobe_aco(SBCodec):
 		filesize = os.path.getsize(file)
 		file = open(file,'rb')
 		version, nbcolors = struct.unpack('>2H',file.read(4))
-		if version == 1 and filesize > 4+nbcolors*10:
+		if version == 1 and filesize > 4+nbcolors*10+1: # Added 1 for the Focoltone library in Photoshop 5
 			file.seek(4+nbcolors*10)
 			version, nbcolors = struct.unpack('>2H',file.read(4))
 		for i in range(nbcolors):
@@ -71,16 +71,23 @@ class adobe_aco(SBCodec):
 				item.values[('GRAY',False)] = [K/10000,]
 				file.seek(6, 1)
 			else:
-				file.seek(8, 1)
 				sys.stderr.write('unsupported color model ['+ColorModels[model]+']\n')
+				id = file.read(7).split('\x00', 1)[0].strip()
+				file.seek(1, 1)
 			if version == 2:
 				length = struct.unpack('>L',file.read(4))[0]
 				if length > 0:
 					id = unicode(struct.unpack(str(length*2)+'s',file.read(length*2))[0],'utf_16_be').split('\x00', 1)[0]
-			if not id:
-				id = str(item.toRGB8())
+			if version == 0: # Photoshop 6
+				length = struct.unpack('B',file.read(1))[0]
+				if length > 0:
+					id = file.read(length)
+			if not id and len(item.values) > 0:
+				id = idfromvals(item.values[item.values.keys()[0]])
+			elif not id:
+				id = 'col'+str(i)
 			if id in swatchbook.materials:
-				if item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]:
+				if (len(item.values) == 0 and len(swatchbook.materials[id].values) == 0) or (item.values[item.values.keys()[0]] == swatchbook.materials[id].values[swatchbook.materials[id].values.keys()[0]]):
 					swatchbook.book.items.append(Swatch(id))
 					continue
 				else:
