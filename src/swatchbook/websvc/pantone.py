@@ -82,7 +82,7 @@ class pantone(WebSvc):
 
 	def read(self,swatchbook,guide):
 		page = urlopen(self.url+'xref_lib'+guide+'.js').readlines()
-		swatchbook.info.title = 'PANTONE® '+self.guide[guide]
+		swatchbook.info.title = u'PANTONE® '+self.guide[guide]
 		for line in page[1:]:
 			if line.strip() > '':
 				line = line.split('"')[1].split(',')
