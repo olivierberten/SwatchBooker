@@ -87,10 +87,10 @@ class gimp_ggr(SBCodec):
 					color.info.identifier = colorid
 					swatchbook.materials[colorid] = color
 				stop.color = colorid
-				item.stops.append(stop)
-				l = len(item.stops)
-				if len(item.stops) > 2 and item.stops[l-2].color == colorid and item.stops[l-3].color == colorid:
-					item.stops.pop(l-2)
+				item.colorstops.append(stop)
+				l = len(item.colorstops)
+				if l > 2 and item.colorstops[l-2].color == colorid and item.colorstops[l-3].color == colorid:
+					item.colorstops.pop(l-2)
 			stop = ColorStop()
 			stop.position = segments[i][0]
 			if round(segments[i][1], 2) != round(segments[i][0] + (segments[i][2]-segments[i][0])/2, 2):
@@ -129,10 +129,10 @@ class gimp_ggr(SBCodec):
 				color.info.identifier = colorid
 				swatchbook.materials[colorid] = color
 			stop.color = colorid
-			item.stops.append(stop)
-			l = len(item.stops)
-			if len(item.stops) > 2 and len(item.stops) > 2 and item.stops[l-2].color == colorid and item.stops[l-3].color == colorid:
-				item.stops.pop(l-2)
+			item.colorstops.append(stop)
+			l = len(item.colorstops)
+			if len(item.colorstops) > 2 and len(item.colorstops) > 2 and item.colorstops[l-2].color == colorid and item.colorstops[l-3].color == colorid:
+				item.colorstops.pop(l-2)
 		stop = ColorStop()
 		stop.position = segments[i][2]
 		color = Color(swatchbook)
@@ -160,10 +160,10 @@ class gimp_ggr(SBCodec):
 			color.info.identifier = colorid
 			swatchbook.materials[colorid] = color
 		stop.color = colorid
-		item.stops.append(stop)
-		l = len(item.stops)
-		if item.stops[l-2].color == colorid and item.stops[l-3].color == colorid:
-			item.stops.pop(l-2)
+		item.colorstops.append(stop)
+		l = len(item.colorstops)
+		if item.colorstops[l-2].color == colorid and item.colorstops[l-3].color == colorid:
+			item.colorstops.pop(l-2)
 
 		if transparency:
 			for i in range(len(opstops)):

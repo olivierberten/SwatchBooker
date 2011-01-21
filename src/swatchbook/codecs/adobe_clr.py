@@ -90,7 +90,7 @@ class adobe_clr(SBCodec):
 					color.info.identifier = colorid
 					swatchbook.materials[colorid] = color
 				stop.color = colorid
-				item.stops.append(stop)
+				item.colorstops.append(stop)
 				if opacity != 0xFF:
 					transparency = True
 				opstops.append((offset,opacity))

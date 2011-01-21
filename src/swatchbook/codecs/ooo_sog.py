@@ -63,7 +63,7 @@ class ooo_sog(SBCodec):
 					shade.info.identifier = shadeid
 					swatchbook.materials[shadeid] = shade
 					stop.color = shadeid
-				item.stops.append(stop)
+				item.colorstops.append(stop)
 
 				stop = ColorStop()
 				stop.position = 1
@@ -84,7 +84,7 @@ class ooo_sog(SBCodec):
 					shade.info.identifier = shadeid
 					swatchbook.materials[shadeid] = shade
 					stop.color = shadeid
-				item.stops.append(stop)
+				item.colorstops.append(stop)
 
 				id = name
 				if id in swatchbook.materials or id == '':

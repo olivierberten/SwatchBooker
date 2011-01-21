@@ -403,10 +403,10 @@ class MainWindow(QMainWindow):
 		material = Gradient()
 		stop0 = ColorStop()
 		stop0.position = 0
-		material.stops.append(stop0)
+		material.colorstops.append(stop0)
 		stop1 = ColorStop()
 		stop1.position = 1
-		material.stops.append(stop1)
+		material.colorstops.append(stop1)
 		material.info.identifier = id
 		form.sb.materials[id] = material
 		self.addMaterial(id)
@@ -938,7 +938,7 @@ class MainWindow(QMainWindow):
 		elif isinstance(material, Gradient):
 			gradient = QLinearGradient(0, 0, 1, 0)
 			gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
-			stops = material.stops
+			stops = material.colorstops
 			for i, stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
 					location = stop.position + 0.0001
@@ -2112,7 +2112,7 @@ class GradientWidget(QWidget):
 		self.colorSlider = MultiSlider(self)
 		self.colorSlider.setMaximum(10000)
 		self.colorSlider.flipHandles = True
-		for stop in self.item.stops:
+		for stop in self.item.colorstops:
 			self.colorSlider.addHandle(stop.position * 10000)
 		
 		m = self.colorSlider.margins()
@@ -2201,8 +2201,8 @@ class GradientWidget(QWidget):
 
 	def colorActivate(self):
 		self.currentStop = sorted(self.colorSlider.handles).index(self.colorSlider.handles[0])
-		if self.item.stops[self.currentStop].color:
-			id = self.item.stops[self.currentStop].color
+		if self.item.colorstops[self.currentStop].color:
+			id = self.item.colorstops[self.currentStop].color
 			palette = QLabel().palette()
 			material = form.sb.materials[id]
 			prof_out = str(settings.value("mntrProfile").toString()) or False
@@ -2228,18 +2228,18 @@ class GradientWidget(QWidget):
 		self.colorStopFormula.clear()
 
 	def colorMove(self, val):
-		self.item.stops[self.currentStop].position = val / 10000
+		self.item.colorstops[self.currentStop].position = val / 10000
 		self.colorSampleUpdate()
 
 	def colorAddStop(self, val):
 		stop = ColorStop()
 		stop.position = val / 10000
-		self.item.stops.insert(sorted(self.colorSlider.handles).index(val), stop)
+		self.item.colorstops.insert(sorted(self.colorSlider.handles).index(val), stop)
 		self.colorSampleUpdate()
 		self.colorActivate()
 
 	def colorDelStop(self, index):
-		self.item.stops.pop(index)
+		self.item.colorstops.pop(index)
 		self.colorSampleUpdate()
 		self.colorEditReset()
 
@@ -2247,7 +2247,7 @@ class GradientWidget(QWidget):
 		gradient = QLinearGradient(0, 0, 1, 0)
 		gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
 		palette = QLabel().palette()
-		stops = self.item.stops
+		stops = self.item.colorstops
 		prof_out = str(settings.value("mntrProfile").toString()) or False
 		if len(stops) > 0:
 			for i, stop in enumerate(stops):

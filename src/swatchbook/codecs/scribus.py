@@ -68,7 +68,7 @@ class scribus(SBCodec):
 							tint.info.identifier = tintid
 							swatchbook.materials[tintid] = tint
 							stop.color = tintid
-						item.stops.append(stop)
+						item.colorstops.append(stop)
 						opstops.append((stop.position, eval(stops.attrib['TRANS'])))
 				if not (len(opstops) == 2 and opstops[0][1] == opstops[1][1]):
 					for i in range(len(opstops)):

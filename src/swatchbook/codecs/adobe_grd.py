@@ -165,7 +165,7 @@ class adobe_grd(SBCodec):
 						swatchbook.materials[colorid] = color
 					stop.color = colorid
 					stop.interpolation = "sine"
-					item.stops.append(stop)
+					item.colorstops.append(stop)
 				nbopstops = struct.unpack('>H',file.read(2))[0]
 				opstops = []
 				transparency = False
@@ -259,7 +259,7 @@ class adobe_grd(SBCodec):
 							swatchbook.materials[colorid] = color
 						stop.color = colorid
 						stop.interpolation = "sine"
-						item.stops.append(stop)
+						item.colorstops.append(stop)
 					opstops = []
 					transparency = False
 					for opstop in grdn['Trns']:
