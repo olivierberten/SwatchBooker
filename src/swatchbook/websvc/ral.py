@@ -27,19 +27,23 @@ class ral(WebSvc):
 
 	content = ['swatchbook']
 
-	about = u'These data come from the <a href="http://www.ral-farben.de/uebersicht-ral-classic-farben.html?&L=1">RAL CLASSIC colour names</a> listed at RAL\'s website.<br /><br />RAL CLASSIC is registered trademarks of RAL gGmbH, 53757 Sankt Augustin.'
+	about = u'These data come from the <a href="http://www.ral-farben.de/uebersicht-ral-classic-farben.html?&L=1">RAL CLASSIC</a> and <a href="http://www.ral-farben.de/uebersicht-ral-p1-farben.html?&L=1">RAL PLASTICS</a> colour names listed at RAL\'s website.<br /><br />RAL CLASSIC and RAL PLASTICS are registered trademarks of RAL gGmbH, 53757 Sankt Augustin.'
 
 	nbLevels = 1
-	url = 'http://www.ral-farben.de/uebersicht-ral-classic-farben.html'
+	urls = [('RAL CLASSIC','http://www.ral-farben.de/uebersicht-ral-classic-farben.html'),('RAL PLASTICS','http://www.ral-farben.de/uebersicht-ral-p1-farben.html')]
 
 	def level0(self):
-		return {'0': u'RAL CLASSIC'}
+		palettes = SortedDict()
+		palettes['0'] = self.urls[0][0]
+		palettes['1'] = self.urls[1][0]
+		return palettes 
 
 	def read(self,swatchbook,palette):
-		webpage = urlopen(self.url).read()
+		palette = eval(palette)
+		webpage = urlopen(self.urls[palette][1]).read()
 		data = webpage.split('<tbody>')[1].split('</tbody>')[0]
 		data = data.split('<tr')[1:]
-		swatchbook.info.title = u'RAL CLASSIC'
+		swatchbook.info.title = self.urls[palette][0]
 
 		i = 0
 		for line in data:
@@ -59,4 +63,4 @@ class ral(WebSvc):
 			item.info.title_l10n = {'de': unicode(de,'UTF-8'),'en': unicode(en,'UTF-8'),'fr': unicode(fr,'UTF-8'),'es': unicode(es,'UTF-8'),'it': unicode(it,'UTF-8'),'nl': unicode(nl,'UTF-8')}
 			swatchbook.materials[code] = item
 			swatchbook.book.items.append(Swatch(code))
-			i += 1			
+			i += 1
