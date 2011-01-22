@@ -785,21 +785,22 @@ class MainWindow(QMainWindow):
 
 	def webOpen(self):
 		try:
-			# workaround for http://bugs.python.org/issue9062
-			test = urllib.urlopen('http://www.selapa.net')
-	
 			dialog = webOpenDlg(self, settings)
 			if dialog.exec_() and dialog.svc and dialog.ids:
 				self.clear()
-				thread = webOpenThread(dialog.svc, dialog.ids[0], self)
-				self.connect(thread, SIGNAL("finished()"), self.fill)
-				self.connect(thread, SIGNAL("terminated()"), self.misloaded)
-				app.setOverrideCursor(Qt.WaitCursor)
-				self.loadingDlg.label.setText(_("Loading swatch book"))
-				self.loadingDlg.show()
-				thread.start()
+				self.loadWeb(dialog.svc, dialog.ids[0])
 		except IOError:
 			QMessageBox.critical(self, _('Error'), _("No internet connexion has been found"))
+
+	def loadWeb(self, websvc, webid):
+		thread = webOpenThread(websvc, webid, self)
+		self.connect(thread, SIGNAL("finished()"), self.fill)
+		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
+		app.setOverrideCursor(Qt.WaitCursor)
+		self.loadingDlg.label.setText(_("Loading swatch book"))
+		self.loadingDlg.progress.hide()
+		self.loadingDlg.show()
+		thread.start()
 
 	def fileOpen(self):
 		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else QDir.homePath()

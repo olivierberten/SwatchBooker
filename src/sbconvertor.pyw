@@ -175,9 +175,6 @@ class MainWindow(QMainWindow):
 
 	def webOpen(self):
 		try:
-			# workaround for http://bugs.python.org/issue9062
-			test = urllib.urlopen('http://www.selapa.net')
-	
 			dialog = webOpenDlg(self,settings,True)
 			if dialog.exec_() and dialog.svc and dialog.ids:
 				self.tobeadded += len(dialog.ids)
