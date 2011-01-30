@@ -591,9 +591,10 @@ class Gradient(object):
 		colors = set()
 		for stop in self.colorstops:
 			colors.add(stop.color)
-		sRGB_colors = {} 
+		sRGB_colors = {}
 		for color in colors:
-			sRGB_colors[color] = self.swatchbook.materials[color].toRGB(prof_out) or (128, 128, 128)
+			if color:
+				sRGB_colors[color] = self.swatchbook.materials[color].toRGB(prof_out) or (128, 128, 128)
 		# Color
 		image = Image.new('RGB', (width, height))
 		draw = ImageDraw.Draw(image)
@@ -608,8 +609,10 @@ class Gradient(object):
 				else:
 					right = j
 					break
-			if left == right:
-				r, g, b = sRGB_colors[self.colorstops[left].color]
+			sRGB_left = sRGB_colors[self.colorstops[left].color] if self.colorstops[left].color else 128, 128, 128
+			sRGB_right = sRGB_colors[self.colorstops[right].color] if self.colorstops[right].color else 128, 128, 128
+			if left == right or self.colorstops[left].color == self.colorstops[right].color:
+				r, g, b = sRGB_left
 			else:
 				seg_pos = (pos - self.colorstops[left].position) / (self.colorstops[right].position - self.colorstops[left].position)
 	
@@ -619,7 +622,7 @@ class Gradient(object):
 					midpoint = 0.5
 				factor = Gradient.get_factor(self.colorstops[left].interpolation, seg_pos, midpoint)
 	
-				r, g, b = Gradient.interpolate(sRGB_colors[self.colorstops[left].color], sRGB_colors[self.colorstops[right].color], factor, self.colorstops[left].model, self.colorstops[left].args)
+				r, g, b = Gradient.interpolate(sRGB_left, sRGB_right, factor, self.colorstops[left].model, self.colorstops[left].args)
 	
 			draw.line((i, 0, i, height), fill=(int(round(r * 0xFF)), int(round(g * 0xFF)), int(round(b * 0xFF))))
 		del draw

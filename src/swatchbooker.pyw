@@ -400,13 +400,10 @@ class MainWindow(QMainWindow):
 			while id in form.sb.materials:
 				id = _('New Gradient') + ' (' + str(i) + ')'
 				i += 1
-		material = Gradient()
+		material = Gradient(form.sb)
 		stop0 = ColorStop()
 		stop0.position = 0
 		material.colorstops.append(stop0)
-		stop1 = ColorStop()
-		stop1.position = 1
-		material.colorstops.append(stop1)
 		material.info.identifier = id
 		form.sb.materials[id] = material
 		self.addMaterial(id)
