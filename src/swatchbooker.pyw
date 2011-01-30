@@ -446,13 +446,17 @@ class MainWindow(QMainWindow):
 			if Image.EXTENSION[ext] in Image.ID:
 				supported += " *" + ext
 		supported += ")"
+		dir = settings.value('lastPatternDir').toString() if settings.contains('lastPatternDir') else QDir.homePath()
 		fnames = QFileDialog.getOpenFileNames(self,
-							_("Choose image file"), ".",
+							_("Choose image file"), dir,
 							(_("Supported image files") + supported))
 		if len(fnames) > 0:
+			settings.setValue('lastPatternDir', QVariant(os.path.dirname(unicode(fnames[0]))))
 			ids = []
 			for fname in fnames:
-				ids.append(self.addPattern(fname))
+				id = self.addPattern(fname)
+				if id:
+					ids.append(id)
 			return ids
 
 	def deleteMaterial(self):
@@ -539,9 +543,10 @@ class MainWindow(QMainWindow):
 				self.gridWidget.addItem(gridItem)
 			self.items[treeItem] = gridItem
 			selected = [treeItem]
-		self.treeWidget.setCurrentItem(treeItem)
-		self.gridWidget.update()
-		self.updSwatchCount()
+		if len(ids) > 0:
+			self.treeWidget.setCurrentItem(treeItem)
+			self.gridWidget.update()
+			self.updSwatchCount()
 
 	def addBreak(self):
 		self.addBreakSpacer('Break')

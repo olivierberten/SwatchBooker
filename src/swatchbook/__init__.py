@@ -452,7 +452,7 @@ class Pattern(object):
 			outputProfile = prof_out
 		else:
 			outputProfile = sRGB
-		new_image = ImageCms.profileToProfile(image, inputProfile, outputProfile)
+		new_image = ImageCms.profileToProfile(image, inputProfile, outputProfile, outputMode="RGB")
 		if alpha_band:
 			new_image.putalpha(alpha_band)
 		return new_image
