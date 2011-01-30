@@ -19,7 +19,6 @@
 #       MA 02110-1301, USA.
 #
 
-import urllib
 import gettext
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *

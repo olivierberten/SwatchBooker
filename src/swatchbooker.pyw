@@ -288,6 +288,7 @@ class MainWindow(QMainWindow):
 		self.profiles = {}
 		self.groups = {}
 		self.items = {}
+		self.sb = SwatchBook()
 
 		self.sbInfo.clear()
 		self.sbProfList.clear()
@@ -841,6 +842,7 @@ class MainWindow(QMainWindow):
 		self.connect(thread, SIGNAL("fileFormatError()"), self.fileFormatError)
 		app.setOverrideCursor(Qt.WaitCursor)
 		self.loadingDlg.label.setText(_("Loading swatch"))
+		self.loadingDlg.progress.hide()
 		self.loadingDlg.show()
 		thread.start()
 
