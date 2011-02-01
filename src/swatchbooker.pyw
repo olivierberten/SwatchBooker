@@ -416,29 +416,35 @@ class MainWindow(QMainWindow):
 		return [id]
 
 	def addPattern(self, fname):
+		fname = unicode(fname)
 		try:
-			fname = unicode(fname)
-			Image.open(fname)
-			id = os.path.basename(fname)
-			if not os.path.isdir(os.path.join(self.sb.tmpdir, "patterns")):
-				os.mkdir(os.path.join(self.sb.tmpdir, "patterns"))
-			copy2(fname, os.path.join(self.sb.tmpdir, "patterns"))
-			material = Pattern(self.sb)
-			material.info.identifier = id
-			if "title" in material.image().info:
-				material.info.title = material.image().info["title"]
+			image = Image.open(fname)
+			image.load()
+		except (IOError, TypeError):
+			goon = QMessageBox.warning(self, _("Warning"), _("This file isn't supported by the Python Image Library. Add anyway?"), QMessageBox.Yes | QMessageBox.No)
+			if goon == QMessageBox.Yes:
+				pass
 			else:
-				material.info.title = os.path.splitext(os.path.basename(fname))[0]
-			form.sb.materials[id] = material
-			self.addMaterial(id)
-			icon = self.drawIcon(id)
-			self.addIcon(id, icon[0], icon[1])
-			self.matList.setFocus()
-			self.matList.setCurrentItem(self.materials[id][0])
-			self.updSwatchCount()
-			return id
-		except IOError:
-			QMessageBox.critical(self, _("Error"), _("Unsupported file"))			
+				return
+		id = os.path.basename(fname)
+		patdir = os.path.join(self.sb.tmpdir, "patterns")
+		if not os.path.isdir(patdir):
+			os.mkdir(patdir)
+		copy2(fname, patdir)
+		material = Pattern(self.sb)
+		material.info.identifier = id
+		if material.image() and "title" in material.image().info:
+			material.info.title = material.image().info["title"]
+		else:
+			material.info.title = os.path.splitext(id)[0]
+		form.sb.materials[id] = material
+		self.addMaterial(id)
+		icon = self.drawIcon(id)
+		self.addIcon(id, icon[0], icon[1])
+		self.matList.setFocus()
+		self.matList.setCurrentItem(self.materials[id][0])
+		self.updSwatchCount()
+		return id
 
 	def addPatterns(self):
 		Image.init()
@@ -928,7 +934,7 @@ class MainWindow(QMainWindow):
 			else:
 				paint.drawRect(0, 0, 15, 15)
 			paint.end()
-		elif isinstance(material, Pattern):
+		elif isinstance(material, Pattern) and material.image():
 			image = ImageQt.ImageQt(material.imageRGB())
 			paint.begin(pix)
 			paint.drawImage(0, 0, image.scaled(16, 16, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation))
@@ -2354,7 +2360,7 @@ class SwatchPreview(QLabel):
 			if self.material.toRGB8(prof_out):
 				r, g, b = self.material.toRGB8(prof_out)
 				paint.setBrush(QBrush(QColor(r, g, b)))
-		elif isinstance(self.material, Pattern):
+		elif isinstance(self.material, Pattern) and self.material.image():
 			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(prof_out)))
 			paint.setBrush(QBrush(image))
 		elif isinstance(self.material, Gradient):

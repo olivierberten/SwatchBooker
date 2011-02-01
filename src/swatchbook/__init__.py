@@ -427,13 +427,17 @@ class Pattern(object):
 
 	#TODO: SVG support
 	def image(self):
-		return Image.open(os.path.join(self.swatchbook.tmpdir, "patterns", self.info.identifier))
+		try:
+			image = Image.open(os.path.join(self.swatchbook.tmpdir, "patterns", self.info.identifier))
+			image.load()
+			return image
+		except (IOError, TypeError):
+			return False
 
 	def imageRGB(self, prof_out=False):
 		image = self.image()
 		alpha_band = False
 		if image.mode in ('LA', 'PA', 'RGBA'):
-			image.load()
 			bands = image.split()
 			alpha_band = bands[-1]
 			image = Image.merge(image.mode[:-1], bands[:-1])
