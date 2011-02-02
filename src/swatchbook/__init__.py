@@ -613,8 +613,8 @@ class Gradient(object):
 				else:
 					right = j
 					break
-			sRGB_left = sRGB_colors[self.colorstops[left].color] if self.colorstops[left].color else 128, 128, 128
-			sRGB_right = sRGB_colors[self.colorstops[right].color] if self.colorstops[right].color else 128, 128, 128
+			sRGB_left = sRGB_colors[self.colorstops[left].color] if self.colorstops[left].color else (128, 128, 128)
+			sRGB_right = sRGB_colors[self.colorstops[right].color] if self.colorstops[right].color else (128, 128, 128)
 			if left == right or self.colorstops[left].color == self.colorstops[right].color:
 				r, g, b = sRGB_left
 			else:
