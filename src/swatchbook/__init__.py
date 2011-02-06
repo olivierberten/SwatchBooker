@@ -45,32 +45,37 @@ class SortedDict(dict):
 	def __init__(self, data=None):
 		if data is None:
 			data = {}
+		elif isinstance(data, GeneratorType):
+			# Unfortunately we need to be able to read a generator twice.  Once
+			# to get the data into self with our super().__init__ call and a
+			# second time to setup keyOrder correctly
+			data = list(data)
 		super(SortedDict, self).__init__(data)
 		if isinstance(data, dict):
 			self.keyOrder = data.keys()
 		else:
 			self.keyOrder = []
+			seen = set()
 			for key, value in data:
-				if key not in self.keyOrder:
+				if key not in seen:
 					self.keyOrder.append(key)
+					seen.add(key)
 
 	def __deepcopy__(self, memo):
-		from copy import deepcopy
 		return self.__class__([(key, deepcopy(value, memo))
 							   for key, value in self.iteritems()])
 
 	def __setitem__(self, key, value):
-		super(SortedDict, self).__setitem__(key, value)
-		if key not in self.keyOrder:
+		if key not in self:
 			self.keyOrder.append(key)
+		super(SortedDict, self).__setitem__(key, value)
 
 	def __delitem__(self, key):
 		super(SortedDict, self).__delitem__(key)
 		self.keyOrder.remove(key)
 
 	def __iter__(self):
-		for k in self.keyOrder:
-			yield k
+		return iter(self.keyOrder)
 
 	def pop(self, k, *args):
 		result = super(SortedDict, self).pop(k, *args)
@@ -91,7 +96,7 @@ class SortedDict(dict):
 
 	def iteritems(self):
 		for key in self.keyOrder:
-			yield key, super(SortedDict, self).__getitem__(key)
+			yield key, self[key]
 
 	def keys(self):
 		return self.keyOrder[:]
@@ -100,18 +105,18 @@ class SortedDict(dict):
 		return iter(self.keyOrder)
 
 	def values(self):
-		return [super(SortedDict, self).__getitem__(k) for k in self.keyOrder]
+		return map(self.__getitem__, self.keyOrder)
 
 	def itervalues(self):
 		for key in self.keyOrder:
-			yield super(SortedDict, self).__getitem__(key)
+			yield self[key]
 
 	def update(self, dict_):
-		for k, v in dict_.items():
-			self.__setitem__(k, v)
+		for k, v in dict_.iteritems():
+			self[k] = v
 
 	def setdefault(self, key, default):
-		if key not in self.keyOrder:
+		if key not in self:
 			self.keyOrder.append(key)
 		return super(SortedDict, self).setdefault(key, default)
 
