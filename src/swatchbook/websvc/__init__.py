@@ -21,7 +21,7 @@
 
 from __future__ import division
 from urllib import quote_plus,unquote_plus,urlencode,urlretrieve
-from urllib2 import urlopen
+from urllib2 import urlopen,Request
 import xml.etree.cElementTree as etree
 from xml.sax.saxutils import escape as xmlescape
 from xml.sax.saxutils import unescape as xmlunescape
