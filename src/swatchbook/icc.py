@@ -80,12 +80,18 @@ class ICCprofile():
 			return {0: unicode(struct.unpack(str(acount)+'s',file.read(acount))[0],'mac_roman').split('\x00', 1)[0]}
 		elif type == 'mluc':
 			content = {}
-			records = struct.unpack('>L',file.read(4))[0]
+			records = []
+			nbrecords = struct.unpack('>L',file.read(4))[0]
 			size = struct.unpack('>L',file.read(4))[0]
-			for i in range(records):
-				if size == 12:
-					lang,country,length,offset = struct.unpack('>2s 2s 2L',file.read(12))
-					file.seek(start+offset)
-					content[lang+'_'+country] = unicode(struct.unpack(str(length)+'s',file.read(length))[0],'utf_16_be')
+			for i in range(nbrecords):
+				records.append(struct.unpack('>2s 2s 2L',file.read(12)))
+			for r in records:
+				lang,country,length,offset = r
+				file.seek(start+offset)
+				if country != '\x00\x00':
+					lg = lang+'_'+country
+				else:
+					lg = lang
+				content[lg] = unicode(struct.unpack(str(length)+'s',file.read(length))[0],'utf_16_be').strip('\x00')
 			return content
 		
