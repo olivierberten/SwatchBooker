@@ -42,7 +42,17 @@ class ral_bcs(SBCodec):
 		file.seek(offset+1, 0)
 		nbcolors = struct.unpack('<H',file.read(2))[0]
 		length = struct.unpack('B',file.read(1))[0]
-		name_tmp = struct.unpack(str(length)+'s',file.read(length))[0].split(':')
+		x = file.tell()
+		name_tmp = struct.unpack(str(length)+'s',file.read(length))[0]
+		if name_tmp[-1] != ':': # Workaround for CIE-HLC & CIE-LAB
+			name_tmp = ''
+			file.seek(x)
+			period = 0
+			while period < 2:
+				c = file.read(1)
+				if c == ':': period += 1
+				name_tmp += c
+		name_tmp = name_tmp.split(':')
 		swatchbook.info.title = unicode(name_tmp[0].split('English_')[1],'latin1')
 		if name_tmp[1].split('German_')[1] != swatchbook.info.title:
 			swatchbook.info.title_l10n['de'] = unicode(name_tmp[1].split('German_')[1],'latin1')
