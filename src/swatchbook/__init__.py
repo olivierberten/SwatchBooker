@@ -318,12 +318,12 @@ class Break(object):
 
 class Color(object):
 	"""Output values
-       sRGB,RGB,HSV,HSL,CMY,CMYK,nCLR: 0 -> 1
-       YIQ: Y 0 -> 1 : IQ -0.5 -> 0.5
-       Lab: L 0 -> 100 : ab -128 -> 127
-       LCH: LC 0 -> 100 : H 0 -> 360
-       XYZ: 0 -> ~100 (cfr. ref)
-	   XYZ: xy 0 -> 1 : Y 0 -> 100 """
+	   sRGB,RGB,HSV,HSL,CMY,CMYK,nCLR: 0 -> 1
+	   YIQ: Y 0 -> 1 : IQ -0.5 -> 0.5
+	   Lab: L 0 -> 100 : ab -128 -> 127
+	   LCH: LC 0 -> 100 : H 0 -> 360
+	   XYZ: 0 -> ~100 (cfr. ref)
+	   xyZ: xy 0 -> 1 : Y 0 -> 100 """
 
 	def __init__(self, swatchbook):
 		self.info = Info()
