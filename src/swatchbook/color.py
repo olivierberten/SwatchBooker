@@ -28,7 +28,7 @@ def dirpath(name):
 	if not name:
 		return name
 	elif os.path.islink(name):
-		return os.path.dirname(os.path.abspath(os.path._resolve_link(name)))
+		return os.path.dirname(os.path.abspath(os.path.realpath(name)))
 	else:
 		return os.path.dirname(name)
 
