@@ -20,17 +20,19 @@
 #
 
 import gettext
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from multiprocessing import Pool 
 
 from swatchbook import *
 import swatchbook.codecs as codecs
 import swatchbook.websvc as websvc
 
-VERSION = "0.7.3"
+VERSION = "0.8"
 
 def translate_sb(app,settings,main_globals):
-	locale = settings.value("Language").toString() or QLocale.system().name()
+	locale = settings.value("Language") or QLocale.system().name()
 	# translation of the app
 	try:
 		if os.path.isdir(os.path.join((dirpath(__file__) or "."),"locale")):
@@ -103,8 +105,8 @@ class webOpenDlg(QDialog):
 			self.webWidgets[svc] = (webWidget,current_svc.about,listItem)
 		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
 		self.webSvcList.sortItems()
-		if settings.contains('lastWebSvc') and str(settings.value('lastWebSvc').toString()) in self.webWidgets:
-			self.webSvcList.setCurrentItem(self.webWidgets[str(settings.value('lastWebSvc').toString())][2])
+		if settings.contains('lastWebSvc') and str(settings.value('lastWebSvc')) in self.webWidgets:
+			self.webSvcList.setCurrentItem(self.webWidgets[str(settings.value('lastWebSvc'))][2])
 		else:
 			self.webSvcList.setCurrentRow(0)
 		self.changeTab()
@@ -127,13 +129,12 @@ class webOpenDlg(QDialog):
 			self.setWindowTitle(_("Add from web"))
 		else:
 			self.setWindowTitle(_("Open from web"))
-		self.connect(self.webSvcList,
-				SIGNAL("itemSelectionChanged()"), self.changeTab)
-		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
-		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
+		self.webSvcList.itemSelectionChanged.connect(self.changeTab)
+		buttonBox.accepted.connect(self.accept)
+		buttonBox.rejected.connect(self.reject)
 
 	def changeTab(self):
-		self.svc = str(self.webSvcList.selectedItems()[0].data(Qt.UserRole).toString())
+		self.svc = str(self.webSvcList.selectedItems()[0].data(Qt.UserRole))
 		self.ids = False
 		self.webSvcStack.setCurrentWidget(self.webWidgets[self.svc][0])
 		self.about.setText(self.webWidgets[self.svc][1])
@@ -152,10 +153,8 @@ class webWidgetList(QTreeWidget):
 		self.setFrameShape(QFrame.NoFrame)
 		if parent.multi:
 			self.setSelectionMode(QAbstractItemView.ExtendedSelection)
-		self.connect(self,
-				SIGNAL("itemSelectionChanged()"), self.activate)
-		self.connect(self,
-				SIGNAL("itemExpanded(QTreeWidgetItem *)"), self.nextLevel)
+		self.itemSelectionChanged.connect(self.activate)
+		self.itemExpanded.connect(self.nextLevel)
 
 	def activate(self):
 		self.parent.ids = False
@@ -172,22 +171,19 @@ class webWidgetList(QTreeWidget):
 				root = []
 			for item in root:
 				if isinstance(root[item],SortedDict):
-					pitemtext = QStringList()
-					pitemtext << item
-					pitem = QTreeWidgetItem(self,pitemtext)
+					pitemtext = [item]
+					pitem = QTreeWidgetItem(self, pitemtext)
 					pitem.setFlags(pitem.flags() & ~(Qt.ItemIsSelectable))
 					for sitem in root[item]:
 						if sitem == 0:
 							continue
-						itemtext = QStringList()
-						itemtext << root[item][sitem] << str(sitem)
+						itemtext = [root[item][sitem], str(sitem)]
 						titem = QTreeWidgetItem(pitem,itemtext)
 						if self.svc.nbLevels > 1:
 							titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
 							titem.setFlags(titem.flags() & ~(Qt.ItemIsSelectable))
 				else:
-					itemtext = QStringList()
-					itemtext << root[item] << item
+					itemtext = [root[item], item]
 					titem = QTreeWidgetItem(self,itemtext)
 					if self.svc.nbLevels > 1:
 						titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)
@@ -203,8 +199,7 @@ class webWidgetList(QTreeWidget):
 				level += 1
 			llist = eval('self.svc.level'+str(level))(unicode(treeItem.text(1)))
 			for item in llist:
-				itemtext = QStringList()
-				itemtext << llist[item] << item
+				itemtext = [llist[item], item]
 				titem = QTreeWidgetItem(treeItem,itemtext)
 				if self.svc.nbLevels > level+1:
 					titem.setChildIndicatorPolicy(QTreeWidgetItem.ShowIndicator)

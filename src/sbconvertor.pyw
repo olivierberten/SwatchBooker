@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
 		inputLayout.addWidget(self.progress,5,1)
 
 		if settings.contains('lastSaveDir'):
-			self.path = unicode(settings.value('lastSaveDir').toString())
+			self.path = settings.value('lastSaveDir')
 		else:
 			self.path = unicode(QDir.homePath())
 
@@ -85,10 +85,10 @@ class MainWindow(QMainWindow):
 			codec_exts = []
 			for ext in eval('codecs.'+codec).ext:
 				codec_exts.append('*.'+ext)
-			self.formatCombo.addItem(eval('codecs.'+codec).__doc__ +' ('+" ".join(codec_exts)+')',QVariant(codec))
+			self.formatCombo.addItem(eval('codecs.'+codec).__doc__ +' ('+" ".join(codec_exts)+')',codec)
 		
 		if settings.contains('lastSaveCodec'):
-			self.formatCombo.setCurrentIndex(self.formatCombo.findText(settings.value('lastSaveCodec').toString()))
+			self.formatCombo.setCurrentIndex(self.formatCombo.findText(settings.value('lastSaveCodec')))
 
 		formatLayout = QHBoxLayout()
 		formatLayout.addWidget(QLabel(_("Output format:")))
@@ -106,22 +106,14 @@ class MainWindow(QMainWindow):
 		
 		self.setCentralWidget(mainWidget)
 
-		self.connect(self.addFile, SIGNAL("clicked()"),
-					 self.fileOpen)
-		self.connect(self.addWeb, SIGNAL("clicked()"),
-					 self.webOpen)
-		self.connect(self.removeButton, SIGNAL("clicked()"),
-					 self.remove)
-		self.connect(self.removeAllButton, SIGNAL("clicked()"),
-					 self.removeAll)
-		self.connect(self.convertButton, SIGNAL("clicked()"),
-					 self.convert)
-		self.connect(self.pathButton, SIGNAL("clicked()"),
-					 self.setPath)
-		self.connect(self.list, SIGNAL("itemSelectionChanged()"),
-					 self.toggleRemove)
-		self.connect(self.formatCombo, SIGNAL("currentIndexChanged(int)"),
-					 self.paramsChanged)
+		self.addFile.clicked.connect(self.fileOpen)
+		self.addWeb.clicked.connect(self.webOpen)
+		self.removeButton.clicked.connect(self.remove)
+		self.removeAllButton.clicked.connect(self.removeAll)
+		self.convertButton.clicked.connect(self.convert)
+		self.pathButton.clicked.connect(self.setPath)
+		self.list.itemSelectionChanged.connect(self.toggleRemove)
+		self.formatCombo.currentIndexChanged[int].connect(self.paramsChanged)
 		
 	def setPath(self):
 		path = unicode(QDir.toNativeSeparators(QFileDialog.getExistingDirectory(self,
@@ -139,7 +131,7 @@ class MainWindow(QMainWindow):
 				self.tobeconverted[index][1] = False
 
 	def fileOpen(self):
-		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else QDir.homePath()
+		dir = settings.value('lastOpenDir') if settings.contains('lastOpenDir') else QDir.homePath()
 		filetypes = []
 		for codec in codecs.reads:
 			codec_exts = []
@@ -150,16 +142,16 @@ class MainWindow(QMainWindow):
 		allexts = ["*.%s" % unicode(format).lower() \
 				   for format in codecs.readexts.keys()]
 		if settings.contains('lastOpenCodec'):
-			filetype = settings.value('lastOpenCodec').toString()
+			filetype = settings.value('lastOpenCodec')
 		else:
 			filetype = QString()
 		flist = QFileDialog.getOpenFileNames(self,
 							_("Add files"), dir,
-							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+";;"+_("All files (*)"),filetype)
-		if flist.count() > 0:
-			settings.setValue('lastOpenCodec',QVariant(filetype))
-			settings.setValue('lastOpenDir',QVariant(os.path.dirname(unicode(flist[0]))))
-			self.tobeadded += flist.count()
+							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+";;"+_("All files (*)"),filetype)[0]
+		if len(flist) > 0:
+			settings.setValue('lastOpenCodec',filetype)
+			settings.setValue('lastOpenDir',os.path.dirname(unicode(flist[0])))
+			self.tobeadded += len(flist)
 			self.progress.setMaximum(self.tobeadded)
 			self.progress.setValue(self.added)
 			self.progress.show()
@@ -167,11 +159,17 @@ class MainWindow(QMainWindow):
 			self.removeAllButton.setEnabled(False)
 			for fname in flist:
 				thread = fileOpenThread(fname,self)
-				self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
-				self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
-				self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
+				thread.added.connect(self.addToList)
+				thread.finished.connect(self.toggleAdding)
 				self.threads.append(thread)
 				thread.start()
+
+	def addToList(self):
+		row = self.list.rowCount()
+		self.list.insertRow(row)
+		sb = self.tobeconverted[-1][0]
+		self.list.setItem(row,1,QTableWidgetItem(sb.info.title))
+		self.updateProgressBar()
 
 	def webOpen(self):
 		try:
@@ -185,9 +183,8 @@ class MainWindow(QMainWindow):
 				self.removeAllButton.setEnabled(False)
 				for id in dialog.ids:
 					thread = webOpenThread(dialog.svc,id,self)
-					self.connect(thread, SIGNAL("added()"), self.updateProgressBar)
-					self.connect(thread, SIGNAL("finished()"), self.toggleAdding)
-					self.connect(thread, SIGNAL("terminated()"), self.toggleAdding)
+					thread.added.connect(self.addToList)
+					thread.finished.connect(self.toggleAdding)
 					self.threads.append(thread)
 					thread.start()
 		except IOError:
@@ -233,14 +230,13 @@ class MainWindow(QMainWindow):
 		self.convertButton.setEnabled(False)
 
 	def convert(self):
-		codec = unicode(self.formatCombo.itemData(self.formatCombo.currentIndex()).toString())
+		codec = unicode(self.formatCombo.itemData(self.formatCombo.currentIndex()))
 		path = self.path
-		settings.setValue('lastSaveCodec',QVariant(self.formatCombo.itemText(self.formatCombo.currentIndex())))
-		settings.setValue('lastSaveDir',QVariant(path))
+		settings.setValue('lastSaveCodec', self.formatCombo.itemText(self.formatCombo.currentIndex()))
+		settings.setValue('lastSaveDir', path)
 		thread = convertThread(path,codec,self)
-		self.connect(thread, SIGNAL("converted(int)"), self.converted)
-		self.connect(thread, SIGNAL("finished()"), self.allConverted)
-		self.connect(thread, SIGNAL("terminated()"), self.allConverted)
+		thread.converted[int].connect(self.converted)
+		thread.finished.connect(self.allConverted)
 		self.addFile.setEnabled(False)
 		self.addWeb.setEnabled(False)
 		self.removeButton.setEnabled(False)
@@ -268,6 +264,8 @@ class MainWindow(QMainWindow):
 #		self.list.setCurrentRow(-1)
 
 class fileOpenThread(QThread):
+	added = pyqtSignal()
+
 	def __init__(self, fname, parent = None):
 		super(fileOpenThread, self).__init__(parent)
 		self.fname = fname
@@ -276,15 +274,13 @@ class fileOpenThread(QThread):
 		try:
 			sb = SwatchBook(unicode(self.fname))
 			self.parent().tobeconverted.append([sb,False])
-			row = self.parent().list.rowCount()
-			self.parent().list.insertRow(row)
-			self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
-#			self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
-			self.emit(SIGNAL("added()"))
+			self.added.emit()
 		except FileFormatError:
 			pass
 
 class webOpenThread(QThread):
+	added = pyqtSignal()
+
 	def __init__(self, svc, id, parent = None):
 		super(webOpenThread, self).__init__(parent)
 		self.svc = svc
@@ -293,13 +289,11 @@ class webOpenThread(QThread):
 	def run(self):
 		sb = SwatchBook(websvc=self.svc,webid=self.id)
 		self.parent().tobeconverted.append([sb,False])
-		row = self.parent().list.rowCount()
-		self.parent().list.insertRow(row)
-		self.parent().list.setItem(row,1,QTableWidgetItem(sb.info.title))
-#		self.parent().list.setItem(row,2,QTableWidgetItem(str(len(sb.materials))))
-		self.emit(SIGNAL("added()"))
+		self.added.emit()
 
 class convertThread(QThread):
+	converted = pyqtSignal(int)
+
 	def __init__(self, path, codec, parent = None):
 		super(convertThread, self).__init__(parent)
 		self.path = path
@@ -317,7 +311,7 @@ class convertThread(QThread):
 						i += 1
 				sb[0].write(self.codec,fname+'.'+ext)
 				sb[1] = True
-				self.emit(SIGNAL("converted(int)"), self.parent().tobeconverted.index(sb))
+				self.converted.emit(self.parent().tobeconverted.index(sb))
 
 if __name__ == "__main__":
 	app = QApplication(sys.argv)

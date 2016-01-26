@@ -80,24 +80,24 @@ class MainWindow(QMainWindow):
 		self.treeViewAction = QAction(_("Tree view"), self)
 		self.treeViewAction.setActionGroup(viewActionGroup)
 		self.treeViewAction.setCheckable(True)
-		self.connect(self.treeViewAction, SIGNAL("triggered()"), self.dispPane)
+		self.treeViewAction.triggered.connect(self.dispPane)
 		self.gridViewAction = QAction(_("Grid view"), self)
 		self.gridViewAction.setActionGroup(viewActionGroup)
 		self.gridViewAction.setCheckable(True)
-		self.connect(self.gridViewAction, SIGNAL("triggered()"), self.dispPane)
+		self.gridViewAction.triggered.connect(self.dispPane)
 		self.directionMenu = QMenu(_("Grid direction"))
 		directionActionGroup = QActionGroup(self)
 		self.gridVertAction = QAction(_("Vertical"), self)
 		self.gridVertAction.setActionGroup(directionActionGroup)
 		self.gridVertAction.setCheckable(True)
-		self.connect(self.gridVertAction, SIGNAL("triggered()"), self.gridEdit)
+		self.gridVertAction.triggered.connect(self.gridEdit)
 		self.gridHorizAction = QAction(_("Horizontal"), self)
 		self.gridHorizAction.setActionGroup(directionActionGroup)
 		self.gridHorizAction.setCheckable(True)
-		self.connect(self.gridHorizAction, SIGNAL("triggered()"), self.gridEdit)
+		self.gridHorizAction.triggered.connect(self.gridEdit)
 		self.availMaterialsAction = QAction(_("Available materials"), self)
 		self.availMaterialsAction.setCheckable(True)
-		self.connect(self.availMaterialsAction, SIGNAL("triggered()"), self.dispPane)
+		self.availMaterialsAction.triggered.connect(self.dispPane)
 		viewMenu.addAction(self.treeViewAction)
 		viewMenu.addAction(self.gridViewAction)
 		viewMenu.addMenu(self.directionMenu)
@@ -109,13 +109,13 @@ class MainWindow(QMainWindow):
 		self.menuBar().addAction(_("&About"), self.about)
 		self.updateFileMenu()
 
-		if settings.contains('gridView') and settings.value('gridView').toBool():
+		if settings.contains('gridView') and bool(settings.value('gridView')):
 			self.gridViewAction.setChecked(True)
 			self.directionMenu.setEnabled(True)
 		else:
 			self.treeViewAction.setChecked(True)
 			self.directionMenu.setEnabled(False)
-		if settings.contains('materialList') and settings.value('materialList').toBool():
+		if settings.contains('materialList') and bool(settings.value('materialList')):
 			self.availMaterialsAction.setChecked(True)
 		else:
 			self.availMaterialsAction.setChecked(False)
@@ -250,7 +250,7 @@ class MainWindow(QMainWindow):
 		sbGrid.addWidget(self.swGEditBut, 0, 2, Qt.AlignTop)
 		self.groupBoxGrid.setLayout(sbGrid)
 
-		if settings.contains('gridHoriz') and settings.value('gridHoriz').toBool():
+		if settings.contains('gridHoriz') and bool(settings.value('gridHoriz')):
 			self.gridHorizAction.setChecked(True)
 			self.colsLabel.setText(_("Rows:"))
 			self.rowsLabel.setText(_("Columns:"))
@@ -268,18 +268,12 @@ class MainWindow(QMainWindow):
 
 		self.updSwatchCount()
 
-		self.connect(self.cols,
-				SIGNAL("valueChanged(int)"), self.gridEdit)
-		self.connect(self.rows,
-				SIGNAL("valueChanged(int)"), self.gridEdit)
-		self.connect(self.matList,
-				SIGNAL("itemSelectionChanged()"), self.sw_display_list)
-		self.connect(self.treeWidget,
-				SIGNAL("itemSelectionChanged()"), self.sw_display_tree)
-		self.connect(self.gridWidget,
-				SIGNAL("itemSelectionChanged()"), self.sw_display_grid)
-		self.connect(self.sbProfList,
-				SIGNAL("itemSelectionChanged()"), self.prof_editable)
+		self.cols.valueChanged[int].connect(self.gridEdit)
+		self.rows.valueChanged[int].connect(self.gridEdit)
+		self.matList.itemSelectionChanged.connect(self.sw_display_list)
+		self.treeWidget.itemSelectionChanged.connect(self.sw_display_tree)
+		self.gridWidget.itemSelectionChanged.connect(self.sw_display_grid)
+		self.sbProfList.itemSelectionChanged.connect(self.prof_editable)
 
 	def clear(self):
 		global breaks
@@ -355,11 +349,11 @@ class MainWindow(QMainWindow):
 			elif self.rows.value() == 0:
 				self.sb.book.display['rows'] = False
 		if self.gridHorizAction.isChecked():
-			settings.setValue("gridHoriz", QVariant(True))
+			settings.setValue("gridHoriz", True)
 			self.colsLabel.setText(_("Rows:"))
 			self.rowsLabel.setText(_("Columns:"))
 		if self.gridVertAction.isChecked():
-			settings.setValue("gridHoriz", QVariant(False))
+			settings.setValue("gridHoriz", False)
 			self.colsLabel.setText(_("Columns:"))
 			self.rowsLabel.setText(_("Rows:"))
 		self.gridWidget.update()
@@ -453,12 +447,12 @@ class MainWindow(QMainWindow):
 			if Image.EXTENSION[ext] in Image.ID:
 				supported += " *" + ext
 		supported += ")"
-		dir = settings.value('lastPatternDir').toString() if settings.contains('lastPatternDir') else QDir.homePath()
+		dir = settings.value('lastPatternDir') if settings.contains('lastPatternDir') else QDir.homePath()
 		fnames = QFileDialog.getOpenFileNames(self,
 							_("Choose image file"), dir,
 							(_("Supported image files") + supported))
 		if len(fnames) > 0:
-			settings.setValue('lastPatternDir', QVariant(os.path.dirname(unicode(fnames[0]))))
+			settings.setValue('lastPatternDir', os.path.dirname(unicode(fnames[0])))
 			ids = []
 			for fname in fnames:
 				id = self.addPattern(fname)
@@ -697,18 +691,18 @@ class MainWindow(QMainWindow):
 
 	def dispPane(self):
 		if self.availMaterialsAction.isChecked():
-			settings.setValue("materialList", QVariant(True))
+			settings.setValue("materialList", True)
 			self.groupBoxList.show()
 		else:
-			settings.setValue("materialList", QVariant(False))
+			settings.setValue("materialList", False)
 			self.groupBoxList.hide()
 		if self.treeViewAction.isChecked():
-			settings.setValue("gridView", QVariant(False))
+			settings.setValue("gridView", False)
 			self.groupBoxTree.show()
 			self.groupBoxGrid.hide()
 			self.directionMenu.setEnabled(False)
 		if self.gridViewAction.isChecked():
-			settings.setValue("gridView", QVariant(True))
+			settings.setValue("gridView", True)
 			self.groupBoxTree.hide()
 			self.groupBoxGrid.show()
 			self.directionMenu.setEnabled(True)
@@ -724,14 +718,14 @@ class MainWindow(QMainWindow):
 		dialog = SettingsDlg(self)
 		if dialog.exec_():
 			if dialog.returnDisProf():
-				settings.setValue("mntrProfile", QVariant(dialog.returnDisProf()))
+				settings.setValue("mntrProfile", dialog.returnDisProf())
 			else:
 				settings.remove("mntrProfile")
 			if dialog.returnCMYKProf():
-				settings.setValue("CMYKProfile", QVariant(dialog.returnCMYKProf()))
+				settings.setValue("CMYKProfile", dialog.returnCMYKProf())
 			else:
 				settings.remove("CMYKProfile")
-			settings.setValue("MaxRecentFiles", QVariant(dialog.RecFilesSpin.value()))
+			settings.setValue("MaxRecentFiles", dialog.RecFilesSpin.value())
 			if dialog.lang:
 				settings.setValue("Language", dialog.lang)
 			else:
@@ -740,37 +734,38 @@ class MainWindow(QMainWindow):
 
 	def updateFileMenu(self, fname=False):
 		if not settings.contains("MaxRecentFiles"):
-			settings.setValue("MaxRecentFiles", QVariant(6))
-		files = settings.value("recentFileList").toStringList()
+			settings.setValue("MaxRecentFiles", 6)
+		files = settings.value("recentFileList")
 		for file in files:
 			if not QFile.exists(file):
-				files.removeAll(file)
+				files.remove(file)
 
+		MaxRecentFiles = int(settings.value("MaxRecentFiles"))
 		if fname:
-			files.removeAll(fname)
-			files.prepend(fname)
-			while files.count() > settings.value("MaxRecentFiles").toInt()[0]:
-				files.removeAt(files.count() - 1)
+			if fname in files:
+				files.remove(fname)
+			files = [fname] + files
+			if len(files) > MaxRecentFiles:
+				files = files[:MaxRecentFiles]
 
-		settings.setValue("recentFileList", QVariant(files))
+		settings.setValue("recentFileList", files)
 
-		numRecentFiles = min(files.count(), settings.value("MaxRecentFiles").toInt()[0])
+		numRecentFiles = min(len(files), MaxRecentFiles)
 
 		recentFileActs = []
 
-		for h in range(settings.value("MaxRecentFiles").toInt()[0]):
+		for h in range(MaxRecentFiles):
 			recentFileActs.append(QAction(self))
 			recentFileActs[h].setVisible(False)
-			self.connect(recentFileActs[h], SIGNAL("triggered()"),
-						 self.openRecentFile)
+			recentFileActs[h].triggered.connect(self.openRecentFile)
 
 		for i in range(numRecentFiles):
-			text = QString("&%1 %2").arg(i + 1).arg(self.strippedName(files[i]))
+			text = u"&{0} {1}".format(i + 1, self.strippedName(files[i]))
 			recentFileActs[i].setText(text)
-			recentFileActs[i].setData(QVariant(files[i]))
+			recentFileActs[i].setData(files[i])
 			recentFileActs[i].setVisible(True)
 
-		for j in range(numRecentFiles, settings.value("MaxRecentFiles").toInt()[0]):
+		for j in range(numRecentFiles, MaxRecentFiles):
 			recentFileActs[j].setVisible(False)
 
 		self.fileMenu.clear()
@@ -780,7 +775,7 @@ class MainWindow(QMainWindow):
 		self.fileMenu.addAction(_("&Save"), self.fileSave, QKeySequence.Save)
 		self.fileMenu.addAction(_("Save As..."), self.fileSaveAs)
 		self.fileMenu.addSeparator()
-		for k in range(settings.value("MaxRecentFiles").toInt()[0]):
+		for k in range(MaxRecentFiles):
 			self.fileMenu.addAction(recentFileActs[k])
 
 	def strippedName(self, fullFileName):
@@ -803,8 +798,7 @@ class MainWindow(QMainWindow):
 
 	def loadWeb(self, websvc, webid):
 		thread = webOpenThread(websvc, webid, self)
-		self.connect(thread, SIGNAL("finished()"), self.fill)
-		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
+		thread.finished.connect(self.fill)
 		app.setOverrideCursor(Qt.WaitCursor)
 		self.loadingDlg.label.setText(_("Loading swatch book"))
 		self.loadingDlg.progress.hide()
@@ -812,7 +806,7 @@ class MainWindow(QMainWindow):
 		thread.start()
 
 	def fileOpen(self):
-		dir = settings.value('lastOpenDir').toString() if settings.contains('lastOpenDir') else QDir.homePath()
+		dir = settings.value('lastOpenDir') if settings.contains('lastOpenDir') else QDir.homePath()
 		filetypes = []
 		for codec in codecs.reads:
 			codec_exts = []
@@ -823,15 +817,15 @@ class MainWindow(QMainWindow):
 		allexts = ["*.%s" % unicode(format).lower() \
 				   for format in codecs.readexts.keys()]
 		if settings.contains('lastOpenCodec'):
-			filetype = settings.value('lastOpenCodec').toString()
+			filetype = settings.value('lastOpenCodec')
 		else:
 			filetype = QString()
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							_("Choose file"), dir,
 							(unicode(_("All supported files (%s)")) % " ".join(allexts)) + ";;" + (";;".join(sorted(filetypes))) + ";;" + _("All files (*)"), filetype))
 		if fname:
-			settings.setValue('lastOpenCodec', QVariant(filetype))
-			settings.setValue('lastOpenDir', QVariant(os.path.dirname(fname)))
+			settings.setValue('lastOpenCodec', filetype)
+			settings.setValue('lastOpenDir', os.path.dirname(fname))
 			self.clear()
 			self.loadFile(fname)
 
@@ -839,13 +833,12 @@ class MainWindow(QMainWindow):
 		action = self.sender()
 		if action:
 			self.clear()
-			self.loadFile(unicode(action.data().toString()))
+			self.loadFile(unicode(action.data()))
 
 	def loadFile(self, fname):
 		thread = fileOpenThread(os.path.realpath(fname), self)
-		self.connect(thread, SIGNAL("finished()"), self.fill)
-		self.connect(thread, SIGNAL("terminated()"), self.misloaded)
-		self.connect(thread, SIGNAL("fileFormatError()"), self.fileFormatError)
+		thread.finished.connect(self.fill)
+		thread.fileFormatError.connect(self.fileFormatError)
 		app.setOverrideCursor(Qt.WaitCursor)
 		self.loadingDlg.label.setText(_("Loading swatch"))
 		self.loadingDlg.progress.hide()
@@ -869,13 +862,9 @@ class MainWindow(QMainWindow):
 		if self.filename:
 			self.updateFileMenu(self.filename)
 		thread = fillViewsThread(self)
-		self.connect(thread, SIGNAL("finished()"), self.buildIcons)
-		self.connect(thread, SIGNAL("filled()"), self.filled)
+		thread.finished.connect(self.buildIcons)
+		thread.filled.connect(self.filled)
 		thread.start()
-
-	def misloaded(self):
-		app.restoreOverrideCursor()
-		QMessageBox.critical(self, _("Error"), _("There was an error while opening that file"))
 
 	def filled(self):
 		self.loadingDlg.progress.setValue(self.loadingDlg.progress.value() + 1)
@@ -895,8 +884,8 @@ class MainWindow(QMainWindow):
 			for id in self.materials:
 				thread = drawIconThread(id, self)
 				self.iconsLoading += 1
-				self.connect(thread, SIGNAL("icon(QString,QImage,QImage)"), self.addIcon)
-				self.connect(thread, SIGNAL("finished()"), self.iconLoaded)
+				thread.icon[str,QImage,QImage].connect(self.addIcon)
+				thread.finished.connect(self.iconLoaded)
 				thread.start()
 		else:
 			self.fullyLoaded()
@@ -911,7 +900,7 @@ class MainWindow(QMainWindow):
 		pix = QImage(16, 16, QImage.Format_ARGB32_Premultiplied)
 		pix.fill(Qt.transparent)
 		paint = QPainter()
-		prof_out = str(settings.value("mntrProfile").toString()) or False
+		prof_out = str(settings.value("mntrProfile")) or False
 		if material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade') and material.toRGB8():
 			r, g, b = material.toRGB8(prof_out)
 			paint.begin(pix)
@@ -1016,23 +1005,23 @@ class MainWindow(QMainWindow):
 				codec_exts.append('*.' + ext)
 			codec_txt = eval('codecs.' + codec).__doc__ + ' (' + " ".join(codec_exts) + ')'
 			filetypes[codec_txt] = (codec, eval('codecs.' + codec).ext[0])
-		dir = unicode(settings.value('lastSaveDir').toString()) if settings.contains('lastSaveDir') else "."
+		dir = unicode(settings.value('lastSaveDir')) if settings.contains('lastSaveDir') else "."
 		f = os.path.splitext(os.path.basename(self.filename or ''))[0]
 		if f == '':
 			f = self.sb.info.title
 		if settings.contains('lastSaveCodec'):
-			filetype = settings.value('lastSaveCodec').toString()
+			filetype = settings.value('lastSaveCodec')
 		else:
 			filetype = QString()
 		fname = unicode(QFileDialog.getSaveFileName(self,
 						_("Save file"), os.path.join(dir, f),
-						";;".join(filetypes.keys()), filetype))
+						";;".join(filetypes.keys()), filetype)[0])
 		if fname:
 			if len(fname.rsplit(".", 1)) == 1 or (len(fname.rsplit(".", 1)) > 1 and fname.rsplit(".", 1)[1] != filetypes[unicode(filetype)][1]):
 				fname += "." + filetypes[unicode(filetype)][1]
 			self.filename = fname
-			settings.setValue('lastSaveDir', QVariant(os.path.dirname(fname)))
-			settings.setValue('lastSaveCodec', QVariant(filetype))
+			settings.setValue('lastSaveDir', os.path.dirname(fname))
+			settings.setValue('lastSaveCodec', filetype)
 			self.codec = filetypes[unicode(filetype)][0]
 			self.fileSave()
 			if self.codec in codecs.reads:
@@ -1045,7 +1034,7 @@ class MainWindow(QMainWindow):
 	def addProfile(self):
 		fname = unicode(QFileDialog.getOpenFileName(self,
 							_("Choose file"), ".",
-							(_("ICC profiles (*.icc *.icm);;" + _("All files (*)")))))
+							(_("ICC profiles (*.icc *.icm);;" + _("All files (*)"))))[0])
 		if fname:
 			# the next 6 lines are a workaround for the unability of lcms to deal with unicode file names
 			fi = open(fname, 'rb')
@@ -1101,19 +1090,19 @@ class InfoWidget(QWidget):
 		for field in Info.dc:
 			if Info.dc[field][1]:
 				exec('self.' + field + ' = QTextEdit()')
-				exec('self.connect(self.' + field + ',	SIGNAL("textChanged()"), self.edit)')
+				exec('self.' + field + '.textChanged.connect(self.edit)')
 			else:
 				exec('self.' + field + ' = QLineEdit()')
-				exec('self.connect(self.' + field + ',	SIGNAL("editingFinished()"), self.edit)')
+				exec('self.' + field + '.editingFinished.connect(self.edit)')
 			exec('self.' + field + '.setObjectName("' + field + '")')
 			if Info.dc[field][0]:
 				exec('self.l10n' + field.capitalize() + ' = l10nButton()')
-				exec('self.connect(self.l10n' + field.capitalize() + ',	SIGNAL("pressed()"), self.l10n)')
+				exec('self.l10n' + field.capitalize() + '.pressed.connect(self.l10n)')
 		self.date = QDateTimeEdit()
 #		self.license = LicenseWidget()
 		self.license = QLineEdit()
 		self.license.setObjectName('license')
-		self.connect(self.license, SIGNAL("editingFinished()"), self.edit)
+		self.license.editingFinished.connect(self.edit)
 
 		layout = QGridLayout()
 		layout.setContentsMargins(0, 0, 0, 0)
@@ -1259,8 +1248,7 @@ class l10nWidget(QWidget):
 		for lang in info:
 			self.l10nList.addWidget(l10nItem(lang, info[lang], self.long, parent=self))
 
-		self.connect(addButton,
-				SIGNAL("clicked()"), self.addItem)
+		addButton.clicked.connect(self.addItem)
 
 	def addItem(self):
 		self.l10nList.addWidget(l10nItem(long=self.long, parent=self))
@@ -1300,14 +1288,10 @@ class l10nItem(QWidget):
 		layout.addWidget(delLoc, 0, Qt.AlignTop)
 		self.setLayout(layout)
 
-		self.connect(self.langEdit,
-				SIGNAL("editingFinished()"), self.langEdited)
-		self.connect(self.textEdit,
-				SIGNAL("textChanged(QString)"), self.textEdited)
-		self.connect(self.textEdit,
-				SIGNAL("textChanged()"), self.textEdited)
-		self.connect(delLoc,
-				SIGNAL("clicked()"), self.delLoc)
+		self.langEdit.editingFinished.connect(self.langEdited)
+		self.textEdit.textChanged[str].connect(self.textEdited)
+		self.textEdit.textChanged.connect(self.textEdited)
+		delLoc.clicked.connect(self.delLoc)
 
 	def langEdited(self):
 		if (unicode(self.langEdit.text()) != self.lang) and (unicode(self.langEdit.text()) not in self.parent.info) and (unicode(self.langEdit.text()) > ''):
@@ -1355,8 +1339,8 @@ class listItemMaterial(QListWidgetItem):
 		return [ int(c) if c.isdigit() else c.lower() for c in NUM_RE.split(s) ]
 
 	def __lt__ (self, other):
-		lvalue = self.alphanum_key(unicode(self.data(0).toString()))
-		rvalue = self.alphanum_key(unicode(other.data(0).toString()))
+		lvalue = self.alphanum_key(unicode(self.data(0)))
+		rvalue = self.alphanum_key(unicode(other.data(0)))
 		if lvalue == rvalue:
 			return self.id < other.id
 		else:
@@ -1632,7 +1616,7 @@ class sbGridWidget(QListWidget):
 		self.zHeight = self.zWidth = 2 * self.frameWidth()
 
 	def update(self):
-		if settings.contains('gridHoriz') and settings.value('gridHoriz').toBool():
+		if settings.contains('gridHoriz') and bool(settings.value('gridHoriz')):
 			if form.sb.book.display['columns']:
 				self.setFixedHeight(form.sb.book.display['columns'] * 17 + self.zHeight)
 			else:
@@ -1769,10 +1753,8 @@ class MaterialWidget(QGroupBox):
 			row += 1
 			self.tExtra.append([unicode(extra), unicode(self.item.extra[extra])])
 
-		self.connect(self.swExtra,
-				SIGNAL("cellChanged(int,int)"), self.editExtra)
-		self.connect(self.swExtra,
-				SIGNAL("cellClicked(int,int)"), self.extra_editable)
+		self.swExtra.cellChanged[int,int].connect(self.editExtra)
+		self.swExtra.cellClicked[int,int].connect(self.extra_editable)
 
 	def extra_editable(self):
 		self.extraRemoveAction.setEnabled(True)
@@ -1853,12 +1835,9 @@ class ColorWidget(QWidget):
 		self.def_current_sp()
 
 		# Actions
-		self.connect(self.usageSpot,
-				SIGNAL("stateChanged(int)"), self.edit)
-		self.connect(self.valuesWidget,
-				SIGNAL("currentChanged(int)"), self.def_current_sp)
-		self.connect(self.valuesWidget.tabBar(),
-				SIGNAL("tabMoved(int,int)"), self.tab_moved)
+		self.usageSpot.stateChanged[int].connect(self.edit)
+		self.valuesWidget.currentChanged[int].connect(self.def_current_sp)
+		self.valuesWidget.tabBar().tabMoved[int,int].connect(self.tab_moved)
 
 	def tab_moved(self, tfrom, tto):
 		combo = self.valuesWidget.widget(tfrom).findChild(QComboBox)
@@ -1884,8 +1863,7 @@ class ColorWidget(QWidget):
 			for elem in models[model]:
 				val = QLineEdit()
 				self.val[val] = (space, count)
-				self.connect(val,
-						SIGNAL("textEdited(QString)"), self.valedit)
+				val.textEdited[str].connect(self.valedit)
 				grid.addWidget(QLabel(elem[0] + ":"), count, 0)
 				if elem[1] == 0:
 					grid.addWidget(val, count, 1)
@@ -1931,11 +1909,10 @@ class ColorWidget(QWidget):
 			profCombo = QComboBox()
 			profCombo.addItem('')
 			for prof in sorted(self.getProfList(modellist), cmp=lambda x, y: cmp(x[0].lower(), y[0].lower())):
-				profCombo.addItem(prof[0], QVariant(prof[1]))
+				profCombo.addItem(prof[0], prof[1])
 			if profile in form.sb.profiles:
-				profCombo.setCurrentIndex(profCombo.findData(QVariant(profile)))
-			self.connect(profCombo,
-					SIGNAL("currentIndexChanged(int)"), self.change_profile)
+				profCombo.setCurrentIndex(profCombo.findData(profile))
+			profCombo.currentIndexChanged[int].connect(self.change_profile)
 			spaceLayout.addWidget(profCombo)
 		spaceWidget.setLayout(spaceLayout)
 
@@ -1976,7 +1953,7 @@ class ColorWidget(QWidget):
 			model = str(self.valuesWidget.tabText(self.valuesWidget.currentIndex()))
 			combo = widget.findChild(QComboBox)
 			if combo and combo.currentIndex() > 0:
-				current_sp = (model, unicode(combo.itemData(combo.currentIndex()).toString()))
+				current_sp = (model, unicode(combo.itemData(combo.currentIndex())))
 			else:
 				current_sp = (model, False)
 			if model in models:
@@ -2186,29 +2163,18 @@ class GradientWidget(QWidget):
 		self.colorEditReset()
 		self.opacityEditReset()
 
-		self.connect(self.colorSlider,
-				SIGNAL("sliderMoved(int)"), self.colorMove)
-		self.connect(self.colorSlider,
-				SIGNAL("sliderAdded(int)"), self.colorAddStop)
-		self.connect(self.colorSlider,
-				SIGNAL("sliderDeleted(int)"), self.colorDelStop)
-		self.connect(self.colorSlider,
-				SIGNAL("sliderPressed()"), self.colorActivate)
-		self.connect(self.colorSlider,
-				SIGNAL("currentHandleChanged(int)"), self.colorActivate)
+		self.colorSlider.sliderMoved[int].connect(self.colorMove)
+		self.colorSlider.sliderAdded[int].connect(self.colorAddStop)
+		self.colorSlider.sliderDeleted[int].connect(self.colorDelStop)
+		self.colorSlider.sliderPressed.connect(self.colorActivate)
+		self.colorSlider.currentHandleChanged[int].connect(self.colorActivate)
 
-		self.connect(self.opacitySlider,
-				SIGNAL("sliderMoved(int)"), self.opacityMove)
-		self.connect(self.opacitySlider,
-				SIGNAL("sliderAdded(int)"), self.opacityAddStop)
-		self.connect(self.opacitySlider,
-				SIGNAL("sliderDeleted(int)"), self.opacityDelStop)
-		self.connect(self.opacitySlider,
-				SIGNAL("sliderPressed()"), self.opacityActivate)
-		self.connect(self.opacitySlider,
-				SIGNAL("currentHandleChanged(int)"), self.opacityActivate)
-		self.connect(self.opacitySpin,
-				SIGNAL("valueChanged(int)"), self.opacityEdit)
+		self.opacitySlider.sliderMoved[int].connect(self.opacityMove)
+		self.opacitySlider.sliderAdded[int].connect(self.opacityAddStop)
+		self.opacitySlider.sliderDeleted[int].connect(self.opacityDelStop)
+		self.opacitySlider.sliderPressed.connect(self.opacityActivate)
+		self.opacitySlider.currentHandleChanged[int].connect(self.opacityActivate)
+		self.opacitySpin.valueChanged[int].connect(self.opacityEdit)
 
 	def colorActivate(self):
 		self.currentStop = sorted(self.colorSlider.handles).index(self.colorSlider.handles[0])
@@ -2216,7 +2182,7 @@ class GradientWidget(QWidget):
 			id = self.item.colorstops[self.currentStop].color
 			palette = QLabel().palette()
 			material = form.sb.materials[id]
-			prof_out = str(settings.value("mntrProfile").toString()) or False
+			prof_out = str(settings.value("mntrProfile")) or False
 			if material.toRGB8(prof_out):
 				r, g, b = material.toRGB8(prof_out)
 				palette.setBrush(self.backgroundRole(), QBrush(QColor(r, g, b)))
@@ -2259,7 +2225,7 @@ class GradientWidget(QWidget):
 		gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
 		palette = QLabel().palette()
 		stops = self.item.colorstops
-		prof_out = str(settings.value("mntrProfile").toString()) or False
+		prof_out = str(settings.value("mntrProfile")) or False
 		if len(stops) > 0:
 			for i, stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
@@ -2355,7 +2321,7 @@ class SwatchPreview(QLabel):
 		paint = QPainter()
 		paint.begin(pix)
 		paint.setPen(Qt.transparent)
-		prof_out = str(settings.value("mntrProfile").toString()) or False
+		prof_out = str(settings.value("mntrProfile")) or False
 		if self.material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade'):
 			if self.material.toRGB8(prof_out):
 				r, g, b = self.material.toRGB8(prof_out)
@@ -2398,6 +2364,13 @@ class SwatchPreview(QLabel):
 			QWidget.keyPressEvent(self, event)
 
 class MultiSlider(QSlider):
+	currentHandleChanged = pyqtSignal(int)
+	sliderAdded = pyqtSignal(int)
+	sliderDeleted = pyqtSignal(int)
+	sliderMoved = pyqtSignal(int)
+	sliderPressed = pyqtSignal()
+	sliderReleased = pyqtSignal()
+
 	# freely inspired by QT's code ;-) 
 	def __init__(self, parent):
 		super(MultiSlider, self).__init__(Qt.Horizontal, parent)
@@ -2416,7 +2389,7 @@ class MultiSlider(QSlider):
 		if handle != 0:
 			self.handles.insert(0, self.handles.pop(handle))
 			self.position = self.handles[0]
-			self.emit(SIGNAL('currentHandleChanged(int)'), handle)
+			self.currentHandleChanged.emit(handle)
 
 	def addHandle(self, pos):
 		self.handles.insert(0, pos)
@@ -2567,7 +2540,7 @@ class MultiSlider(QSlider):
 		center = sliderRect.center() - sliderRect.topLeft()
 		pos = self.__pixelPosToRangeValue(self.__pick(event.pos() - center))
 		self.addHandle(pos)
-		self.emit(SIGNAL('sliderAdded(int)'), pos)
+		self.sliderAdded.emit(pos)
 
 	def value(self, handle=False):
 		if handle:
@@ -2659,7 +2632,7 @@ class MultiSlider(QSlider):
 			if (pos < 0 or pos > limit) and len(self.handles) > self.minSliders:
 				index = sorted(self.handles).index(self.handles[0])
 				self.delHandle(0)
-				self.emit(SIGNAL('sliderDeleted(int)'), index)
+				self.sliderDeleted.emit(index)
 			self.setSliderDown(False)
 		opt.subControls = oldPressed
 		self.update(self.style().subControlRect(QStyle.CC_Slider, opt, oldPressed, self))
@@ -2688,7 +2661,7 @@ class MultiSlider(QSlider):
 		self.handles[0] = position
 		self.update()
 		if self.pressed:
-			self.emit(SIGNAL('sliderMoved(int)'), position)
+			self.sliderMoved.emit(position)
 		self.triggerAction(QSlider.SliderMove)
 
 	def setSliderDown(self, down):
@@ -2696,11 +2669,13 @@ class MultiSlider(QSlider):
 		self.pressed = down
 		if doEmit:
 			if down:
-				self.emit(SIGNAL('sliderPressed()'))
+				self.sliderPressed.emit()
 			else:
-				self.emit(SIGNAL('sliderReleased()'))
+				self.sliderReleased.emit()
 
 class fileOpenThread(QThread):
+	fileFormatError = pyqtSignal()
+
 	def __init__(self, fname, parent=None):
 		super(fileOpenThread, self).__init__(parent)
 		self.fname = fname
@@ -2712,7 +2687,7 @@ class fileOpenThread(QThread):
 			if self.parent().sb.codec in codecs.writes:
 				self.parent().codec = self.parent().sb.codec
 		except FileFormatError:
-			self.emit(SIGNAL("fileFormatError()"))
+			self.fileFormatError.emit()
 
 class webOpenThread(QThread):
 	def __init__(self, svc, id, parent=None):
@@ -2726,6 +2701,8 @@ class webOpenThread(QThread):
 		self.parent().sb = SwatchBook(websvc=self.svc, webid=self.id)
 
 class fillViewsThread(QThread):
+	filled = pyqtSignal()
+
 	def __init__(self, parent=None):
 		super(fillViewsThread, self).__init__(parent)
 
@@ -2733,7 +2710,7 @@ class fillViewsThread(QThread):
 		form.matList.setSortingEnabled(False)
 		for id in form.sb.materials:
 			form.addMaterial(id)
-			self.emit(SIGNAL("filled()"))
+			self.filled.emit()
 		form.matList.sortItems()
 		form.matList.setSortingEnabled(True)
 		self.fillViews(self.parent().sb.book.items)
@@ -2767,16 +2744,18 @@ class fillViewsThread(QThread):
 				treeItem = treeItemSwatch(item, parent)
 				gridItem = gridItemSwatch(item, self.parent().gridWidget)
 				form.items[treeItem] = gridItem
-			self.emit(SIGNAL("filled()"))
+			self.filled.emit()
 
 class drawIconThread(QThread):
+	icon = pyqtSignal(str,QImage,QImage)
+
 	def __init__(self, id, parent=None):
 		super(drawIconThread, self).__init__(parent)
 		self.id = id
 
 	def run(self):
 		icon = self.parent().drawIcon(self.id)
-		self.emit(SIGNAL("icon(QString,QImage,QImage)"), self.id, icon[0], icon[1])
+		self.icon.emit(self.id, icon[0], icon[1])
 
 class LoadingDlg(QDialog):
 	def __init__(self, parent=None):
@@ -2812,16 +2791,16 @@ class SettingsDlg(QDialog):
 		self.cmykCombo.insertSeparator(self.cmykCombo.count())
 		for profile in sorted(self.profiles, cmp=lambda x, y: cmp(x[0].lower(), y[0].lower())):
 			if profile[2] == "mntr" and profile[3] == 'RGB ':
-				self.mntrCombo.addItem(profile[0], QVariant(profile[1]))
+				self.mntrCombo.addItem(profile[0], profile[1])
 			if profile[3] == 'CMYK':
-				self.cmykCombo.addItem(profile[0], QVariant(profile[1]))
+				self.cmykCombo.addItem(profile[0], profile[1])
 		self.mntrCombo.insertSeparator(self.mntrCombo.count())
 		self.cmykCombo.insertSeparator(self.cmykCombo.count())
 		if settings.contains("mntrProfile") and self.mntrCombo.findData(settings.value("mntrProfile")) < 0:
-			prof = ICCprofile(settings.value("mntrProfile").toString()).info
+			prof = ICCprofile(settings.value("mntrProfile")).info
 			self.mntrCombo.addItem(prof['desc'][prof['desc'].keys()[0]], settings.value("mntrProfile"))
 		if settings.contains("cmykProfile") and self.cmykCombo.findData(settings.value("cmykProfile")) < 0:
-			prof = ICCprofile(settings.value("cmykProfile").toString()).info
+			prof = ICCprofile(settings.value("cmykProfile")).info
 			self.cmykCombo.addItem(prof['desc'][prof['desc'].keys()[0]], settings.value("cmykProfile"))
 		self.mntrCombo.addItem(_("Other..."))
 		self.cmykCombo.addItem(_("Other..."))
@@ -2846,7 +2825,7 @@ class SettingsDlg(QDialog):
 		self.LangCombo = QComboBox()
 		self.LangCombo.addItem(_('(default)'))
 		for lang in sorted(availables_lang):
-			self.LangCombo.addItem(availables_lang[lang], QVariant(lang))
+			self.LangCombo.addItem(availables_lang[lang], lang)
 
 		gLang = QGroupBox(_("Application language"))
 		Lang = QHBoxLayout()
@@ -2861,26 +2840,26 @@ class SettingsDlg(QDialog):
 		self.setLayout(sett)
 
 		if settings.contains("mntrProfile"):
-			self.mntrProfile = settings.value("mntrProfile").toString()
+			self.mntrProfile = settings.value("mntrProfile")
 			self.mntrCombo.setCurrentIndex(self.mntrCombo.findData(self.mntrProfile))
 		else:
 			self.mntrCombo.setCurrentIndex(0)
 		if settings.contains("CMYKProfile"):
-			self.cmykProfile = settings.value("cmykProfile").toString()
+			self.cmykProfile = settings.value("cmykProfile")
 			self.cmykCombo.setCurrentIndex(self.cmykCombo.findData(self.cmykProfile))
 		else:
 			self.cmykCombo.setCurrentIndex(0)
-		self.RecFilesSpin.setValue(settings.value("MaxRecentFiles").toInt()[0])
+		self.RecFilesSpin.setValue(int(settings.value("MaxRecentFiles")))
 		self.lang = False
 		if settings.contains("Language"):
 			self.lang = settings.value("Language")
 			self.LangCombo.setCurrentIndex(self.LangCombo.findData(self.lang))
 
-		self.connect(buttonBox, SIGNAL("accepted()"), self, SLOT("accept()"))
-		self.connect(buttonBox, SIGNAL("rejected()"), self, SLOT("reject()"))
-		self.connect(self.mntrCombo, SIGNAL("currentIndexChanged(int)"), self.setProfile)
-		self.connect(self.cmykCombo, SIGNAL("currentIndexChanged(int)"), self.setProfile)
-		self.connect(self.LangCombo, SIGNAL("currentIndexChanged(int)"), self.setLang)
+		buttonBox.accepted.connect(self.accept)
+		buttonBox.rejected.connect(self.reject)
+		self.mntrCombo.currentIndexChanged[int].connect(self.setProfile)
+		self.cmykCombo.currentIndexChanged[int].connect(self.setProfile)
+		self.LangCombo.currentIndexChanged[int].connect(self.setLang)
 		self.setWindowTitle(_("Settings"))
 
 	def returnDisProf(self):
@@ -2897,7 +2876,7 @@ class SettingsDlg(QDialog):
 			profile = icc.ICCprofile(fname)
 			if profile.info['class'] == "mntr" and profile.info['space'] == 'RGB ':
 				self.mntrCombo.setCurrentIndex(0)
-				self.mntrCombo.insertItem(self.mntrCombo.count() - 1, profile.info['desc'][profile.info['desc'].keys()[0]], QVariant(fname))
+				self.mntrCombo.insertItem(self.mntrCombo.count() - 1, profile.info['desc'][profile.info['desc'].keys()[0]], fname)
 				self.mntrCombo.setCurrentIndex(self.mntrCombo.findData(fname))
 			else:
 				QMessageBox.critical(self, _('Error'), _("This isn't a RGB monitor profile"))
@@ -2917,7 +2896,7 @@ class SettingsDlg(QDialog):
 			profile = icc.ICCprofile(fname)
 			if profile.info['space'] == 'CMYK':
 				self.cmykCombo.setCurrentIndex(0)
-				self.cmykCombo.insertItem(self.cmykCombo.count() - 1, profile.info['desc'][profile.info['desc'].keys()[0]], QVariant(fname))
+				self.cmykCombo.insertItem(self.cmykCombo.count() - 1, profile.info['desc'][profile.info['desc'].keys()[0]], fname)
 				self.cmykCombo.setCurrentIndex(self.cmykCombo.findData(fname))
 			else:
 				QMessageBox.critical(self, _('Error'), _("This isn't a CMYK profile"))
