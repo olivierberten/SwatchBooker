@@ -410,7 +410,6 @@ class MainWindow(QMainWindow):
 		return [id]
 
 	def addPattern(self, fname):
-		fname = unicode(fname)
 		try:
 			image = Image.open(fname)
 			image.load()
@@ -450,9 +449,9 @@ class MainWindow(QMainWindow):
 		dir = settings.value('lastPatternDir') if settings.contains('lastPatternDir') else QDir.homePath()
 		fnames = QFileDialog.getOpenFileNames(self,
 							_("Choose image file"), dir,
-							(_("Supported image files") + supported))
+							(_("Supported image files") + supported))[0]
 		if len(fnames) > 0:
-			settings.setValue('lastPatternDir', os.path.dirname(unicode(fnames[0])))
+			settings.setValue('lastPatternDir', os.path.dirname(fnames[0]))
 			ids = []
 			for fname in fnames:
 				id = self.addPattern(fname)
@@ -735,7 +734,7 @@ class MainWindow(QMainWindow):
 	def updateFileMenu(self, fname=False):
 		if not settings.contains("MaxRecentFiles"):
 			settings.setValue("MaxRecentFiles", 6)
-		files = settings.value("recentFileList")
+		files = settings.value("recentFileList") or []
 		for file in files:
 			if not QFile.exists(file):
 				files.remove(file)
@@ -814,15 +813,15 @@ class MainWindow(QMainWindow):
 				codec_exts.append('*.' + ext)
 			codec_txt = eval('codecs.' + codec).__doc__ + ' (' + " ".join(codec_exts) + ')'
 			filetypes.append(codec_txt)
-		allexts = ["*.%s" % unicode(format).lower() \
+		allexts = ["*.%s" % format.lower() \
 				   for format in codecs.readexts.keys()]
 		if settings.contains('lastOpenCodec'):
 			filetype = settings.value('lastOpenCodec')
 		else:
-			filetype = QString()
-		fname = unicode(QFileDialog.getOpenFileName(self,
+			filetype = ''
+		fname, filetype = QFileDialog.getOpenFileName(self,
 							_("Choose file"), dir,
-							(unicode(_("All supported files (%s)")) % " ".join(allexts)) + ";;" + (";;".join(sorted(filetypes))) + ";;" + _("All files (*)"), filetype))
+							(_("All supported files (%s)") % " ".join(allexts)) + ";;" + (";;".join(sorted(filetypes))) + ";;" + _("All files (*)"), filetype)
 		if fname:
 			settings.setValue('lastOpenCodec', filetype)
 			settings.setValue('lastOpenDir', os.path.dirname(fname))
@@ -833,7 +832,7 @@ class MainWindow(QMainWindow):
 		action = self.sender()
 		if action:
 			self.clear()
-			self.loadFile(unicode(action.data()))
+			self.loadFile(action.data())
 
 	def loadFile(self, fname):
 		thread = fileOpenThread(os.path.realpath(fname), self)
@@ -900,8 +899,8 @@ class MainWindow(QMainWindow):
 		pix = QImage(16, 16, QImage.Format_ARGB32_Premultiplied)
 		pix.fill(Qt.transparent)
 		paint = QPainter()
-		prof_out = str(settings.value("mntrProfile")) or False
-		if material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade') and material.toRGB8():
+		prof_out = settings.value("mntrProfile") or False
+		if material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade') and material.toRGB8(prof_out):
 			r, g, b = material.toRGB8(prof_out)
 			paint.begin(pix)
 			paint.setBrush(QColor(r, g, b))
@@ -980,7 +979,6 @@ class MainWindow(QMainWindow):
 	def addIcon(self, id, normal, selected):
 		if self.loadingDlg.isVisible():
 			self.loadingDlg.progress.setValue(self.loadingDlg.progress.value() + 1)
-		id = unicode(id)
 		icon = QIcon(QPixmap.fromImage(normal))
 		icon.addPixmap(QPixmap.fromImage(selected), QIcon.Selected)
 		self.materials[id][3] = icon
@@ -1005,24 +1003,24 @@ class MainWindow(QMainWindow):
 				codec_exts.append('*.' + ext)
 			codec_txt = eval('codecs.' + codec).__doc__ + ' (' + " ".join(codec_exts) + ')'
 			filetypes[codec_txt] = (codec, eval('codecs.' + codec).ext[0])
-		dir = unicode(settings.value('lastSaveDir')) if settings.contains('lastSaveDir') else "."
+		dir = settings.value('lastSaveDir') if settings.contains('lastSaveDir') else "."
 		f = os.path.splitext(os.path.basename(self.filename or ''))[0]
 		if f == '':
 			f = self.sb.info.title
 		if settings.contains('lastSaveCodec'):
 			filetype = settings.value('lastSaveCodec')
 		else:
-			filetype = QString()
-		fname = unicode(QFileDialog.getSaveFileName(self,
+			filetype = ''
+		fname, filetype = QFileDialog.getSaveFileName(self,
 						_("Save file"), os.path.join(dir, f),
-						";;".join(filetypes.keys()), filetype)[0])
+						";;".join(filetypes.keys()), filetype)
 		if fname:
-			if len(fname.rsplit(".", 1)) == 1 or (len(fname.rsplit(".", 1)) > 1 and fname.rsplit(".", 1)[1] != filetypes[unicode(filetype)][1]):
-				fname += "." + filetypes[unicode(filetype)][1]
+			if len(fname.rsplit(".", 1)) == 1 or (len(fname.rsplit(".", 1)) > 1 and fname.rsplit(".", 1)[1] != filetypes[filetype][1]):
+				fname += "." + filetypes[filetype][1]
 			self.filename = fname
 			settings.setValue('lastSaveDir', os.path.dirname(fname))
 			settings.setValue('lastSaveCodec', filetype)
-			self.codec = filetypes[unicode(filetype)][0]
+			self.codec = filetypes[filetype][0]
 			self.fileSave()
 			if self.codec in codecs.reads:
 				self.updateFileMenu(fname)
@@ -1032,9 +1030,9 @@ class MainWindow(QMainWindow):
 			self.profRemoveAction.setEnabled(True)
 
 	def addProfile(self):
-		fname = unicode(QFileDialog.getOpenFileName(self,
+		fname = QFileDialog.getOpenFileName(self,
 							_("Choose file"), ".",
-							(_("ICC profiles (*.icc *.icm);;" + _("All files (*)"))))[0])
+							(_("ICC profiles (*.icc *.icm);;" + _("All files (*)"))))[0]
 		if fname:
 			# the next 6 lines are a workaround for the unability of lcms to deal with unicode file names
 			fi = open(fname, 'rb')
@@ -1068,7 +1066,7 @@ class MainWindow(QMainWindow):
 				self.profiles[space] = [id]
 
 	def remProfile(self):
-		profid = unicode(self.sbProfList.item(self.sbProfList.currentItem().row(), 1).text())
+		profid = self.sbProfList.item(self.sbProfList.currentItem().row(), 1).text()
 		self.sbProfList.removeRow(self.sbProfList.currentItem().row())
 		self.profiles[self.sb.profiles[profid].info['space'].strip()].remove(profid)
 		del self.sb.profiles[profid]
@@ -1156,7 +1154,7 @@ class InfoWidget(QWidget):
 
 	def edit(self):
 		if self.sender().objectName() == 'identifier':
-			newid = unicode(self.sender().text())
+			newid = self.sender().text()
 			if self.item.info.identifier != 	newid:
 				if newid in form.sb.materials:
 					QMessageBox.critical(self, _('Error'), _("There's already a material with that identifier."))
@@ -1175,7 +1173,7 @@ class InfoWidget(QWidget):
 				text = self.sender().toPlainText()
 			else:
 				text = self.sender().text()
-			exec('self.item.info.' + str(self.sender().objectName()) + ' = unicode(text)')
+			exec('self.item.info.' + self.sender().objectName() + ' = text')
 		if isinstance(self.item, Group):
 			grupdate(self.item)
 		elif not isinstance(self.item, SwatchBook):
@@ -1294,11 +1292,11 @@ class l10nItem(QWidget):
 		delLoc.clicked.connect(self.delLoc)
 
 	def langEdited(self):
-		if (unicode(self.langEdit.text()) != self.lang) and (unicode(self.langEdit.text()) not in self.parent.info) and (unicode(self.langEdit.text()) > ''):
+		if (self.langEdit.text() != self.lang) and (self.langEdit.text() not in self.parent.info) and (self.langEdit.text() > ''):
 			if self.lang > '':
 				del self.parent.info[self.lang]
 			self.textEdited()
-			self.lang = unicode(self.langEdit.text())
+			self.lang = self.langEdit.text()
 			self.parent.caller.set()
 		else:
 			self.langEdit.setText(self.lang)
@@ -1308,11 +1306,11 @@ class l10nItem(QWidget):
 			text = self.textEdit.toPlainText()
 		else:
 			text = self.textEdit.text()
-		self.parent.info[unicode(self.langEdit.text())] = unicode(text)
+		self.parent.info[self.langEdit.text()] = text
 
 	def delLoc(self):
 		if self.langEdit.text() > '':
-			del self.parent.info[unicode(self.langEdit.text())]
+			del self.parent.info[self.langEdit.text()]
 		self.parent.l10nList.removeWidget(self)
 		self.setParent(None)
 		if self.parent.l10nList.count() == 0:
@@ -1339,8 +1337,8 @@ class listItemMaterial(QListWidgetItem):
 		return [ int(c) if c.isdigit() else c.lower() for c in NUM_RE.split(s) ]
 
 	def __lt__ (self, other):
-		lvalue = self.alphanum_key(unicode(self.data(0)))
-		rvalue = self.alphanum_key(unicode(other.data(0)))
+		lvalue = self.alphanum_key(self.data(0))
+		rvalue = self.alphanum_key(other.data(0))
 		if lvalue == rvalue:
 			return self.id < other.id
 		else:
@@ -1388,9 +1386,9 @@ class treeItemGroup(QTreeWidgetItem):
 
 	def update(self):
 		if self.item.info.title > '':
-			self.setText(0, QString(self.item.info.title))
+			self.setText(0, self.item.info.title)
 		else:
-			self.setText(0, QString())
+			self.setText(0, '')
 
 	def childCount(self):
 		if QTreeWidgetItem.childCount(self) == 1 and isinstance(self.child(0), noChild):
@@ -1405,9 +1403,9 @@ class treeItemSpacer(QTreeWidgetItem):
 		self.item = item
 		font = QFont()
 		font.setItalic(True)
-		self.setText(0, QString('<spacer>'))
+		self.setText(0, '<spacer>')
 		self.setFont(0, font)
-		self.setTextColor(0, QColor(128, 128, 128))
+		self.setForeground(0, QColor(128, 128, 128))
 		self.setFlags(self.flags() & ~(Qt.ItemIsDropEnabled))
 
 class gridItemSpacer(QListWidgetItem):
@@ -1417,7 +1415,7 @@ class gridItemSpacer(QListWidgetItem):
 		self.item = item
 		pix = QImage(1, 1, QImage.Format_Mono)
 		pix.fill(Qt.transparent)
-		self.setIcon(QIcon(pix))
+		self.setIcon(QIcon(QPixmap.fromImage(pix)))
 		self.setSizeHint(QSize(17, 17))
 		self.setFlags(Qt.NoItemFlags)
 
@@ -1428,9 +1426,9 @@ class treeItemBreak(QTreeWidgetItem):
 		self.item = item
 		font = QFont()
 		font.setItalic(True)
-		self.setText(0, QString('<break>'))
+		self.setText(0, '<break>')
 		self.setFont(0, font)
-		self.setTextColor(0, QColor(128, 128, 128))
+		self.setForeground(0, QColor(128, 128, 128))
 		self.setFlags(self.flags() & ~(Qt.ItemIsDropEnabled))
 
 class gridItemBreak(QListWidgetItem):
@@ -1441,7 +1439,7 @@ class gridItemBreak(QListWidgetItem):
 		breaks.append(self)
 		pix = QImage(1, 1, QImage.Format_Mono)
 		pix.fill(Qt.transparent)
-		self.setIcon(QIcon(pix))
+		self.setIcon(QIcon(QPixmap.fromImage(pix)))
 		self.setSizeHint(QSize(0, 17))
 		self.setFlags(Qt.NoItemFlags)
 
@@ -1457,7 +1455,7 @@ class noChild(QTreeWidgetItem):
 		font.setItalic(True)
 		self.setText(0, _('empty'))
 		self.setFont(0, font)
-		self.setTextColor(0, QColor(128, 128, 128))
+		self.setForeground(0, QColor(128, 128, 128))
 		self.setFlags(self.flags() & ~(Qt.ItemIsDragEnabled | Qt.ItemIsDropEnabled))
 
 class matListWidget(QListWidget):
@@ -1472,7 +1470,7 @@ class matListWidget(QListWidget):
 		pixmap = QPixmap()
 		rect = self.rectForIndex(indexes[0])
 		rect.adjust(0, -self.verticalOffset(), 0, -self.verticalOffset())
-		pixmap = pixmap.grabWidget(self, rect)
+		pixmap = self.grab(rect)
 		drag = QDrag(self)
 		drag.setPixmap(pixmap)
 		data.setText(self.currentItem().id)
@@ -1530,7 +1528,7 @@ class sbTreeWidget(QTreeWidget):
 			QTreeWidget.dropEvent(self, event)
 			# Update the Python object + replace the generic QTreeWidgetItem with treeItemSwatch
 			parent, index = self.dropped
-			id = unicode(event.mimeData().text())
+			id = event.mimeData().text()
 			sw = Swatch(id)
 			newTreeItem = treeItemSwatch(sw)
 			if parent:
@@ -1751,7 +1749,7 @@ class MaterialWidget(QGroupBox):
 			self.swExtra.setItem(row, 0, key)
 			self.swExtra.setItem(row, 1, val)
 			row += 1
-			self.tExtra.append([unicode(extra), unicode(self.item.extra[extra])])
+			self.tExtra.append([extra, self.item.extra[extra]])
 
 		self.swExtra.cellChanged[int,int].connect(self.editExtra)
 		self.swExtra.cellClicked[int,int].connect(self.extra_editable)
@@ -1767,7 +1765,7 @@ class MaterialWidget(QGroupBox):
 
 	def remExtra(self):
 		if self.swExtra.item(self.swExtra.currentRow(), 0):
-			extra = unicode(self.swExtra.item(self.swExtra.currentRow(), 0).text())
+			extra = self.swExtra.item(self.swExtra.currentRow(), 0).text()
 			del self.item.extra[extra]
 		self.swExtra.removeRow(self.swExtra.currentRow())
 		self.extraRemoveAction.setEnabled(False)
@@ -1777,15 +1775,15 @@ class MaterialWidget(QGroupBox):
 		if col == 0:
 			if self.tExtra[row][0] in self.item.extra:
 				del self.item.extra[self.tExtra[row][0]]
-			self.tExtra[row][0] = unicode(self.swExtra.item(row, col).text())
+			self.tExtra[row][0] = self.swExtra.item(row, col).text()
 		else:
-			self.tExtra[row][0] = unicode(self.swExtra.item(row, col).text())
-			self.tExtra[row][col] = unicode(self.swExtra.item(row, col).text())
+			self.tExtra[row][0] = self.swExtra.item(row, col).text()
+			self.tExtra[row][col] = self.swExtra.item(row, col).text()
 		if self.swExtra.item(row, 0):
 			if self.swExtra.item(row, 1):
-				self.item.extra[unicode(self.swExtra.item(row, 0).text())] = unicode(self.swExtra.item(row, 1).text())
+				self.item.extra[self.swExtra.item(row, 0).text()] = self.swExtra.item(row, 1).text()
 			else:
-				self.item.extra[unicode(self.swExtra.item(row, 0).text())] = None
+				self.item.extra[self.swExtra.item(row, 0).text()] = None
 
 class ColorWidget(QWidget):
 	def __init__(self, id, parent):
@@ -1842,10 +1840,10 @@ class ColorWidget(QWidget):
 	def tab_moved(self, tfrom, tto):
 		combo = self.valuesWidget.widget(tfrom).findChild(QComboBox)
 		if combo and combo.currentIndex() > 0:
-			space = unicode(combo.itemData(combo.currentIndex()).toString())
+			space = combo.itemData(combo.currentIndex())
 		else:
 			space = False
-		key = (str(self.valuesWidget.tabText(tfrom)), space)
+		key = (self.valuesWidget.tabText(tfrom), space)
 		val = self.item.values.pop(key)
 		self.item.values.insert(tfrom, key, val)
 		icon = form.drawIcon(self.item.info.identifier)
@@ -1935,13 +1933,13 @@ class ColorWidget(QWidget):
 		model = sender[0][0]
 		if model in models:
 			if models[model][sender[1]][1] == 0:
-				self.item.values[sender[0]][sender[1]] = eval(str(self.sender().text()))
+				self.item.values[sender[0]][sender[1]] = eval(self.sender().text())
 			elif models[model][sender[1]][1] == 1:
-				self.item.values[sender[0]][sender[1]] = eval(str(self.sender().text())) / 100
+				self.item.values[sender[0]][sender[1]] = eval(self.sender().text()) / 100
 			elif models[model][sender[1]][1] == 2:
-				self.item.values[sender[0]][sender[1]] = eval(str(self.sender().text())) / 360
+				self.item.values[sender[0]][sender[1]] = eval(self.sender().text()) / 360
 		else:
-			self.item.values[sender[0]][sender[1]] = eval(str(self.sender().text()))
+			self.item.values[sender[0]][sender[1]] = eval(self.sender().text())
 		icon = form.drawIcon(self.item.info.identifier)
 		form.addIcon(self.item.info.identifier, icon[0], icon[1])
 		self.sample.update()
@@ -1950,10 +1948,10 @@ class ColorWidget(QWidget):
 		global current_sp
 		if self.valuesWidget.count() > 0:
 			widget = self.valuesWidget.currentWidget()
-			model = str(self.valuesWidget.tabText(self.valuesWidget.currentIndex()))
+			model = self.valuesWidget.tabText(self.valuesWidget.currentIndex())
 			combo = widget.findChild(QComboBox)
 			if combo and combo.currentIndex() > 0:
-				current_sp = (model, unicode(combo.itemData(combo.currentIndex())))
+				current_sp = (model, combo.itemData(combo.currentIndex()))
 			else:
 				current_sp = (model, False)
 			if model in models:
@@ -1991,7 +1989,7 @@ class ColorWidget(QWidget):
 		self.sample.update()
 
 	def addVal(self):
-		model = str(self.sender().text())
+		model = self.sender().text()
 		if not hasattr(self, 'val'):
 			self.val = {}
 		self.item.values[(model, False)] = []
@@ -2182,7 +2180,7 @@ class GradientWidget(QWidget):
 			id = self.item.colorstops[self.currentStop].color
 			palette = QLabel().palette()
 			material = form.sb.materials[id]
-			prof_out = str(settings.value("mntrProfile")) or False
+			prof_out = settings.value("mntrProfile") or False
 			if material.toRGB8(prof_out):
 				r, g, b = material.toRGB8(prof_out)
 				palette.setBrush(self.backgroundRole(), QBrush(QColor(r, g, b)))
@@ -2225,7 +2223,7 @@ class GradientWidget(QWidget):
 		gradient.setCoordinateMode(QGradient.ObjectBoundingMode)
 		palette = QLabel().palette()
 		stops = self.item.colorstops
-		prof_out = str(settings.value("mntrProfile")) or False
+		prof_out = settings.value("mntrProfile") or False
 		if len(stops) > 0:
 			for i, stop in enumerate(stops):
 				if i > 0 and stop.position == stops[i - 1].position:
@@ -2321,7 +2319,7 @@ class SwatchPreview(QLabel):
 		paint = QPainter()
 		paint.begin(pix)
 		paint.setPen(Qt.transparent)
-		prof_out = str(settings.value("mntrProfile")) or False
+		prof_out = settings.value("mntrProfile") or False
 		if self.material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade'):
 			if self.material.toRGB8(prof_out):
 				r, g, b = self.material.toRGB8(prof_out)
@@ -2871,7 +2869,7 @@ class SettingsDlg(QDialog):
 			return self.cmykProfile
 
 	def setRGBFile(self):
-		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(), _("ICC profiles (*.icc *.icm);;" + _("All files (*)")))
+		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(), _("ICC profiles (*.icc *.icm);;" + _("All files (*)")))[0]
 		if fname:
 			profile = icc.ICCprofile(fname)
 			if profile.info['class'] == "mntr" and profile.info['space'] == 'RGB ':
@@ -2891,7 +2889,7 @@ class SettingsDlg(QDialog):
 				self.mntrCombo.setCurrentIndex(0)
 
 	def setCMYKFile(self):
-		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(), _("ICC profiles (*.icc *.icm);;" + _("All files (*)")))
+		fname = QFileDialog.getOpenFileName(self, _("Choose file"), QDir.homePath(), _("ICC profiles (*.icc *.icm);;" + _("All files (*)")))[0]
 		if fname:
 			profile = icc.ICCprofile(fname)
 			if profile.info['space'] == 'CMYK':
@@ -2946,11 +2944,11 @@ class SettingsDlg(QDialog):
 						except BadICCprofile:
 							pass
 		if os.name == 'posix':
-			profdirs = [unicode(QDir.homePath()) + "/.color/icc", "/usr/share/color/icc", "/usr/local/share/color/icc", "/var/lib/color/icc", unicode(QDir.homePath()) + "/.local/share/icc"]
+			profdirs = [QDir.homePath() + "/.color/icc", "/usr/share/color/icc", "/usr/local/share/color/icc", "/var/lib/color/icc", QDir.homePath() + "/.local/share/icc"]
 		elif os.name == 'nt':
 			profdirs = ["C:\\Windows\\System\\Color", "C:\\Winnt\\system32\\spool\\drivers\\color", "C:\\Windows\\system32\\spool\\drivers\\color"]
 		elif os.name == 'mac':
-			profdirs = ["/Network/Library/ColorSync/Profiles", "/System/Library/Colorsync/Profiles", "/Library/ColorSync/Profiles", unicode(QDir.homePath()) + "/Library/ColorSync/Profiles"]
+			profdirs = ["/Network/Library/ColorSync/Profiles", "/System/Library/Colorsync/Profiles", "/Library/ColorSync/Profiles", QDir.homePath() + "/Library/ColorSync/Profiles"]
 		else:
 			profdirs = []
 		for profdir in profdirs:
@@ -2973,6 +2971,4 @@ if __name__ == "__main__":
 	form.show()
 	form.dispPane()
 
-	if app.style().metaObject().className() == "QGtkStyle" and PYQT_VERSION_STR.startswith("4.6"):
-		app.setStyle(QStyleFactory.create("Cleanlooks"))
 	app.exec_()

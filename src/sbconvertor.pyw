@@ -68,7 +68,7 @@ class MainWindow(QMainWindow):
 		if settings.contains('lastSaveDir'):
 			self.path = settings.value('lastSaveDir')
 		else:
-			self.path = unicode(QDir.homePath())
+			self.path = QDir.homePath()
 
 		self.pathLabel = QLabel(self.path)
 		self.pathLabel.setFrameStyle(QFrame.StyledPanel|
@@ -116,8 +116,8 @@ class MainWindow(QMainWindow):
 		self.formatCombo.currentIndexChanged[int].connect(self.paramsChanged)
 		
 	def setPath(self):
-		path = unicode(QDir.toNativeSeparators(QFileDialog.getExistingDirectory(self,
-					_("Choose output directory"), self.path)))
+		path = QDir.toNativeSeparators(QFileDialog.getExistingDirectory(self,
+					_("Choose output directory"), self.path))
 		if path > '' and path != self.path:
 			self.path = path
 			self.pathLabel.setText(self.path)
@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
 				codec_exts.append('*.'+ext)
 			codec_txt = eval('codecs.'+codec).__doc__ +' ('+" ".join(codec_exts)+')'
 			filetypes.append(codec_txt)
-		allexts = ["*.%s" % unicode(format).lower() \
+		allexts = ["*.%s" % format.lower() \
 				   for format in codecs.readexts.keys()]
 		if settings.contains('lastOpenCodec'):
 			filetype = settings.value('lastOpenCodec')
@@ -147,10 +147,10 @@ class MainWindow(QMainWindow):
 			filetype = QString()
 		flist = QFileDialog.getOpenFileNames(self,
 							_("Add files"), dir,
-							(unicode(_("All supported files (%s)")) % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+";;"+_("All files (*)"),filetype)[0]
+							(_("All supported files (%s)") % " ".join(allexts))+";;"+(";;".join(sorted(filetypes)))+";;"+_("All files (*)"),filetype)[0]
 		if len(flist) > 0:
-			settings.setValue('lastOpenCodec',filetype)
-			settings.setValue('lastOpenDir',os.path.dirname(unicode(flist[0])))
+			settings.setValue('lastOpenCodec', filetype)
+			settings.setValue('lastOpenDir', os.path.dirname(flist[0]))
 			self.tobeadded += len(flist)
 			self.progress.setMaximum(self.tobeadded)
 			self.progress.setValue(self.added)
@@ -230,7 +230,7 @@ class MainWindow(QMainWindow):
 		self.convertButton.setEnabled(False)
 
 	def convert(self):
-		codec = unicode(self.formatCombo.itemData(self.formatCombo.currentIndex()))
+		codec = self.formatCombo.itemData(self.formatCombo.currentIndex())
 		path = self.path
 		settings.setValue('lastSaveCodec', self.formatCombo.itemText(self.formatCombo.currentIndex()))
 		settings.setValue('lastSaveDir', path)
@@ -251,7 +251,7 @@ class MainWindow(QMainWindow):
 	def converted(self,index):
 		iconWidget = QLabel()
 		iconWidget.setAlignment(Qt.AlignCenter)
-		iconWidget.setPixmap(app.style().standardPixmap(QStyle.SP_DialogOkButton))
+		iconWidget.setPixmap(app.style().standardIcon(QStyle.SP_DialogOkButton).pixmap(64))
 		self.list.setCellWidget(index,0,iconWidget)
 
 	def allConverted(self):
@@ -272,7 +272,7 @@ class fileOpenThread(QThread):
 
 	def run(self):
 		try:
-			sb = SwatchBook(unicode(self.fname))
+			sb = SwatchBook(self.fname)
 			self.parent().tobeconverted.append([sb,False])
 			self.added.emit()
 		except FileFormatError:

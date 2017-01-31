@@ -158,7 +158,7 @@ class webWidgetList(QTreeWidget):
 		if self.selectedItems():
 			self.parent.ids = []
 			for item in self.selectedItems():
-				self.parent.ids.append(unicode(item.text(1)))
+				self.parent.ids.append(item.text(1))
 
 	def load(self):
 		if not self.loaded:
@@ -194,7 +194,7 @@ class webWidgetList(QTreeWidget):
 			while parent:
 				parent = parent.parent()
 				level += 1
-			llist = eval('self.svc.level'+str(level))(unicode(treeItem.text(1)))
+			llist = eval('self.svc.level'+str(level))(treeItem.text(1))
 			for item in llist:
 				itemtext = [llist[item], item]
 				titem = QTreeWidgetItem(treeItem,itemtext)
