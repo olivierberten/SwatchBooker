@@ -36,7 +36,7 @@ for websvc in os.listdir((dirpath(__file__) or ".")):
 	if os.path.splitext(websvc)[1] == '.py' and websvc not in ('__init__.py','template.py'):
 		exec 'from '+os.path.splitext(websvc)[0]+' import *'
 
-list = {}
+members = {}
 
 for websvc in WebSvc.__subclasses__():
-	list[websvc.__name__] = websvc.__doc__
+	members[websvc.__name__] = websvc.__doc__

@@ -90,18 +90,15 @@ class webOpenDlg(QDialog):
 
 		self.webWidgets = {}
 
-		for svc in websvc.list:
+		for svc in websvc.members:
 			current_svc = eval('websvc.'+svc+'()')
 			if 'swatchbook' in current_svc.content:
 				webWidget = webWidgetList(svc,self)
 			else:
 				continue
 			self.webSvcStack.addWidget(webWidget)
-			listItem = QListWidgetItem(websvc.list[svc],self.webSvcList)
+			listItem = QListWidgetItem(websvc.members[svc],self.webSvcList)
 			listItem.setData(Qt.UserRole,svc)
-			icon = os.path.join(dirpath(websvc.__file__) or '.',svc+'.png')
-			if(QFile.exists(icon)):
-				listItem.setIcon(QIcon(icon))
 			self.webWidgets[svc] = (webWidget,current_svc.about,listItem)
 		buttonBox = QDialogButtonBox(QDialogButtonBox.Ok|QDialogButtonBox.Cancel)
 		self.webSvcList.sortItems()

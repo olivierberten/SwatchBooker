@@ -27,10 +27,10 @@ class munsell(WebSvc):
 
 	content = ['swatchbook']
 
-	about = u'These data come from Munsell Color Science Laboratory\'s <a href="http://www.cis.rit.edu/research/mcsl2/online/munsell.php">Munsell Renotation Data</a>.<br /><br />Copyright 2010 RIT Munsell Color Science Laboratory. All rights reserved.'
+	about = u'These data come from Munsell Color Science Laboratory\'s <a href="https://www.rit.edu/cos/colorscience/rc_munsell_renotation.php">Munsell Renotation Data</a>. None of these data should be confused with actual measurements from a Munsell Book of Color!<br /><br />Copyright 2010 RIT Munsell Color Science Laboratory. All rights reserved.'
 
 	nbLevels = 1
-	url = 'http://www.cis.rit.edu/research/mcsl2/online/munsell_data/'
+	url = 'http://www.rit-mcsl.org/MunsellRenotation/'
 
 	palettes = SortedDict()
 	palettes['1929'] = '1929 Book of Colors'

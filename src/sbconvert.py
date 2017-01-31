@@ -10,7 +10,7 @@ __version__ = "0.5"
 
 parser = OptionParser(usage="usage: %prog -o output [-i input -d dir] file1 file2 ...\n   or  %prog -w websvc -o output [-d dir] palette1 palette2 ...\n Help: %prog -h", version="%prog "+__version__)
 parser.add_option("-i", "--input", help="input format: "+", ".join(codecs.reads))
-parser.add_option("-w", "--websvc", help="web service: "+", ".join(websvc.list.keys()))
+parser.add_option("-w", "--websvc", help="web service: "+", ".join(websvc.members.keys()))
 parser.add_option("-o", "--output", help="output format: "+", ".join(codecs.writes))
 parser.add_option("-d", "--dir", help="output directory")
 
@@ -23,7 +23,7 @@ if options.output and options.output not in codecs.writes:
 if options.input and options.input not in codecs.reads:
 	parser.error("Wrong input format. Should be one of these: "+", ".join(codecs.reads))
 if options.websvc and options.websvc not in websvc.list:
-	parser.error("Wrong web service. Should be one of these: "+", ".join(websvc.list.keys()))
+	parser.error("Wrong web service. Should be one of these: "+", ".join(websvc.members.keys()))
 if len(args) == 0:
 	parser.error("No file to convert")
 
