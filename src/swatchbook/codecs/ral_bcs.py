@@ -43,7 +43,7 @@ class ral_bcs(SBCodec):
 		nbcolors = struct.unpack('<H',file.read(2))[0]
 		length = struct.unpack('B',file.read(1))[0]
 		x = file.tell()
-		name_tmp = struct.unpack(str(length)+'s',file.read(length))[0]
+		name_tmp = file.read(length)
 		if name_tmp[-1] != ':': # Workaround for CIE-HLC & CIE-LAB
 			name_tmp = ''
 			file.seek(x)
@@ -54,7 +54,7 @@ class ral_bcs(SBCodec):
 				name_tmp += c
 		name_tmp = name_tmp.split(':')
 		swatchbook.info.title = unicode(name_tmp[0].split('English_')[1],'latin1')
-		if name_tmp[1].split('German_')[1] != swatchbook.info.title:
+		if unicode(name_tmp[1].split('German_')[1],'latin1') != swatchbook.info.title:
 			swatchbook.info.title_l10n['de'] = unicode(name_tmp[1].split('German_')[1],'latin1')
 		file.seek(1, 1)
 		for i in range(nbcolors):
@@ -62,12 +62,11 @@ class ral_bcs(SBCodec):
 			id = False
 			length = struct.unpack('B',file.read(1))[0]
 			if length > 0:
-				x = file.tell()
+				id_tmp = file.read(length)
 				try:
-					id = unicode(struct.unpack(str(length)+'s',file.read(length))[0],'utf-8')
+					id = unicode(id_tmp,'utf-8')
 				except UnicodeDecodeError:
-					file.seek(x)
-					id =  unicode(struct.unpack(str(length)+'s',file.read(length))[0],'latin1')
+					id =  unicode(id_tmp,'latin1')
 			item.values[('Lab',False)] = list(struct.unpack('<3f',file.read(12)))
 			if sig == 'clf':
 				item.usage.add('spot')

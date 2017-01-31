@@ -1334,7 +1334,8 @@ class listItemMaterial(QListWidgetItem):
 
 	@staticmethod
 	def alphanum_key(s):
-		return [ int(c) if c.isdigit() else c.lower() for c in NUM_RE.split(s) ]
+		if s:
+			return [ int(c) if c.isdigit() else c.lower() for c in NUM_RE.split(s) ]
 
 	def __lt__ (self, other):
 		lvalue = self.alphanum_key(self.data(0))
@@ -2181,8 +2182,9 @@ class GradientWidget(QWidget):
 			palette = QLabel().palette()
 			material = form.sb.materials[id]
 			prof_out = settings.value("mntrProfile") or False
-			if material.toRGB8(prof_out):
-				r, g, b = material.toRGB8(prof_out)
+			RGB8 = material.toRGB8(prof_out)
+			if RGB8:
+				r, g, b = RGB8
 				palette.setBrush(self.backgroundRole(), QBrush(QColor(r, g, b)))
 			self.colorIcon.setPalette(palette)
 			self.colorIcon.setAutoFillBackground(True)
@@ -2321,8 +2323,9 @@ class SwatchPreview(QLabel):
 		paint.setPen(Qt.transparent)
 		prof_out = settings.value("mntrProfile") or False
 		if self.material.__class__.__name__ in ('Color', 'Tint', 'Tone', 'Shade'):
-			if self.material.toRGB8(prof_out):
-				r, g, b = self.material.toRGB8(prof_out)
+			RGB8 = self.material.toRGB8(prof_out)
+			if RGB8:
+				r, g, b = RGB8
 				paint.setBrush(QBrush(QColor(r, g, b)))
 		elif isinstance(self.material, Pattern) and self.material.image():
 			image = QPixmap.fromImage(ImageQt.ImageQt(self.material.imageRGB(prof_out)))

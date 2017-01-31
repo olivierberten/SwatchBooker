@@ -22,6 +22,7 @@
 from __future__ import division
 import os
 import sys
+import struct
 from datetime import *
 from color import *
 from tempfile import mkdtemp
@@ -348,8 +349,9 @@ class Color(object):
 				return False
 			
 	def toRGB8(self, prof_out=False):
-		if self.toRGB(prof_out):
-			R, G, B = self.toRGB(prof_out)
+		RGB = self.toRGB(prof_out)
+		if RGB:
+			R, G, B = RGB
 			return (int(round(R * 0xFF)), int(round(G * 0xFF)), int(round(B * 0xFF)))
 		else:
 			return False
@@ -369,8 +371,9 @@ class Tint(object):
 		return HSL2RGB(H, S, L)
 
 	def toRGB8(self, prof_out=False):
-		if self.toRGB(prof_out):
-			R, G, B = self.toRGB(prof_out)
+		RGB = self.toRGB(prof_out)
+		if RGB:
+			R, G, B = RGB
 			return (int(round(R * 0xFF)), int(round(G * 0xFF)), int(round(B * 0xFF)))
 		else:
 			return False
@@ -391,8 +394,9 @@ class Tone(object):
 		return HSL2RGB(H, S, L)
 
 	def toRGB8(self, prof_out=False):
-		if self.toRGB(prof_out):
-			R, G, B = self.toRGB(prof_out)
+		RGB = self.toRGB(prof_out)
+		if RGB:
+			R, G, B = RGB
 			return (int(round(R * 0xFF)), int(round(G * 0xFF)), int(round(B * 0xFF)))
 		else:
 			return False
@@ -412,8 +416,9 @@ class Shade(object):
 		return HSL2RGB(H, S, L)
 
 	def toRGB8(self, prof_out=False):
-		if self.toRGB(prof_out):
-			R, G, B = self.toRGB(prof_out)
+		RGB = self.toRGB(prof_out)
+		if RGB:
+			R, G, B = RGB
 			return (int(round(R * 0xFF)), int(round(G * 0xFF)), int(round(B * 0xFF)))
 		else:
 			return False
@@ -462,8 +467,9 @@ class Pattern(object):
 		else:
 			outputProfile = sRGB
 		new_image = ImageCms.profileToProfile(image, inputProfile, outputProfile, outputMode="RGB")
-		if alpha_band:
-			new_image.putalpha(alpha_band)
+		if not alpha_band:
+			alpha_band = Image.new('L', image.size, 255)
+		new_image.putalpha(alpha_band)
 		return new_image
 
 	# to be called before deleting a pattern from the book
@@ -574,7 +580,7 @@ class Gradient(object):
 		left = 0
 		right = len(self.opacitystops) - 1
 		for i, stop in enumerate(self.opacitystops):
-			if pos >= stop.position and self.opacitystops[i + 1].position > stop.position:
+			if pos >= stop.position:
 				left = i
 			else:
 				right = i
@@ -642,8 +648,8 @@ class Gradient(object):
 			new_image = image
 		
 		# Opacity
+		alpha = Image.new('L', (width, height), 255)
 		if len(self.opacitystops) > 0:
-			alpha = Image.new('L', (width, height))
 			draw = ImageDraw.Draw(alpha)
 			for i in range(width):
 				try:
@@ -652,7 +658,7 @@ class Gradient(object):
 					a = 1
 				draw.line((i, 0, i, image.size[1]), fill=int(round(a * 0xFF)))
 			del draw
-			new_image.putalpha(alpha)
+		new_image.putalpha(alpha)
 		return new_image
 
 class ColorStop(object):

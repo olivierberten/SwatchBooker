@@ -164,10 +164,10 @@ class MainWindow(QMainWindow):
 				self.threads.append(thread)
 				thread.start()
 
-	def addToList(self):
+	def addToList(self, i):
 		row = self.list.rowCount()
 		self.list.insertRow(row)
-		sb = self.tobeconverted[-1][0]
+		sb = self.tobeconverted[i][0]
 		self.list.setItem(row,1,QTableWidgetItem(sb.info.title))
 		self.updateProgressBar()
 
@@ -264,7 +264,7 @@ class MainWindow(QMainWindow):
 #		self.list.setCurrentRow(-1)
 
 class fileOpenThread(QThread):
-	added = pyqtSignal()
+	added = pyqtSignal(int)
 
 	def __init__(self, fname, parent = None):
 		super(fileOpenThread, self).__init__(parent)
@@ -273,8 +273,9 @@ class fileOpenThread(QThread):
 	def run(self):
 		try:
 			sb = SwatchBook(self.fname)
+			i = len(self.parent().tobeconverted)
 			self.parent().tobeconverted.append([sb,False])
-			self.added.emit()
+			self.added.emit(i)
 		except FileFormatError:
 			pass
 
