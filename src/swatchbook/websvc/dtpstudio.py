@@ -26,40 +26,39 @@ class dtpstudio(WebSvc):
 
 	content = ['swatchbook']
 
-	about = u'These data come from dtp studio\'s <a href="http://www.dtpstudio.de/colordesigner/popup_e.htm">Color Designer</a> tool.<br /><br />© dtp studio · Grünteweg 31· D-26127 Oldenburg'
+	about = u'These data come from dtp studio\'s <a href="http://www.dtpstudio.de/Colordesigner/">Color Designer</a> tool.<br /><br />© dtp studio · Grünteweg 31· D-26127 Oldenburg'
 
 	nbLevels = 1
-	url = "http://www.dtpstudio.de/colordesigner/"
+	url = "http://www.dtpstudio.de/Colordesigner/"
 
 	def level0(self):
-		page = urllib.urlopen(self.url+"popup_d.htm").read()
-		namelist = page.split('<option value="-1" selected>Farbsystem auswählen...</option>')[1].split('</option>\n            </select>')[0].strip().split('</option>')
+		page = urllib.urlopen(self.url+"index.html").read()
+		namelist = page.split('<option value="-1" selected>Farbsystem auswählen...</option>')[1].split('</option>\r\n            </select>')[0].strip().split('</option>')[:-1]
 		page = urllib.urlopen(self.url+"Scripts/main.js").read()
 		syslist = page.split("var targetSystems = new Array('")[1].split("');",1)[0].split("','")
 		systems = SortedDict()
 		for i in range(len(namelist)):
 			systems[syslist[i]] = namelist[i].split('">')[1]
 		# Fix for some mistakes in the color system list
-		if urllib.urlopen(self.url+"popup_d.htm").info().getdate('Last-Modified') == (2009, 10, 5, 7, 15, 57, 0, 1, 0) and urllib.urlopen(self.url+"Scripts/main.js").info().getdate('Last-Modified') == (2009, 10, 5, 13, 59, 20, 0, 1, 0):
-			systems['AVERY900SUPERCAST-PANTONE.js'] = 'Avery900SuperCast-Pantone'
-			systems['AVERY900SUPERCAST.js'] = 'Avery900SuperCast'
-			del systems['BRILLUXSCALA.js']
-			systems['BRILLUX_ACRYLCOLOR.js'] = 'Brillux AcrylColor'
-			systems['BRILLUX_FARBKOLLEKTION.js'] = 'Brillux Farbkollektion'
-			systems['BRILLUX_KUNSTHARZPUTZ.js'] = 'Brillux Kunstharzputz'
-			systems['BRILLUX_LACK.js'] = 'Brillux Lack'
-			systems['BRILLUX_MINERALPUTZ.js'] = 'Brillux Mineralputz'
-			systems['BRILLUX_MIX.js'] = 'Brillux Mix'
-			systems.insert(34,'BRILLUX_SCALA.js','Brillux SCALA')
-			systems['COLORTREND_FACADE.js'] = 'Colortrend Facade'
-			systems['COLORTREND_FACADE_PLUS.js'] = 'Colortrend Facade plus'
-			systems['ORACAL_SERIE_8500.js'] = 'Oracal Serie 8500'
-			systems['ORACAL_SERIE_851.js'] = 'Oracal Serie 851'
-			systems['STOCOLORSYSTEM.js'] = 'StoColorSystem'
-			systems['STO_SILIKAT.js'] = 'sto Silikat'
-			systems['ZERO_COLORFASSFARBE.js'] = 'Zero ColorFassFarbe'
-			systems['ZERO_COLORSYSTEM.js'] = 'Zero ColorSystem'
-			systems['ZERO_COLOR_SYSTEM_720.js'] = 'zero Color System 720'
+		systems['AVERY900SUPERCAST-PANTONE.js'] = 'Avery900SuperCast-Pantone'
+		systems['AVERY900SUPERCAST.js'] = 'Avery900SuperCast'
+		del systems['BRILLUXSCALA.js']
+		systems['BRILLUX_ACRYLCOLOR.js'] = 'Brillux AcrylColor'
+		systems['BRILLUX_FARBKOLLEKTION.js'] = 'Brillux Farbkollektion'
+		systems['BRILLUX_KUNSTHARZPUTZ.js'] = 'Brillux Kunstharzputz'
+		systems['BRILLUX_LACK.js'] = 'Brillux Lack'
+		systems['BRILLUX_MINERALPUTZ.js'] = 'Brillux Mineralputz'
+		systems['BRILLUX_MIX.js'] = 'Brillux Mix'
+		systems.insert(34,'BRILLUX_SCALA.js','Brillux SCALA')
+		systems['COLORTREND_FACADE.js'] = 'Colortrend Facade'
+		systems['COLORTREND_FACADE_PLUS.js'] = 'Colortrend Facade plus'
+		systems['ORACAL_SERIE_8500.js'] = 'Oracal Serie 8500'
+		systems['ORACAL_SERIE_851.js'] = 'Oracal Serie 851'
+		systems['STOCOLORSYSTEM.js'] = 'StoColorSystem'
+		systems['STO_SILIKAT.js'] = 'sto Silikat'
+		systems['ZERO_COLORFASSFARBE.js'] = 'Zero ColorFassFarbe'
+		systems['ZERO_COLORSYSTEM.js'] = 'Zero ColorSystem'
+		systems['ZERO_COLOR_SYSTEM_720.js'] = 'zero Color System 720'
 		return systems
 
 	def read(self,swatchbook,system):

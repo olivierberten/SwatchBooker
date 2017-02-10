@@ -30,14 +30,14 @@ class ral(WebSvc):
 	about = u'These data come from the <a href="http://www.ral-farben.de/uebersicht-ral-classic-farben.html?&L=1">RAL CLASSIC colour names</a> listed at RAL\'s website.<br /><br />RAL CLASSIC is registered trademarks of RAL gGmbH, 53757 Sankt Augustin.'
 
 	nbLevels = 1
-	url = 'http://www.ral-farben.de/uebersicht-ral-classic-farben.html'
+	url = 'http://web.archive.org/web/20120208005345/https://www.ral-farben.de/uebersicht-ral-classic-farben.html'
 
 	def level0(self):
 		return {'0': u'RAL CLASSIC'}
 
 	def read(self,swatchbook,palette):
 		webpage = urllib.urlopen(self.url).read()
-		data = webpage.split('<tbody>')[1].split('</tbody>')[0]
+		data = webpage.split('<!-- END WAYBACK TOOLBAR INSERT -->')[1].split('<tbody>')[1].split('</tbody>')[0]
 		data = data.split('<tr')[1:]
 		swatchbook.info.title = u'RAL CLASSIC'
 
