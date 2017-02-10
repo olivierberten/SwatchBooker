@@ -1,4 +1,10 @@
-swatchbooker (0.7.4-0ppa1) UNRELEASED; urgency=medium
+swatchbooker (0.7.5-0ppa1) yakkety; urgency=medium
+
+  * Migrate to lcms2
+
+ -- Olivier Berten (selapa.net) <olivier.berten@gmail.com>  Fri, 10 Feb 2017 13:25:16 +0100
+
+swatchbooker (0.7.4-0ppa1) xenial; urgency=medium
 
   * Add fix for Homebrew
 

@@ -9,7 +9,7 @@ Homepage: http://www.selapa.net/swatchbooker/
 
 Package: swatchbooker
 Architecture: all
-Depends: ${misc:Depends}, ${python:Depends}, python-liblcms (>= 1.18), python-qt4 (>= 4.6)
+Depends: ${misc:Depends}, ${python:Depends}, liblcms2-2, python-qt4 (>= 4.6)
 XB-Python-Version: >= 2.5
 Description: Swatch edition and conversion utilities
  SwatchBooker is a swatch book editor and convertor. It includes 
