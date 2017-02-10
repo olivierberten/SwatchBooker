@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 #
-#       Copyright 2008 Olivier Berten <olivier.berten@gmail.com>
+#       Copyright 2008, 2017 Olivier Berten <olivier.berten@gmail.com>
 #       
 #       This program is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published by
@@ -20,14 +20,19 @@
 #
 
 from __future__ import division
-from lcms import *
+from lcms2 import *
 from icc import *
 import os.path
+import math
+
+DblTriplet = c_double * 3
+DblQuad = c_double * 4
 
 def dirpath(name):
 	if not name:
 		return name
 	elif os.path.islink(name):
+		#return os.path.dirname(os.path.abspath(os.path._resolve_link(name)))
 		return os.path.dirname(os.path.abspath(os.path.realpath(name)))
 	else:
 		return os.path.dirname(name)
@@ -49,151 +54,72 @@ def toRGB(model,values,prof_in=False,prof_out=False):
 			Y,I,Q = values
 			R,G,B = YIQ2RGB(Y,I,Q)
 		R,G,B = RGB2RGB(R,G,B,prof_in,prof_out)
-	elif model == 'sRGB':
-		R,G,B = values
-		R,G,B = sRGB2RGB(R,G,B,prof_out)
-	elif model == 'Lab':
-		L,a,b = values
-		R,G,B = Lab2RGB(L,a,b,prof_out)
-	elif model == 'XYZ':
-		X,Y,Z = values
-		R,G,B = XYZ2RGB(X,Y,Z,prof_out)
-	elif model == 'CMYK':
-		C,M,Y,K = values
-		R,G,B = CMYK2RGB(C,M,Y,K,prof_in,prof_out)
+	elif model in ('sRGB', 'Lab', 'XYZ', 'CMYK'):
+		R,G,B = lcms2RGB(model, values, prof_in, prof_out)
+	elif model == 'LCH':
+		R,G,B = lcms2RGB('Lab', LCH2Lab(*values), prof_in, prof_out)
+	elif model == 'xyY':
+		R,G,B = lcms2RGB('XYZ', xyY2XYZ(*values), prof_in, prof_out)
 	elif model == 'GRAY':
 		R = G = B = 1-values[0]
 	else:
 		return False
 	return (R,G,B)
 
-def Lab2RGB(L,a,b,prof_out=False):
+def lcms2RGB(model,values,prof_in=False,prof_out=False):
+	print (model,values,prof_in,prof_out)
+	context = cmsCreateContext(None, None)
+	if model in ('RGB', 'sRGB') and prof_in == prof_out:
+		return values
 
-	Lab = cmsCIELab(L,a,b)
-	RGB = COLORW()
-	
-	hLab    = cmsCreateLabProfile(None)
-	if prof_out:
-		hRGB = cmsOpenProfileFromFile(prof_out,'r')
-	else:
-		hRGB = cmsCreate_sRGBProfile()
+	t = {'RGB': TYPE_RGB_DBL,
+	     'Lab': TYPE_Lab_DBL,
+	     'XYZ': TYPE_XYZ_DBL,
+	     'sRGB': TYPE_RGB_DBL,
+	     'CMYK': TYPE_CMYK_DBL}
 
-	xform = cmsCreateTransform(hLab, TYPE_Lab_DBL, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
-
-	cmsDoTransform(xform, Lab, RGB, 1)
-
-	cmsDeleteTransform(xform)
-	cmsCloseProfile(hRGB)
-	cmsCloseProfile(hLab)
-
-	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
-
-def XYZ2RGB(X,Y,Z,prof_out=False):
-
-	XYZ = cmsCIEXYZ(X/100,Y/100,Z/100)
-	RGB = COLORW()
-	
-	hXYZ    = cmsCreateXYZProfile()
-	if prof_out:
-		hRGB = cmsOpenProfileFromFile(prof_out,'r')
-	else:
-		hRGB = cmsCreate_sRGBProfile()
-
-	xform = cmsCreateTransform(hXYZ, TYPE_XYZ_DBL, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
-
-	cmsDoTransform(xform, XYZ, RGB, 1)
-
-	cmsDeleteTransform(xform)
-	cmsCloseProfile(hRGB)
-	cmsCloseProfile(hXYZ)
-
-	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
-
-def CMYK2RGB(C,M,Y,K,prof_in=False,prof_out=False):
-	
-	CMYK = COLORW()
-	RGB = COLORW()
-	
-	CMYK[0] = int(C*0xFFFF)
-	CMYK[1] = int(M*0xFFFF)
-	CMYK[2] = int(Y*0xFFFF)
-	CMYK[3] = int(K*0xFFFF)
-
-	if prof_out:
-		hRGB = cmsOpenProfileFromFile(prof_out,'r')
-	else:
-		hRGB = cmsCreate_sRGBProfile()
 	if prof_in:
-		hCMYK = cmsOpenProfileFromFile(prof_in,'r')
+		inprof = cmsOpenProfileFromFileTHR(context, prof_in,'r')
+	elif model == 'Lab':
+		inprof = cmsCreateLab4ProfileTHR(context, None)
+	elif model == 'XYZ':
+		inprof = cmsCreateXYZProfileTHR(context)
+	elif model == 'CMYK':
+		inprof = cmsOpenProfileFromFileTHR(context, (dirpath(__file__) or ".")+"/Fogra27L.icm",'r')
 	else:
-		hCMYK = cmsOpenProfileFromFile((dirpath(__file__) or ".")+"/Fogra27L.icm",'r')
+		inprof = cmsCreate_sRGBProfileTHR(context)
 
-	xform = cmsCreateTransform(hCMYK, TYPE_CMYK_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
+	if prof_out:
+		outprof = cmsOpenProfileFromFileTHR(context, prof_out,'r')
+	else:
+		outprof = cmsCreate_sRGBProfileTHR(context)
 
-	cmsDoTransform(xform, CMYK, RGB, 1)
+	if model in ('XYZ', ):
+		inbuf = DblTriplet(*(v/100 for v in values))
+	elif model in ('CMYK', ):
+		inbuf = DblQuad(*(v*100 for v in values))
+	else:
+		inbuf = DblTriplet(*values)
+	print(tuple(inbuf))
+	outbuf = DblTriplet()
+	xform = cmsCreateTransformTHR(context, inprof, t[model], 
+	                           outprof, t['RGB'],
+	                           INTENT_PERCEPTUAL, 0)
+	cmsCloseProfile(inprof)
+	cmsCloseProfile(outprof)
 
+	cmsDoTransform(xform, inbuf, outbuf, 1)
 	cmsDeleteTransform(xform)
-	cmsCloseProfile(hRGB)
-	cmsCloseProfile(hCMYK)
 
-	return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
+	print (tuple(outbuf))
+
+	return tuple(outbuf)
 
 def RGB2RGB(RR,GG,BB,prof_in=False,prof_out=False):
 	if prof_in == prof_out:
 		return (RR,GG,BB)
 	else:
-		RRGGBB = COLORW()
-		RGB = COLORW()
-		
-		RRGGBB[0] = int(RR*0xFFFF)
-		RRGGBB[1] = int(GG*0xFFFF)
-		RRGGBB[2] = int(BB*0xFFFF)
-
-		if prof_out:
-			hRGB = cmsOpenProfileFromFile(prof_out,'r')
-		else:
-			hRGB = cmsCreate_sRGBProfile()
-		if prof_in:
-			hRRGGBB = cmsOpenProfileFromFile(prof_in,'r')
-		else:
-			hRRGGBB = cmsCreate_sRGBProfile()
-
-		xform = cmsCreateTransform(hRRGGBB, TYPE_RGB_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
-
-		cmsDoTransform(xform, RRGGBB, RGB, 1)
-
-		cmsDeleteTransform(xform)
-		cmsCloseProfile(hRGB)
-		cmsCloseProfile(hRRGGBB)
-
-		return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
-
-def sRGB2RGB(RR,GG,BB,prof_out=False):
-	if prof_out:
-		RRGGBB = COLORW()
-		RGB = COLORW()
-	
-		RRGGBB[0] = int(RR*0xFFFF)
-		RRGGBB[1] = int(GG*0xFFFF)
-		RRGGBB[2] = int(BB*0xFFFF)
-
-		hRGB = cmsOpenProfileFromFile(prof_out,'r')
-
-		hRRGGBB = cmsCreate_sRGBProfile()
-
-		xform = cmsCreateTransform(hRRGGBB, TYPE_RGB_16, hRGB, TYPE_RGB_16, INTENT_PERCEPTUAL, cmsFLAGS_NOTPRECALC)
-
-		cmsDoTransform(xform, RRGGBB, RGB, 1)
-
-		cmsDeleteTransform(xform)
-		cmsCloseProfile(hRGB)
-		cmsCloseProfile(hRRGGBB)
-
-		return (RGB[0]/0xFFFF,RGB[1]/0xFFFF,RGB[2]/0xFFFF)
-
-	else:
-
-		return (RR,GG,BB)
+		return lcms2RGB('RGB', (RR, GG, BB), prof_in, prof_out)
 
 #
 # color model conversion formulas: http://www.easyrgb.com/math.php
@@ -245,27 +171,23 @@ def XYZ2Lab(X,Y,Z): # This formula is used in the ASE codec
 	L = (116*Y)-16
 	a = 500*(X-Y)
 	b = 200*(Y-Z)
-	
+
 	return (L,a,b)
 
-def HSL2RGB(H,S,L):
-	if ( S == 0 ): 
-		R = L 
-		G = L
-		B = L
+def xyY2XYZ(x,y,Y):
+	if y == 0: # trick for the Munsell full range palette
+		X = Z = float('inf')
 	else:
-		if ( L < 0.5 ):
-			var_2 = L * ( 1 + S )
-		else:
-			var_2 = ( L + S ) - ( S * L )
+		X = x * ( Y / y )
+		Z = ( 1 - x - y ) * ( Y / y )
 
-		var_1 = 2 * L - var_2
+	return (X,Y,Z)
 
-		R = Hue_2_RGB( var_1, var_2, H + ( 1 / 3 ) )
-		G = Hue_2_RGB( var_1, var_2, H )
-		B = Hue_2_RGB( var_1, var_2, H - ( 1 / 3 ) )
-	
-	return (R,G,B)
+def LCH2Lab(L,C,H):
+	a = math.cos(math.radians(H)) * C
+	b = math.sin(math.radians(H)) * C
+
+	return (L,a,b)
 
 def Hue_2_RGB(v1,v2,vH):
 	if ( vH < 0 ):
@@ -278,7 +200,7 @@ def Hue_2_RGB(v1,v2,vH):
 		return ( v2 )
 	if ( ( 3 * vH ) < 2 ):
 		return ( v1 + ( v2 - v1 ) * ( ( 2 / 3 ) - vH ) * 6 )
-	
+
 	return ( v1 )
 
 def HSV2RGB(H,S,V):
@@ -322,6 +244,78 @@ def HSV2RGB(H,S,V):
 
 	return (R,G,B)
 
+def HSL2RGB(H,S,L):
+	if ( S == 0 ): 
+		R = L 
+		G = L
+		B = L
+	else:
+		if ( L < 0.5 ):
+			var_2 = L * ( 1 + S )
+		else:
+			var_2 = ( L + S ) - ( S * L )
+
+		var_1 = 2 * L - var_2
+
+		R = Hue_2_RGB( var_1, var_2, H + ( 1 / 3 ) )
+		G = Hue_2_RGB( var_1, var_2, H )
+		B = Hue_2_RGB( var_1, var_2, H - ( 1 / 3 ) )
+
+	return (R,G,B)
+
+def RGB2HSV(var_R,var_G,var_B):
+	var_Min = min( var_R, var_G, var_B )    # Min. value of RGB
+	var_Max = max( var_R, var_G, var_B )    # Max. value of RGB
+	del_Max = var_Max - var_Min             # Delta RGB value 
+
+	V = var_Max
+
+	if del_Max == 0:                        # This is a gray, no chroma...
+		H = 0                               # HSV results from 0 to 1
+		S = 0
+	else:                                   # Chromatic data...
+		S = del_Max / var_Max
+
+		del_R = ( ( ( var_Max - var_R ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		del_G = ( ( ( var_Max - var_G ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		del_B = ( ( ( var_Max - var_B ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+
+		if var_R == var_Max: H = del_B - del_G
+		elif var_G == var_Max: H = ( 1 / 3 ) + del_R - del_B
+		elif var_B == var_Max: H = ( 2 / 3 ) + del_G - del_R
+
+		if H < 0: H += 1
+		if H > 1: H -= 1
+
+	return (H,S,V)
+
+def RGB2HSL(var_R,var_G,var_B):
+	var_Min = min( var_R, var_G, var_B )    # Min. value of RGB
+	var_Max = max( var_R, var_G, var_B )    # Max. value of RGB
+	del_Max = var_Max - var_Min             # Delta RGB value
+	
+	L = ( var_Max + var_Min ) / 2
+	
+	if del_Max == 0:                        # This is a gray, no chroma...
+	   H = 0                                # HSL results from 0 to 1
+	   S = 0
+	else:                                   # Chromatic data...
+		if L < 0.5: S = del_Max / ( var_Max + var_Min )
+		else: S = del_Max / ( 2 - var_Max - var_Min )
+		
+		del_R = ( ( ( var_Max - var_R ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		del_G = ( ( ( var_Max - var_G ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		del_B = ( ( ( var_Max - var_B ) / 6 ) + ( del_Max / 2 ) ) / del_Max
+		
+		if var_R == var_Max: H = del_B - del_G
+		elif var_G == var_Max: H = ( 1 / 3 ) + del_R - del_B
+		elif var_B == var_Max: H = ( 2 / 3 ) + del_G - del_R
+		
+		if H < 0: H += 1
+		if H > 1: H -= 1
+
+	return H,S,L
+
 def CMY2RGB(C,M,Y):
 	R = ( 1 - C )
 	G = ( 1 - M )
@@ -335,3 +329,18 @@ def YIQ2RGB(Y,I,Q):
 	G = Y - 0.2721 * I - 0.6474 * Q
 	B = Y - 1.1070 * I + 1.7046 * Q
 	return (R,G,B)
+
+# from http://www.4p8.com/eric.brasseur/gamma.html
+def sRGB_to_linear (s) :
+	a = 0.055
+	if s <= 0.04045 :
+		return s / 12.92
+	else :
+		return ( (s+a) / (1+a) ) ** 2.4
+
+def linear_to_sRGB (s) :
+	a = 0.055
+	if s <= 0.0031308 :
+		return 12.92 * s
+	else :
+		return (1+a) * s**(1/2.4) - a
