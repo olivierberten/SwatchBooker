@@ -27,7 +27,7 @@ from swatchbook import *
 import swatchbook.codecs as codecs
 import swatchbook.websvc as websvc
 
-VERSION = "0.7.5"
+VERSION = "0.7.6"
 
 def translate_sb(app,settings,main_globals):
 	locale = settings.value("Language").toString() or QLocale.system().name()
